@@ -112,15 +112,15 @@ mod tests {
     fn symlink_is_hashed_as_target_text_and_never_followed() {
         let d = tempfile::tempdir().unwrap();
         write(d.path(), "SKILL.md", "hello");
-        symlink("../../../etc/passwd", d.path().join("escape")).unwrap();
-        // Must not error and must not read the escaped file.
+        symlink("./definitely-not-here", d.path().join("escape")).unwrap();
+        // Must not error despite target not existing (proves link is not followed).
         let h = hash_dir(d.path()).unwrap();
         assert!(h.starts_with("sha256:"));
 
         // A file whose contents equal the link text must hash differently.
         let e = tempfile::tempdir().unwrap();
         write(e.path(), "SKILL.md", "hello");
-        write(e.path(), "escape", "../../../etc/passwd");
+        write(e.path(), "escape", "./definitely-not-here");
         assert_ne!(h, hash_dir(e.path()).unwrap());
     }
 
