@@ -1,0 +1,7 @@
+# Glob patterns, one per line, of paths the whitespace and end-of-line hooks
+# must not touch. Content this repo vendors rather than authors: reformatting
+# it diverges the local copy from its recorded upstream hash, which makes
+# `wska sync` treat the skill as locally patched and refuse to update it ever
+# again.
+skills/*
+LICENSES/*

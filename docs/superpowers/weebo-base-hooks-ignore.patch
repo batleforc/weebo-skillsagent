@@ -1,0 +1,67 @@
+.hooks/end-of-line.sh      | 15 +++++++++++++++
+ .hooks/whitespace-fixer.sh | 15 +++++++++++++++
+ 2 files changed, 30 insertions(+)
+
+Changes:
+
+.hooks/end-of-line.sh
+@@ -8,11 +8,26 @@
+ IFS="
+ "
+
++# Paths this repo vendors rather than authors are left untouched: see
++# .hooks/ignore. Reformatting vendored content breaks provenance tracking.
++hooks_ignored() {
++    [ -f .hooks/ignore ] || return 1
++    while IFS= read -r pattern; do
++        case "$pattern" in ''|\#*) continue ;; esac
++        # shellcheck disable=SC2254  # the pattern is meant to glob
++        case "$1" in $pattern) return 0 ;; esac
++    done < .hooks/ignore
++    return 1
++}
++
+ # Get the list of staged files (added/copied/modified only, skip deletions)
+ STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACM)
+
+ # Loop through each staged file
+ for FILE in $STAGED_FILES; do
++    if hooks_ignored "$FILE"; then
++        continue
++    fi
+     # Check if the file exists, is a regular file and is a text file (grep -qI skips binaries)
+     if [ -f "$FILE" ] && grep -qI '' "$FILE"; then
+         # Check if the last character of the file is a newline
+  +15 -0
+
+.hooks/whitespace-fixer.sh
+@@ -16,6 +16,18 @@ elif [ "$uname_result" = "Darwin" ]; then
+   platform="mac"
+ fi
+
++# Paths this repo vendors rather than authors are left untouched: see
++# .hooks/ignore. Reformatting vendored content breaks provenance tracking.
++hooks_ignored() {
++    [ -f .hooks/ignore ] || return 1
++    while IFS= read -r pattern; do
++        case "$pattern" in ''|\#*) continue ;; esac
++        # shellcheck disable=SC2254  # the pattern is meant to glob
++        case "$1" in $pattern) return 0 ;; esac
++    done < .hooks/ignore
++    return 1
++}
++
+ # change IFS to ignore filename's space in |for|
+ IFS="
+ "
+@@ -27,6 +39,9 @@ for line in `git diff --check --cached | sed '/^[+-]/d'` ; do
+   else
+     file="`echo $line | sed -r 's/:[0-9]+: .*//'`"
+   fi
++  if hooks_ignored "$file"; then
++    continue
++  fi
+   # display tips
+   echo -e "auto remove trailing whitespace in \033[31m$file\033[0m!"
+   # since $file in working directory isn't always equal to $file in index, so we backup it
+  +15 -0

@@ -16,6 +16,18 @@ elif [ "$uname_result" = "Darwin" ]; then
   platform="mac"
 fi
 
+# Paths this repo vendors rather than authors are left untouched: see
+# .hooks/ignore. Reformatting vendored content breaks provenance tracking.
+hooks_ignored() {
+    [ -f .hooks/ignore ] || return 1
+    while IFS= read -r pattern; do
+        case "$pattern" in ''|\#*) continue ;; esac
+        # shellcheck disable=SC2254  # the pattern is meant to glob
+        case "$1" in $pattern) return 0 ;; esac
+    done < .hooks/ignore
+    return 1
+}
+
 # change IFS to ignore filename's space in |for|
 IFS="
 "
@@ -26,6 +38,9 @@ for line in `git diff --check --cached | sed '/^[+-]/d'` ; do
     file="`echo $line | sed -E 's/:[0-9]+: .*//'`"
   else
     file="`echo $line | sed -r 's/:[0-9]+: .*//'`"
+  fi
+  if hooks_ignored "$file"; then
+    continue
   fi
   # display tips
   echo -e "auto remove trailing whitespace in \033[31m$file\033[0m!"
