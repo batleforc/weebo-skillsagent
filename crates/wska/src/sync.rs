@@ -105,6 +105,7 @@ pub fn sync_source(
     };
 
     let mut fresh: BTreeMap<String, String> = BTreeMap::new();
+    let mut any_patched = false;
     for skill in skills {
         let local = repo_root.join("skills").join(&skill);
         let remote = upstream_dir.join(&skill);
@@ -140,12 +141,31 @@ pub fn sync_source(
                 out.push(Outcome::Unchanged { skill });
             } else {
                 if !check_only {
+                    let tmp = local.with_file_name(format!(".wska-tmp-{skill}"));
+                    if tmp.exists() {
+                        std::fs::remove_dir_all(&tmp).map_err(|source| SyncError::Io {
+                            op: "clearing",
+                            path: tmp.clone(),
+                            source,
+                        })?;
+                    }
+                    if let Err(e) = copy_dir(&remote, &tmp) {
+                        let _ = std::fs::remove_dir_all(&tmp);
+                        return Err(e);
+                    }
+                    // shortcut: remove+rename is not atomic, so a crash between them still loses
+                    // the skill; upgrade to a single atomic rename (swap via renameat2) if sync
+                    // ever runs somewhere `skills/` is not recoverable from git.
                     std::fs::remove_dir_all(&local).map_err(|source| SyncError::Io {
                         op: "replacing",
                         path: local.clone(),
                         source,
                     })?;
-                    copy_dir(&remote, &local)?;
+                    std::fs::rename(&tmp, &local).map_err(|source| SyncError::Io {
+                        op: "renaming",
+                        path: local.clone(),
+                        source,
+                    })?;
                 }
                 fresh.insert(skill.clone(), remote_hash);
                 out.push(Outcome::FastForward {
@@ -161,21 +181,30 @@ pub fn sync_source(
                 fresh.insert(skill.clone(), r.clone());
             }
             out.push(Outcome::Patched { skill });
+            any_patched = true;
         }
     }
 
     if !check_only {
-        write_back(&repo_root.join("vendor.toml"), name, &new_commit, &fresh)?;
+        // A patched skill means the tree is not actually at new_commit for
+        // this source, so don't advance commit — leave it as recorded.
+        let commit = if any_patched {
+            None
+        } else {
+            Some(new_commit.as_str())
+        };
+        write_back(&repo_root.join("vendor.toml"), name, commit, &fresh)?;
     }
     Ok(out)
 }
 
-/// Update one source's `commit` and `hashes` in place, preserving comments
-/// and field order.
+/// Update one source's `hashes` in place, preserving comments and field
+/// order. `commit` is set to the given value when `Some`; when `None` the
+/// existing `commit` field (if any) is left untouched.
 pub fn write_back(
     vendor_path: &Path,
     source: &str,
-    commit: &str,
+    commit: Option<&str>,
     hashes: &BTreeMap<String, String>,
 ) -> Result<(), SyncError> {
     let body = std::fs::read_to_string(vendor_path).map_err(|e| SyncError::Io {
@@ -189,7 +218,9 @@ pub fn write_back(
         .and_then(|s| s.get_mut(source))
         .ok_or_else(|| SyncError::UnknownSource(source.to_string()))?;
 
-    table["commit"] = toml_edit::value(commit);
+    if let Some(commit) = commit {
+        table["commit"] = toml_edit::value(commit);
+    }
     let mut inline = toml_edit::InlineTable::new();
     for (k, v) in hashes {
         inline.insert(k, v.clone().into());
@@ -418,6 +449,64 @@ licence = "MIT"
         );
     }
 
+    /// R18: a patched skill means the tree isn't really at upstream's new
+    /// commit, so `commit` in vendor.toml must not advance to it either.
+    #[test]
+    fn patched_skill_does_not_advance_the_recorded_commit() {
+        let d = tempfile::tempdir().unwrap();
+        let up = d.path().join("up");
+        upstream(&up, "v1");
+        let repo = d.path().join("repo");
+        let local = repo.join("skills/brainstorming");
+        fs::create_dir_all(&local).unwrap();
+        fs::write(local.join("SKILL.md"), "v1").unwrap();
+
+        let mut src = source(&up);
+        let old_hash = crate::hash::hash_dir(&local).unwrap();
+        src.hashes.insert("brainstorming".into(), old_hash.clone());
+        src.commit = Some("oldsha".into());
+        // the author patches locally
+        fs::write(local.join("SKILL.md"), "v1 + my edit").unwrap();
+        // and upstream moves on
+        fs::write(up.join("skills/brainstorming/SKILL.md"), "v2").unwrap();
+        git(&up, &["commit", "-aqm", "v2"]);
+        let new_commit = String::from_utf8(
+            Command::new("git")
+                .args(["rev-parse", "--short", "HEAD"])
+                .current_dir(&up)
+                .output()
+                .unwrap()
+                .stdout,
+        )
+        .unwrap()
+        .trim()
+        .to_string();
+
+        fs::write(
+            repo.join("vendor.toml"),
+            r#"[sources.sp]
+upstream = "unused"
+ref = "main"
+subpath = "skills"
+provides = "*"
+licence = "MIT"
+commit = "oldsha"
+"#,
+        )
+        .unwrap();
+
+        let out = sync_source("sp", &src, &repo, &d.path().join("cache"), false).unwrap();
+        assert!(
+            out.iter().any(|o| matches!(o, Outcome::Patched { .. })),
+            "{out:?}"
+        );
+
+        let body = fs::read_to_string(repo.join("vendor.toml")).unwrap();
+        assert!(body.contains("commit = \"oldsha\""), "{body}");
+        assert!(!body.contains(&new_commit), "{body}");
+        assert!(body.contains(&old_hash), "{body}");
+    }
+
     #[test]
     fn check_only_reports_a_missing_licence_and_writes_nothing() {
         let d = tempfile::tempdir().unwrap();
@@ -457,7 +546,7 @@ licence = "MIT"
         .unwrap();
         let mut hashes = BTreeMap::new();
         hashes.insert("brainstorming".to_string(), "sha256:ab".to_string());
-        write_back(&p, "sp", "deadbee", &hashes).unwrap();
+        write_back(&p, "sp", Some("deadbee"), &hashes).unwrap();
         let body = fs::read_to_string(&p).unwrap();
         assert!(body.contains("# keep me"), "{body}");
         assert!(body.contains("deadbee"), "{body}");
