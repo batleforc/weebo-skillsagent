@@ -4,6 +4,14 @@ version = "0.1.0"
 edition.workspace = true
 license.workspace = true
 
+[lib]
+name = "wska"
+path = "src/lib.rs"
+
+[[bin]]
+name = "wska"
+path = "src/main.rs"
+
 [dependencies]
 clap.workspace = true
 serde.workspace = true
