@@ -35,6 +35,8 @@ pub enum SyncError {
     },
     #[error("vendor.toml has no source named `{0}`")]
     UnknownSource(String),
+    #[error("refusing upstream symlink {path}: target `{target}` leaves the skill directory")]
+    UnsafeLink { path: PathBuf, target: String },
     #[error("parsing vendor.toml: {0}")]
     Edit(#[from] toml_edit::TomlError),
 }
@@ -236,6 +238,39 @@ pub fn write_back(
 }
 
 fn copy_dir(from: &Path, to: &Path) -> Result<(), SyncError> {
+    copy_into(from, to, to)
+}
+
+/// Whether a symlink placed at `link` pointing at `target` stays under `root`.
+/// Resolved lexically, not via canonicalize: the link is copied before
+/// whatever it points at, so the real path does not exist yet.
+fn link_stays_inside(link: &Path, target: &Path, root: &Path) -> bool {
+    use std::path::Component;
+    if target.is_absolute() {
+        return false;
+    }
+    let Some(base) = link.parent() else {
+        return false;
+    };
+    let Ok(rel) = base.strip_prefix(root) else {
+        return false;
+    };
+    let mut depth = 0usize;
+    for component in rel.components().chain(target.components()) {
+        match component {
+            Component::CurDir => {}
+            Component::Normal(_) => depth += 1,
+            Component::ParentDir => match depth.checked_sub(1) {
+                Some(d) => depth = d,
+                None => return false,
+            },
+            Component::RootDir | Component::Prefix(_) => return false,
+        }
+    }
+    true
+}
+
+fn copy_into(from: &Path, to: &Path, root: &Path) -> Result<(), SyncError> {
     std::fs::create_dir_all(to).map_err(|source| SyncError::Io {
         op: "creating",
         path: to.to_path_buf(),
@@ -263,13 +298,21 @@ fn copy_dir(from: &Path, to: &Path) -> Result<(), SyncError> {
                 path: entry.path(),
                 source,
             })?;
+            // Upstream is untrusted input: a link out of the tree would be
+            // handed to the agent verbatim once the skill is installed.
+            if !link_stays_inside(&dest, &target, root) {
+                return Err(SyncError::UnsafeLink {
+                    path: entry.path(),
+                    target: target.display().to_string(),
+                });
+            }
             std::os::unix::fs::symlink(target, &dest).map_err(|source| SyncError::Io {
                 op: "linking",
                 path: dest,
                 source,
             })?;
         } else if md.is_dir() {
-            copy_dir(&entry.path(), &dest)?;
+            copy_into(&entry.path(), &dest, root)?;
         } else {
             std::fs::copy(entry.path(), &dest).map_err(|source| SyncError::Io {
                 op: "copying to",
@@ -587,6 +630,37 @@ commit = "oldsha"
             "{out:?}"
         );
         assert_eq!(fs::read_to_string(local.join("SKILL.md")).unwrap(), "v1");
+    }
+
+    #[test]
+    fn an_escaping_upstream_symlink_is_refused() {
+        let d = tempfile::tempdir().unwrap();
+        let from = d.path().join("remote");
+        std::fs::create_dir_all(from.join("nested")).unwrap();
+        std::fs::write(from.join("SKILL.md"), "x").unwrap();
+        std::os::unix::fs::symlink("/etc/shadow", from.join("secrets")).unwrap();
+        let err = copy_dir(&from, &d.path().join("local")).unwrap_err();
+        assert!(matches!(err, SyncError::UnsafeLink { .. }), "got {err:?}");
+
+        std::fs::remove_file(from.join("secrets")).unwrap();
+        std::os::unix::fs::symlink("../../../etc/shadow", from.join("nested/up")).unwrap();
+        let err = copy_dir(&from, &d.path().join("local2")).unwrap_err();
+        assert!(matches!(err, SyncError::UnsafeLink { .. }), "got {err:?}");
+    }
+
+    #[test]
+    fn an_internal_upstream_symlink_is_copied() {
+        let d = tempfile::tempdir().unwrap();
+        let from = d.path().join("remote");
+        std::fs::create_dir_all(from.join("nested")).unwrap();
+        std::fs::write(from.join("SKILL.md"), "x").unwrap();
+        std::os::unix::fs::symlink("../SKILL.md", from.join("nested/alias")).unwrap();
+        let to = d.path().join("local");
+        copy_dir(&from, &to).unwrap();
+        assert_eq!(
+            std::fs::read_link(to.join("nested/alias")).unwrap(),
+            Path::new("../SKILL.md")
+        );
     }
 
     #[test]

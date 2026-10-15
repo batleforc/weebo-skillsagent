@@ -17,7 +17,7 @@ subpath  = "skills"
 provides = ["mcp-builder", "webapp-testing", "frontend-design", "theme-factory"]
 licence  = "Apache-2.0"
 commit = "dbd4588"
-hashes = { frontend-design = "sha256:b5c2e1f1e14812a1313248313eaed1b17fdf3762607fcb4b9e2ca35501370a06", mcp-builder = "sha256:5bbe358b4bf2efcac08cb86720df4c0abcb6b6a7f05c206229cad35ce2f3130e", theme-factory = "sha256:6b1609671e9da6726637a51427f5552584e0a1cacfcab4a1e8852a195913808b", webapp-testing = "sha256:2a31b4dbf0e5de705a4d5e8b4a7ef4f418dc2ea9bbfbacaa26269729d81027cc" }
+hashes = { frontend-design = "sha256:b5c2e1f1e14812a1313248313eaed1b17fdf3762607fcb4b9e2ca35501370a06", mcp-builder = "sha256:5bbe358b4bf2efcac08cb86720df4c0abcb6b6a7f05c206229cad35ce2f3130e", theme-factory = "sha256:6b1609671e9da6726637a51427f5552584e0a1cacfcab4a1e8852a195913808b", webapp-testing = "sha256:25ee0d712d267b8b8c5037b2790068cd66b5481ab43c0ba2cba2892b14d9ade9" }
 
 [sources.impeccable]
 upstream = "https://github.com/pbakaus/impeccable"
@@ -33,7 +33,65 @@ provides = ["impeccable"]
 # recorded upstream hash, marking the skill as patched forever.
 licence  = "Apache-2.0"
 commit = "8a0e198"
-hashes = { impeccable = "sha256:9f09af1dd3b653935ead897b3f41678181aaee58b35fc2a7c54505fc4cb7ee52" }
+hashes = { impeccable = "sha256:f662ef25e26db89b4b27b725ac8815d38772f4645b50fbec2bcf384f7b261ec3" }
+
+[sources.blender-game-skills]
+upstream = "https://github.com/majidmanzarpour/blender-game-skills"
+ref      = "main"
+subpath  = "skills"
+# A named list, not "*": upstream ships one skill today and anything it adds
+# later should be a deliberate choice here, not a silent new item.
+provides = ["blender-image-to-3d"]
+# Full text in LICENSES/blender-game-skills.txt: upstream keeps LICENSE at the
+# repo root, outside the synced subpath, so sync cannot carry it into the skill
+# dir -- and putting it there by hand would make the local hash diverge from
+# the recorded upstream hash, marking the skill as patched forever.
+licence  = "MIT"
+commit = "f0ef293"
+hashes = { blender-image-to-3d = "sha256:816f1c987a8d16c6107d438821f9c8d63cf510a111857099e934563d4e2eb984" }
+
+[sources.3dviz-pro-max]
+upstream = "https://github.com/viettranx/3dviz-pro-max"
+ref      = "main"
+subpath  = "skills"
+provides = ["3dviz-pro-max"]
+# Full text in LICENSES/3dviz-pro-max.txt, for the same reason as the two
+# sources above: LICENSE sits at the repo root, outside the synced subpath.
+licence  = "MIT"
+commit = "d077e0e"
+hashes = { 3dviz-pro-max = "sha256:d0c6a9577d67ef5623214bbd6f962c71006f72cfafc197166b3a0c0d6a843530" }
+
+[sources.ponytail]
+upstream = "https://github.com/DietrichGebert/ponytail"
+ref      = "main"
+subpath  = "skills"
+# A named list, not "*": the subpath also holds the plugin's own plugin.json,
+# and anything upstream adds later should be a deliberate choice here.
+provides = ["ponytail", "ponytail-audit", "ponytail-debt", "ponytail-gain", "ponytail-help", "ponytail-review"]
+# Full text in LICENSES/ponytail.txt: LICENSE sits at the repo root, outside
+# the synced subpath, like the three sources above.
+#
+# Upstream ships these skills inside a Claude plugin whose hooks arm ponytail
+# mode at session start. Vendoring carries the skills only: ponytail is then
+# invoked as a skill, not armed by a hook, and ponytail-gain's benchmark
+# numbers (read from the plugin's benchmarks/) are not there to show.
+licence  = "MIT"
+commit = "84740e3"
+hashes = { ponytail = "sha256:b3260ca5d1e0a4af7aa851c97f1d2a45db3efc853ea83b9d49761e57c4b4c0f6", ponytail-audit = "sha256:990428458f4dce2bfc6f2fba0124522795b71d0410958154db22a8b6884495ae", ponytail-debt = "sha256:69fd443d41a89d105f4796bba4bad7e04200d4000cc024b8f952dd38c32f885e", ponytail-gain = "sha256:b128a0b9329504626839bcf082f367ebc26518ac9c5afba1dc79df146ca0ba9b", ponytail-help = "sha256:2c0645d1d1e0c309696fb94630dc7a11c46b3f5dec8003137f1fd9336258ea4a", ponytail-review = "sha256:0fcee427e152792c559f7c45a9f55b68e8c2bba731adaac1ac303d9bc08da98c" }
+
+[sources.mattpocock-skills]
+upstream = "https://github.com/mattpocock/skills"
+ref      = "main"
+# The repo files its skills under category directories; grilling and its
+# trigger shim both live in productivity/.
+subpath  = "skills/productivity"
+# grill-me is a three-line shim whose whole body is "call the Skill tool with
+# grilling", so the two travel together or neither works.
+provides = ["grill-me", "grilling"]
+# Full text in LICENSES/mattpocock-skills.txt, same root-LICENSE reason.
+licence  = "MIT"
+commit = "49dd158"
+hashes = { grill-me = "sha256:a2253d86abb930490613ecd40db7166d53451c0ae03271f4acce36fdf47c5ef3", grilling = "sha256:9fd4deb13b57d10876a782f9a6aa4adb47587be511231a0763835d35c7de6034" }
 
 # External commands each item needs. Hand-maintained: wska reads this, it does
 # not infer requirements, so an upstream that starts shelling out to something
@@ -42,10 +100,26 @@ hashes = { impeccable = "sha256:9f09af1dd3b653935ead897b3f41678181aaee58b35fc2a7
 # Chrome-ish browser across distributions.
 [requires]
 graphify        = ["graphify"]
+rtk             = ["rtk"]
 bmad            = ["npx", "uv"]
 mcp-builder     = ["python3", "npx"]
-webapp-testing  = ["python3", "playwright"]
+# py:<module> is an import check, not a PATH lookup: webapp-testing drives
+# Playwright as a Python library. Install it into the python3 on PATH with
+# `pip install playwright`, then `playwright install chromium` for the browser
+# binaries -- which doctor cannot see, so a green row here is necessary and not
+# sufficient.
+webapp-testing  = ["python3", "py:playwright"]
 frontend-design = ["google-chrome|chromium|chrome"]
+# `blender` must be on PATH for doctor to see it; the skill itself also accepts
+# $BLENDER_BIN or the macOS app path, which no PATH lookup can prove. py:PIL is
+# Pillow, which compose_review.py needs for the compare sheets every phase gate
+# is read from.
+blender-image-to-3d = ["blender", "python3", "py:PIL"]
+# node drives the Three.js half; Blender is optional for this one (without it
+# the skill stays on Three.js-only construction), so it is not required here.
+# The last entry is "inspect the output somehow": automated capture through
+# Playwright, or a visible browser.
+3dviz-pro-max = ["python3", "node", "py:playwright|google-chrome|chromium|chrome"]
 impeccable      = ["node", "npx", "google-chrome|chromium|chrome"]
 
 [installers.bmad]
@@ -54,4 +128,20 @@ scope   = "project"
 
 [installers.graphify]
 command = "graphify install --project --platform claude"
+scope   = "project"
+
+# BMGD, the game dev studio module (installer code `gds`). Its own item because
+# the bmad installer treats `--modules` as the whole install rather than an
+# addition to it: naming only gds would drop bmm from _bmad, so this command
+# names both. Don't install `bmad` and `bmad-gds` together -- same installer,
+# run twice.
+[installers.bmad-gds]
+command = "npx bmad-method install --modules bmm,gds"
+scope   = "project"
+
+# `rtk init` writes RTK.md into the target and patches .claude/settings.json
+# with rtk's hooks. --auto-patch is what keeps it unattended: without it the
+# settings.json step prompts, and an install run from a task would hang.
+[installers.rtk]
+command = "rtk init --auto-patch"
 scope   = "project"

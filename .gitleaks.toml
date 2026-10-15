@@ -1,0 +1,6 @@
+[extend]
+useDefault = true
+
+[allowlist]
+description = "BMAD config manifests list SHA-256 file digests, not secrets"
+paths = ['''^_bmad/_config/.*\.csv$''']

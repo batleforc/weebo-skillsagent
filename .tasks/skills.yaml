@@ -11,12 +11,17 @@ tasks:
       - cargo build --release -p wska
 
   install:
-    desc: "Link the items of one or more profiles into a target (usage: task skills:install PROFILE=base [SCOPE=project|user])"
+    desc: "Link the items of one or more profiles into a target (usage: task skills:install PROFILE=base [SCOPE=project|user] [RUN_INSTALLERS=0])"
+    vars:
+      # Installers (bmad, graphify) write project-coupled state that cannot be
+      # symlinked, so skipping them leaves those items installed nowhere.
+      # RUN_INSTALLERS=0 opts out when you only want the links.
+      RUN_INSTALLERS: '{{.RUN_INSTALLERS | default "1"}}'
     preconditions:
       - sh: 'test -n "{{.PROFILE}}"'
         msg: "pass PROFILE=<name>, or PROFILE=all for everything"
     cmds:
-      - '{{.WSKA}} install --profile {{.PROFILE}} --scope {{.SCOPE}}'
+      - '{{.WSKA}} install --profile {{.PROFILE}} --scope {{.SCOPE}} {{if ne .RUN_INSTALLERS "0"}}--run-installers{{end}}'
 
   status:
     desc: "Show what is linked in a target (usage: task skills:status [SCOPE=project|user])"
@@ -34,7 +39,7 @@ tasks:
       - '{{.WSKA}} doctor'
 
   sync:
-    desc: "Refresh vendored sources from upstream (usage: task skills:sync [SOURCE=superpowers])"
+    desc: "Refresh vendored sources from upstream (usage: task skills:sync [SOURCE=impeccable])"
     cmds:
       - '{{.WSKA}} sync {{.SOURCE}}'
 

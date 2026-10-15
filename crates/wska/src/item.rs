@@ -59,6 +59,8 @@ pub enum ScanError {
         first: String,
         second: String,
     },
+    #[error("vendor.toml [requires] names `{name}`, which is not an item in this repo")]
+    UnknownRequirement { name: String },
 }
 
 pub fn scan(repo_root: &Path, vendor: &Vendor) -> Result<BTreeMap<String, Item>, ScanError> {
@@ -118,6 +120,14 @@ pub fn scan(repo_root: &Path, vendor: &Vendor) -> Result<BTreeMap<String, Item>,
         )?;
     }
 
+    // A [requires] key that names nothing would silently disable that item's
+    // health check, so a typo must fail loudly rather than report Ok.
+    for name in vendor.requires.keys() {
+        if !out.contains_key(name) {
+            return Err(ScanError::UnknownRequirement { name: name.clone() });
+        }
+    }
+
     Ok(out)
 }
 
@@ -164,6 +174,28 @@ mod tests {
             },
         );
         v
+    }
+
+    #[test]
+    fn rejects_a_requires_key_that_names_no_item() {
+        let d = repo(&[("skills", "real")]);
+        let mut v = Vendor::default();
+        v.requires
+            .insert("reel".to_string(), vec!["npx".to_string()]);
+        let err = scan(d.path(), &v).unwrap_err();
+        assert!(
+            matches!(&err, ScanError::UnknownRequirement { name } if name == "reel"),
+            "got {err:?}"
+        );
+    }
+
+    #[test]
+    fn accepts_a_requires_key_for_an_installer() {
+        let d = repo(&[]);
+        let mut v = vendor_with_installer("bmad", Scope::Project);
+        v.requires
+            .insert("bmad".to_string(), vec!["npx".to_string()]);
+        assert!(scan(d.path(), &v).is_ok());
     }
 
     #[test]

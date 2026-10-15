@@ -128,6 +128,13 @@ pub fn sync(
     check: bool,
 ) -> Result<Vec<crate::sync::Outcome>, AppError> {
     let vendor = config::load_vendor(&repo_root.join("vendor.toml"))?;
+    // A name that matches nothing would otherwise sync nothing and report
+    // Clean, so a typo reads as "everything is up to date".
+    for name in sources {
+        if !vendor.sources.contains_key(name) {
+            return Err(crate::sync::SyncError::UnknownSource(name.clone()).into());
+        }
+    }
     let cache = repo_root.join(".task/wska-cache");
     let mut out = Vec::new();
     for (name, source) in &vendor.sources {

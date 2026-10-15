@@ -67,13 +67,30 @@ fn health(item: &Item, requirements: &[String], has: &dyn Fn(&str) -> bool) -> H
 }
 
 /// A requirement is satisfied when any of its `|`-separated alternatives
-/// resolves, so `"google-chrome|chromium"` passes on a box with either.
+/// resolves, so `"google-chrome|chromium"` passes on a box with either. An
+/// alternative written `py:<module>` is an importable Python module rather
+/// than a command, which is the only honest check for a skill that uses a
+/// library (playwright) no PATH lookup can prove is installed.
 pub fn satisfied(requirement: &str, has: &dyn Fn(&str) -> bool) -> bool {
     requirement
         .split('|')
         .map(str::trim)
         .filter(|tool| !tool.is_empty())
-        .any(has)
+        .any(|tool| match tool.strip_prefix("py:") {
+            Some(module) => python_imports(module),
+            None => has(tool),
+        })
+}
+
+fn python_imports(module: &str) -> bool {
+    std::process::Command::new("python3")
+        .arg("-c")
+        .arg(format!("import {module}"))
+        .stdout(std::process::Stdio::null())
+        .stderr(std::process::Stdio::null())
+        .status()
+        .map(|s| s.success())
+        .unwrap_or(false)
 }
 
 /// The requirements that are not satisfied, in declaration order.
@@ -107,16 +124,21 @@ pub fn validate_skill_md(dir: &Path) -> Result<(), String> {
     let path = dir.join("SKILL.md");
     let body = std::fs::read_to_string(&path).map_err(|e| format!("SKILL.md unreadable: {e}"))?;
 
+    // A BOM or a leading blank line is cosmetic, not a reason to call a
+    // working skill inert.
     let frontmatter = body
+        .trim_start_matches('\u{feff}')
+        .trim_start()
         .strip_prefix("---")
         .and_then(|rest| rest.split_once("\n---"))
         .map(|(front, _)| front)
         .ok_or_else(|| "no YAML frontmatter delimited by ---".to_string())?;
 
     for field in ["name", "description"] {
+        // No trim: an indented `  name:` under `metadata:` is a nested key,
+        // not the top-level field the harness reads.
         let value = frontmatter.lines().find_map(|line| {
-            line.trim()
-                .strip_prefix(field)
+            line.strip_prefix(field)
                 .and_then(|rest| rest.strip_prefix(':'))
         });
         match value {
@@ -237,6 +259,30 @@ mod tests {
         let d = skill_dir(Some("---\nname: lonely\n---\n"));
         let err = validate_skill_md(d.path()).unwrap_err();
         assert!(err.contains("description"), "unexpected reason: {err}");
+    }
+
+    #[test]
+    fn nested_frontmatter_keys_do_not_satisfy_the_top_level_fields() {
+        let d = skill_dir(Some("---\nmetadata:\n  name: x\n  description: y\n---\n"));
+        let err = validate_skill_md(d.path()).unwrap_err();
+        assert!(err.contains("name"), "unexpected reason: {err}");
+    }
+
+    #[test]
+    fn a_leading_bom_or_blank_line_still_parses() {
+        let body = "---\nname: ok\ndescription: Fine.\n---\n";
+        let d = skill_dir(Some(&format!("\n{body}")));
+        assert_eq!(validate_skill_md(d.path()), Ok(()));
+        let d = skill_dir(Some(&format!("\u{feff}{body}")));
+        assert_eq!(validate_skill_md(d.path()), Ok(()));
+    }
+
+    #[test]
+    fn a_py_requirement_is_a_module_not_a_path_lookup() {
+        // Present on PATH under that exact name, yet still unsatisfied:
+        // proves `py:` is resolved by importing, not by `has`.
+        let name = "py:wska_definitely_not_a_module";
+        assert!(!satisfied(name, &has(&[name])));
     }
 
     #[test]

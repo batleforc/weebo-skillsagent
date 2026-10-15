@@ -29,7 +29,9 @@ The final whole-branch review triaged all of them as safe to merge.
 
 ## Larger items the final review raised
 
-- **Dead code (~690 lines).** `sync.rs`, `hash.rs`, `config::{Source, Provides}`, `Command::Sync` and the two `skills:sync*` tasks are implemented and tested but unreachable, because no third-party skills are vendored. `task audit`'s licence step therefore cannot fail. Kept as documented future capability; delete it if vendoring is never adopted.
+- ~~**Dead code (~690 lines).** `sync.rs`, `hash.rs`, `config::{Source, Provides}`, `Command::Sync` and the two `skills:sync*` tasks are implemented and tested but unreachable, because no third-party skills are vendored.~~ Resolved by c44c766: five skills are vendored from two sources, so sync, hashing and `task audit`'s licence step are all live.
+
+- **`sync` prints Rust `Debug`.** `main.rs:71` renders outcomes with `{outcome:?}`, so a row reads `FastForward { skill: "impeccable", from: "8a0e198", to: "4809728" }`. `status` gets away with the same treatment because its states are bare variants; `sync`'s are not. Cosmetic.
 - **Apply is not atomic.** Installers run before unlinks, so a failing installer leaves links created and stale links not yet removed. Re-running converges.
 - **`Applied.skipped` mixes two string kinds** — bare installer names and full "changed since planning" sentences. Only the printed count reads it today.
 - **No end-to-end test of `--scope user`**, and no integration test that `install` refuses a *foreign symlink* (only a real directory is covered).

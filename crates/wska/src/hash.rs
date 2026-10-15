@@ -3,10 +3,11 @@ use std::io;
 use std::path::{Path, PathBuf};
 
 /// SHA-256 over directory entries sorted by relative path. Each entry
-/// contributes: relative path bytes, 0x00, a kind byte (b'f' file, b'l'
-/// symlink), content length as u64 LE, contents. For a symlink the contents
-/// are the link's target text; links are never followed. Modes, timestamps and
-/// ownership are excluded.
+/// contributes: relative path bytes, 0x00, a kind byte (b'f' file, b'x'
+/// executable file, b'l' symlink), content length as u64 LE, contents. For a
+/// symlink the contents are the link's target text; links are never followed.
+/// Timestamps and ownership are excluded; the execute bit is not, because some
+/// vendored skills ship scripts that only work while they stay executable.
 pub fn hash_dir(root: &Path) -> io::Result<String> {
     let mut entries: Vec<(Vec<u8>, u8, Vec<u8>)> = Vec::new();
     collect(root, Path::new(""), &mut entries)?;
@@ -41,9 +42,15 @@ fn collect(dir: &Path, rel_dir: &Path, out: &mut Vec<(Vec<u8>, u8, Vec<u8>)>) ->
         } else if md.is_dir() {
             collect(&entry.path(), &rel, out)?;
         } else {
+            use std::os::unix::fs::PermissionsExt;
+            let kind = if md.permissions().mode() & 0o111 != 0 {
+                b'x'
+            } else {
+                b'f'
+            };
             out.push((
                 rel.as_os_str().as_encoded_bytes().to_vec(),
-                b'f',
+                kind,
                 std::fs::read(entry.path())?,
             ));
         }
@@ -90,6 +97,18 @@ mod tests {
         fs::remove_file(&p).unwrap();
         fs::write(&p, body).unwrap();
         assert_eq!(before, hash_dir(d.path()).unwrap());
+    }
+
+    #[test]
+    fn losing_the_execute_bit_changes_the_hash() {
+        use std::os::unix::fs::PermissionsExt;
+        let d = tempfile::tempdir().unwrap();
+        write(d.path(), "scripts/run", "#!/bin/sh\n");
+        let p = d.path().join("scripts/run");
+        fs::set_permissions(&p, fs::Permissions::from_mode(0o755)).unwrap();
+        let before = hash_dir(d.path()).unwrap();
+        fs::set_permissions(&p, fs::Permissions::from_mode(0o644)).unwrap();
+        assert_ne!(before, hash_dir(d.path()).unwrap());
     }
 
     #[test]
