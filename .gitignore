@@ -7,6 +7,9 @@
 # Claude Code per-user local settings
 .claude/settings.local.json
 
+# graphify's backup of settings.json, written by its installer
+.claude/settings.json.graphify-bak
+
 # Build artifacts
 node_modules/
 target/

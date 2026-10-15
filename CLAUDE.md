@@ -233,7 +233,8 @@ Overall average: **60-90% token reduction** on common development operations.
 
 ## graphify
 
-This project has a knowledge graph at graphify-out/ with god nodes, community structure, and cross-file relationships.
+This project can keep a knowledge graph at graphify-out/ with god nodes, community structure, and cross-file relationships.
+It has not been generated yet — run `graphify .` to create it.
 
 Rules:
 - For codebase questions, first run `graphify query "<question>"` when graphify-out/graph.json exists. Use `graphify path "<A>" "<B>"` for relationships and `graphify explain "<concept>"` for focused concepts. These return a scoped subgraph, usually much smaller than GRAPH_REPORT.md or raw grep output.
