@@ -39,7 +39,7 @@ tasks:
       - '{{.WSKA}} sync {{.SOURCE}}'
 
   sync:check:
-    desc: "Report vendored drift, patched skills and missing licences without writing"
+    desc: "Report vendored drift, patched skills and missing licences without writing (exit 2 = behind upstream, 1 = no licence)"
     cmds:
       - '{{.WSKA}} sync --check'
 

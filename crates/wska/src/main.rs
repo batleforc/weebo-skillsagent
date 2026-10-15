@@ -68,15 +68,29 @@ fn main() {
         Command::Sync { source, check } => {
             let root = wska::target::repo_root(&cwd).expect("repo root");
             wska::app::sync(&root, &source, check).map(|outcomes| {
-                let mut bad = false;
-                for o in &outcomes {
-                    println!("{o:?}");
-                    if matches!(o, wska::sync::Outcome::MissingLicence { .. }) {
-                        bad = true;
-                    }
+                for outcome in &outcomes {
+                    println!("{outcome:?}");
                 }
-                if check && bad {
-                    std::process::exit(1);
+                if !check {
+                    return;
+                }
+                let verdict = wska::sync::check_verdict(&outcomes);
+                match &verdict {
+                    wska::sync::CheckVerdict::Clean => {}
+                    wska::sync::CheckVerdict::Drift(skills) => eprintln!(
+                        "{} skill(s) behind upstream: {}. Run `task skills:sync`, \
+                         then read `git diff skills/` before committing.",
+                        skills.len(),
+                        skills.join(", ")
+                    ),
+                    wska::sync::CheckVerdict::LicenceMissing(sources) => eprintln!(
+                        "no licence recorded for: {}. Add one to vendor.toml.",
+                        sources.join(", ")
+                    ),
+                }
+                let code = verdict.exit_code();
+                if code != 0 {
+                    std::process::exit(code);
                 }
             })
         }

@@ -320,6 +320,59 @@ fn git_stdout(cwd: &Path, args: &[&str]) -> Result<String, SyncError> {
     Ok(String::from_utf8_lossy(&out.stdout).trim().to_string())
 }
 
+/// What a `--check` run concluded.
+#[derive(Debug)]
+pub enum CheckVerdict {
+    Clean,
+    /// Unpatched skills whose upstream has moved on.
+    Drift(Vec<String>),
+    /// Sources with no licence recorded.
+    LicenceMissing(Vec<String>),
+}
+
+impl CheckVerdict {
+    /// 1 for an unmet obligation, 2 for mere staleness, so a CI job can tell
+    /// "fix this" apart from "there is an update to review".
+    pub fn exit_code(&self) -> i32 {
+        match self {
+            CheckVerdict::Clean => 0,
+            CheckVerdict::LicenceMissing(_) => 1,
+            CheckVerdict::Drift(_) => 2,
+        }
+    }
+}
+
+/// Classify a `--check` run. A missing licence outranks drift: one is an
+/// obligation unmet, the other only an available update. A patched skill is
+/// never a failure — the divergence is the author's own deliberate edit, and
+/// failing on it would leave `task audit` permanently red for anyone who
+/// patches anything.
+pub fn check_verdict(outcomes: &[Outcome]) -> CheckVerdict {
+    let unlicensed: Vec<String> = outcomes
+        .iter()
+        .filter_map(|outcome| match outcome {
+            Outcome::MissingLicence { source } => Some(source.clone()),
+            _ => None,
+        })
+        .collect();
+    if !unlicensed.is_empty() {
+        return CheckVerdict::LicenceMissing(unlicensed);
+    }
+
+    let drifted: Vec<String> = outcomes
+        .iter()
+        .filter_map(|outcome| match outcome {
+            Outcome::FastForward { skill, .. } => Some(skill.clone()),
+            _ => None,
+        })
+        .collect();
+    if drifted.is_empty() {
+        CheckVerdict::Clean
+    } else {
+        CheckVerdict::Drift(drifted)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -552,5 +605,71 @@ commit = "oldsha"
         assert!(body.contains("# keep me"), "{body}");
         assert!(body.contains("deadbee"), "{body}");
         assert!(body.contains("sha256:ab"), "{body}");
+    }
+
+    #[test]
+    fn an_all_unchanged_run_is_clean() {
+        let outcomes = vec![
+            Outcome::Unchanged { skill: "a".into() },
+            Outcome::Unchanged { skill: "b".into() },
+        ];
+        assert!(matches!(check_verdict(&outcomes), CheckVerdict::Clean));
+    }
+
+    #[test]
+    fn a_fast_forward_is_drift_naming_the_skill() {
+        let outcomes = vec![
+            Outcome::Unchanged { skill: "a".into() },
+            Outcome::FastForward {
+                skill: "b".into(),
+                from: "old".into(),
+                to: "new".into(),
+            },
+        ];
+        match check_verdict(&outcomes) {
+            CheckVerdict::Drift(skills) => assert_eq!(skills, vec!["b".to_string()]),
+            other => panic!("expected Drift, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn a_patched_skill_is_clean_because_divergence_is_deliberate() {
+        let outcomes = vec![Outcome::Patched {
+            skill: "mine".into(),
+        }];
+        assert!(
+            matches!(check_verdict(&outcomes), CheckVerdict::Clean),
+            "a skill the author patched must not fail the check"
+        );
+    }
+
+    #[test]
+    fn a_missing_licence_outranks_drift() {
+        let outcomes = vec![
+            Outcome::FastForward {
+                skill: "b".into(),
+                from: "old".into(),
+                to: "new".into(),
+            },
+            Outcome::MissingLicence {
+                source: "unlicensed".into(),
+            },
+        ];
+        match check_verdict(&outcomes) {
+            CheckVerdict::LicenceMissing(sources) => {
+                assert_eq!(sources, vec!["unlicensed".to_string()])
+            }
+            other => panic!("expected LicenceMissing, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn verdicts_carry_their_own_exit_code() {
+        assert_eq!(CheckVerdict::Clean.exit_code(), 0);
+        assert_eq!(CheckVerdict::Drift(vec!["b".into()]).exit_code(), 2);
+        assert_eq!(
+            CheckVerdict::LicenceMissing(vec!["x".into()]).exit_code(),
+            1
+        );
     }
 }
