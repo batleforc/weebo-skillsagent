@@ -25,7 +25,8 @@
     "monofolio-design@weebo": true,
     "batlehub@weebo": true,
     "ponytail@ponytail": true,
-    "impeccable@impeccable": true
+    "impeccable@impeccable": true,
+    "superpowers@claude-plugins-official": true
   },
   "extraKnownMarketplaces": {
     "weebo": {
