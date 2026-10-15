@@ -7,4 +7,5 @@ pub mod item;
 pub mod ownership;
 pub mod plan;
 pub mod profile;
+pub mod status;
 pub mod target;

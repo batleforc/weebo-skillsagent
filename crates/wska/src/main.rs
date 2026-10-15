@@ -19,8 +19,24 @@ fn main() {
                 );
             })
         }
-        other => {
-            eprintln!("not implemented: {other:?}");
+        Command::Status { scope } => {
+            let root = wska::target::repo_root(&cwd).expect("repo root");
+            wska::app::status(&root, scope, &cwd, &env).map(|rows| {
+                for row in rows {
+                    println!("{:<28} {:?}", row.name, row.state);
+                }
+            })
+        }
+        Command::List { profiles } => {
+            let root = wska::target::repo_root(&cwd).expect("repo root");
+            wska::app::list(&root, profiles).map(|names| {
+                for name in names {
+                    println!("{name}");
+                }
+            })
+        }
+        Command::Sync { .. } => {
+            eprintln!("not implemented: sync");
             std::process::exit(1);
         }
     };

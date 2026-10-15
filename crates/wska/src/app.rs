@@ -49,3 +49,28 @@ pub fn install(
     }
     Ok(apply(&built, dry_run)?)
 }
+
+pub fn status(
+    repo_root: &Path,
+    scope: Scope,
+    cwd: &Path,
+    env: &dyn Fn(&str) -> Option<String>,
+) -> Result<Vec<crate::status::Row>, AppError> {
+    // Canonicalize once, up front, same as install: item::scan and
+    // status::collect must share the same comparison base or nothing
+    // classifies as Linked.
+    let root = target::repo_root(repo_root)?;
+    let vendor = config::load_vendor(&root.join("vendor.toml"))?;
+    let items = item::scan(&root, &vendor)?;
+    let target_dir = target::resolve(scope, cwd, env)?;
+    Ok(crate::status::collect(&items, &target_dir, &root)?)
+}
+
+pub fn list(repo_root: &Path, profiles: bool) -> Result<Vec<String>, AppError> {
+    if profiles {
+        let cfg = config::load_profiles(&repo_root.join("profiles.toml"))?;
+        return Ok(cfg.profiles.keys().cloned().collect());
+    }
+    let vendor = config::load_vendor(&repo_root.join("vendor.toml"))?;
+    Ok(item::scan(repo_root, &vendor)?.keys().cloned().collect())
+}
