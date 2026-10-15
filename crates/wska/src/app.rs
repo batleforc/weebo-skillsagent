@@ -19,6 +19,8 @@ pub enum AppError {
     Io(#[from] std::io::Error),
     #[error("{0}")]
     Refused(String),
+    #[error(transparent)]
+    Sync(#[from] crate::sync::SyncError),
 }
 
 pub fn install(
@@ -73,4 +75,23 @@ pub fn list(repo_root: &Path, profiles: bool) -> Result<Vec<String>, AppError> {
     }
     let vendor = config::load_vendor(&repo_root.join("vendor.toml"))?;
     Ok(item::scan(repo_root, &vendor)?.keys().cloned().collect())
+}
+
+pub fn sync(
+    repo_root: &Path,
+    sources: &[String],
+    check: bool,
+) -> Result<Vec<crate::sync::Outcome>, AppError> {
+    let vendor = config::load_vendor(&repo_root.join("vendor.toml"))?;
+    let cache = repo_root.join(".task/wska-cache");
+    let mut out = Vec::new();
+    for (name, source) in &vendor.sources {
+        if !sources.is_empty() && !sources.contains(name) {
+            continue;
+        }
+        out.extend(crate::sync::sync_source(
+            name, source, repo_root, &cache, check,
+        )?);
+    }
+    Ok(out)
 }

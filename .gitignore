@@ -1,6 +1,9 @@
 # Task internal cache (checksums/fingerprints)
 .task/
 
+# wska upstream clone cache
+.task/wska-cache/
+
 # Claude Code per-user local settings
 .claude/settings.local.json
 

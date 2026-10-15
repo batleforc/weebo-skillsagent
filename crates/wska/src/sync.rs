@@ -1,0 +1,466 @@
+use crate::config::{Provides, Source};
+use crate::hash::hash_dir;
+use std::collections::BTreeMap;
+use std::path::{Path, PathBuf};
+use std::process::Command;
+
+#[derive(Debug)]
+pub enum Outcome {
+    Unchanged {
+        skill: String,
+    },
+    FastForward {
+        skill: String,
+        from: String,
+        to: String,
+    },
+    Patched {
+        skill: String,
+    },
+    MissingLicence {
+        source: String,
+    },
+}
+
+#[derive(Debug, thiserror::Error)]
+pub enum SyncError {
+    #[error("git {args} failed: {status}")]
+    Git { args: String, status: String },
+    #[error("{op} {path}: {source}")]
+    Io {
+        op: &'static str,
+        path: PathBuf,
+        source: std::io::Error,
+    },
+    #[error("vendor.toml has no source named `{0}`")]
+    UnknownSource(String),
+    #[error("parsing vendor.toml: {0}")]
+    Edit(#[from] toml_edit::TomlError),
+}
+
+pub fn sync_source(
+    name: &str,
+    src: &Source,
+    repo_root: &Path,
+    cache: &Path,
+    check_only: bool,
+) -> Result<Vec<Outcome>, SyncError> {
+    let mut out = Vec::new();
+    if src.licence.is_none() {
+        out.push(Outcome::MissingLicence {
+            source: name.to_string(),
+        });
+    }
+
+    let clone = cache.join(name);
+    if clone.exists() {
+        std::fs::remove_dir_all(&clone).map_err(|source| SyncError::Io {
+            op: "clearing",
+            path: clone.clone(),
+            source,
+        })?;
+    }
+    std::fs::create_dir_all(cache).map_err(|source| SyncError::Io {
+        op: "creating",
+        path: cache.to_path_buf(),
+        source,
+    })?;
+    git(
+        cache,
+        &[
+            "clone",
+            "--quiet",
+            "--depth",
+            "1",
+            "--branch",
+            &src.git_ref,
+            &src.upstream,
+            name,
+        ],
+    )?;
+    let new_commit = git_stdout(&clone, &["rev-parse", "--short", "HEAD"])?;
+
+    let upstream_dir = clone.join(&src.subpath);
+    let skills = match &src.provides {
+        Provides::Named(v) => v.clone(),
+        Provides::Star(_) => {
+            let mut v = Vec::new();
+            for entry in std::fs::read_dir(&upstream_dir).map_err(|source| SyncError::Io {
+                op: "reading",
+                path: upstream_dir.clone(),
+                source,
+            })? {
+                let entry = entry.map_err(|source| SyncError::Io {
+                    op: "reading",
+                    path: upstream_dir.clone(),
+                    source,
+                })?;
+                if entry.path().is_dir() {
+                    v.push(entry.file_name().to_string_lossy().to_string());
+                }
+            }
+            v.sort();
+            v
+        }
+    };
+
+    let mut fresh: BTreeMap<String, String> = BTreeMap::new();
+    for skill in skills {
+        let local = repo_root.join("skills").join(&skill);
+        let remote = upstream_dir.join(&skill);
+        let remote_hash = hash_dir(&remote).map_err(|source| SyncError::Io {
+            op: "hashing",
+            path: remote.clone(),
+            source,
+        })?;
+
+        if !local.exists() {
+            if !check_only {
+                copy_dir(&remote, &local)?;
+            }
+            fresh.insert(skill.clone(), remote_hash.clone());
+            out.push(Outcome::FastForward {
+                skill,
+                from: "absent".into(),
+                to: new_commit.clone(),
+            });
+            continue;
+        }
+
+        let local_hash = hash_dir(&local).map_err(|source| SyncError::Io {
+            op: "hashing",
+            path: local.clone(),
+            source,
+        })?;
+        let recorded = src.hashes.get(&skill);
+
+        if recorded == Some(&local_hash) {
+            if local_hash == remote_hash {
+                fresh.insert(skill.clone(), local_hash);
+                out.push(Outcome::Unchanged { skill });
+            } else {
+                if !check_only {
+                    std::fs::remove_dir_all(&local).map_err(|source| SyncError::Io {
+                        op: "replacing",
+                        path: local.clone(),
+                        source,
+                    })?;
+                    copy_dir(&remote, &local)?;
+                }
+                fresh.insert(skill.clone(), remote_hash);
+                out.push(Outcome::FastForward {
+                    skill,
+                    from: src.commit.clone().unwrap_or_else(|| "unknown".into()),
+                    to: new_commit.clone(),
+                });
+            }
+        } else {
+            // Patched locally: keep the recorded hash so the next sync still
+            // sees the patch, and never overwrite.
+            if let Some(r) = recorded {
+                fresh.insert(skill.clone(), r.clone());
+            }
+            out.push(Outcome::Patched { skill });
+        }
+    }
+
+    if !check_only {
+        write_back(&repo_root.join("vendor.toml"), name, &new_commit, &fresh)?;
+    }
+    Ok(out)
+}
+
+/// Update one source's `commit` and `hashes` in place, preserving comments
+/// and field order.
+pub fn write_back(
+    vendor_path: &Path,
+    source: &str,
+    commit: &str,
+    hashes: &BTreeMap<String, String>,
+) -> Result<(), SyncError> {
+    let body = std::fs::read_to_string(vendor_path).map_err(|e| SyncError::Io {
+        op: "reading",
+        path: vendor_path.to_path_buf(),
+        source: e,
+    })?;
+    let mut doc: toml_edit::DocumentMut = body.parse()?;
+    let table = doc
+        .get_mut("sources")
+        .and_then(|s| s.get_mut(source))
+        .ok_or_else(|| SyncError::UnknownSource(source.to_string()))?;
+
+    table["commit"] = toml_edit::value(commit);
+    let mut inline = toml_edit::InlineTable::new();
+    for (k, v) in hashes {
+        inline.insert(k, v.clone().into());
+    }
+    table["hashes"] = toml_edit::Item::Value(toml_edit::Value::InlineTable(inline));
+
+    std::fs::write(vendor_path, doc.to_string()).map_err(|e| SyncError::Io {
+        op: "writing",
+        path: vendor_path.to_path_buf(),
+        source: e,
+    })
+}
+
+fn copy_dir(from: &Path, to: &Path) -> Result<(), SyncError> {
+    std::fs::create_dir_all(to).map_err(|source| SyncError::Io {
+        op: "creating",
+        path: to.to_path_buf(),
+        source,
+    })?;
+    for entry in std::fs::read_dir(from).map_err(|source| SyncError::Io {
+        op: "reading",
+        path: from.to_path_buf(),
+        source,
+    })? {
+        let entry = entry.map_err(|source| SyncError::Io {
+            op: "reading",
+            path: from.to_path_buf(),
+            source,
+        })?;
+        let dest = to.join(entry.file_name());
+        let md = std::fs::symlink_metadata(entry.path()).map_err(|source| SyncError::Io {
+            op: "inspecting",
+            path: entry.path(),
+            source,
+        })?;
+        if md.file_type().is_symlink() {
+            let target = std::fs::read_link(entry.path()).map_err(|source| SyncError::Io {
+                op: "reading link",
+                path: entry.path(),
+                source,
+            })?;
+            std::os::unix::fs::symlink(target, &dest).map_err(|source| SyncError::Io {
+                op: "linking",
+                path: dest,
+                source,
+            })?;
+        } else if md.is_dir() {
+            copy_dir(&entry.path(), &dest)?;
+        } else {
+            std::fs::copy(entry.path(), &dest).map_err(|source| SyncError::Io {
+                op: "copying to",
+                path: dest,
+                source,
+            })?;
+        }
+    }
+    Ok(())
+}
+
+fn git(cwd: &Path, args: &[&str]) -> Result<(), SyncError> {
+    let status = Command::new("git")
+        .args(args)
+        .current_dir(cwd)
+        .status()
+        .map_err(|source| SyncError::Io {
+            op: "spawning git in",
+            path: cwd.to_path_buf(),
+            source,
+        })?;
+    if status.success() {
+        Ok(())
+    } else {
+        Err(SyncError::Git {
+            args: args.join(" "),
+            status: status.to_string(),
+        })
+    }
+}
+
+fn git_stdout(cwd: &Path, args: &[&str]) -> Result<String, SyncError> {
+    let out = Command::new("git")
+        .args(args)
+        .current_dir(cwd)
+        .output()
+        .map_err(|source| SyncError::Io {
+            op: "spawning git in",
+            path: cwd.to_path_buf(),
+            source,
+        })?;
+    if !out.status.success() {
+        return Err(SyncError::Git {
+            args: args.join(" "),
+            status: out.status.to_string(),
+        });
+    }
+    Ok(String::from_utf8_lossy(&out.stdout).trim().to_string())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::config::{Provides, Source};
+    use std::collections::BTreeMap;
+    use std::fs;
+    use std::process::Command;
+
+    fn git(dir: &Path, args: &[&str]) {
+        let status = Command::new("git")
+            .args(args)
+            .current_dir(dir)
+            .env("GIT_AUTHOR_NAME", "t")
+            .env("GIT_AUTHOR_EMAIL", "t@example.invalid")
+            .env("GIT_COMMITTER_NAME", "t")
+            .env("GIT_COMMITTER_EMAIL", "t@example.invalid")
+            .status()
+            .unwrap();
+        assert!(status.success(), "git {args:?} failed");
+    }
+
+    /// An upstream repository with skills/<name>/SKILL.md on branch main.
+    fn upstream(dir: &Path, body: &str) {
+        fs::create_dir_all(dir.join("skills/brainstorming")).unwrap();
+        fs::write(dir.join("skills/brainstorming/SKILL.md"), body).unwrap();
+        fs::write(dir.join("LICENSE"), "MIT").unwrap();
+        git(dir, &["init", "-q", "-b", "main"]);
+        git(dir, &["add", "-A"]);
+        git(dir, &["commit", "-qm", "x"]);
+    }
+
+    fn source(upstream_dir: &Path) -> Source {
+        Source {
+            upstream: format!("file://{}", upstream_dir.display()),
+            git_ref: "main".into(),
+            subpath: "skills".into(),
+            provides: Provides::Star("*".into()),
+            licence: Some("MIT".into()),
+            commit: None,
+            hashes: BTreeMap::new(),
+        }
+    }
+
+    #[test]
+    fn fast_forwards_an_unpatched_skill() {
+        let d = tempfile::tempdir().unwrap();
+        let up = d.path().join("up");
+        upstream(&up, "v1");
+        let repo = d.path().join("repo");
+        let local = repo.join("skills/brainstorming");
+        fs::create_dir_all(&local).unwrap();
+        fs::write(local.join("SKILL.md"), "v1").unwrap();
+
+        let mut src = source(&up);
+        src.hashes.insert(
+            "brainstorming".into(),
+            crate::hash::hash_dir(&local).unwrap(),
+        );
+        // upstream moves on
+        fs::write(up.join("skills/brainstorming/SKILL.md"), "v2").unwrap();
+        git(&up, &["commit", "-aqm", "v2"]);
+
+        // R4: sync_source(check_only = false) ends by calling write_back,
+        // which reads repo_root/vendor.toml. Create it so that path runs.
+        fs::write(
+            repo.join("vendor.toml"),
+            r#"[sources.sp]
+upstream = "unused"
+ref = "main"
+subpath = "skills"
+provides = "*"
+licence = "MIT"
+"#,
+        )
+        .unwrap();
+
+        let out = sync_source("sp", &src, &repo, &d.path().join("cache"), false).unwrap();
+        assert!(
+            out.iter().any(|o| matches!(o, Outcome::FastForward { .. })),
+            "{out:?}"
+        );
+        assert_eq!(fs::read_to_string(local.join("SKILL.md")).unwrap(), "v2");
+    }
+
+    #[test]
+    fn refuses_to_overwrite_a_patched_skill() {
+        let d = tempfile::tempdir().unwrap();
+        let up = d.path().join("up");
+        upstream(&up, "v1");
+        let repo = d.path().join("repo");
+        let local = repo.join("skills/brainstorming");
+        fs::create_dir_all(&local).unwrap();
+        fs::write(local.join("SKILL.md"), "v1").unwrap();
+
+        let mut src = source(&up);
+        src.hashes.insert(
+            "brainstorming".into(),
+            crate::hash::hash_dir(&local).unwrap(),
+        );
+        // the author patches locally
+        fs::write(local.join("SKILL.md"), "v1 + my edit").unwrap();
+        // and upstream moves on
+        fs::write(up.join("skills/brainstorming/SKILL.md"), "v2").unwrap();
+        git(&up, &["commit", "-aqm", "v2"]);
+
+        // R4: same reason as above — write_back reads repo_root/vendor.toml.
+        fs::write(
+            repo.join("vendor.toml"),
+            r#"[sources.sp]
+upstream = "unused"
+ref = "main"
+subpath = "skills"
+provides = "*"
+licence = "MIT"
+"#,
+        )
+        .unwrap();
+
+        let out = sync_source("sp", &src, &repo, &d.path().join("cache"), false).unwrap();
+        assert!(
+            out.iter().any(|o| matches!(o, Outcome::Patched { .. })),
+            "{out:?}"
+        );
+        assert_eq!(
+            fs::read_to_string(local.join("SKILL.md")).unwrap(),
+            "v1 + my edit",
+            "a patched skill must not be overwritten"
+        );
+    }
+
+    #[test]
+    fn check_only_reports_a_missing_licence_and_writes_nothing() {
+        let d = tempfile::tempdir().unwrap();
+        let up = d.path().join("up");
+        upstream(&up, "v1");
+        let repo = d.path().join("repo");
+        let local = repo.join("skills/brainstorming");
+        fs::create_dir_all(&local).unwrap();
+        fs::write(local.join("SKILL.md"), "v1").unwrap();
+
+        let mut src = source(&up);
+        src.licence = None;
+        src.hashes.insert(
+            "brainstorming".into(),
+            crate::hash::hash_dir(&local).unwrap(),
+        );
+        fs::write(up.join("skills/brainstorming/SKILL.md"), "v2").unwrap();
+        git(&up, &["commit", "-aqm", "v2"]);
+
+        let out = sync_source("sp", &src, &repo, &d.path().join("cache"), true).unwrap();
+        assert!(
+            out.iter()
+                .any(|o| matches!(o, Outcome::MissingLicence { .. })),
+            "{out:?}"
+        );
+        assert_eq!(fs::read_to_string(local.join("SKILL.md")).unwrap(), "v1");
+    }
+
+    #[test]
+    fn write_back_preserves_comments() {
+        let d = tempfile::tempdir().unwrap();
+        let p = d.path().join("vendor.toml");
+        fs::write(
+            &p,
+            "# keep me\n[sources.sp]\nupstream = \"x\"\nref = \"main\"\nsubpath = \"skills\"\nprovides = \"*\"\nlicence = \"MIT\"\n",
+        )
+        .unwrap();
+        let mut hashes = BTreeMap::new();
+        hashes.insert("brainstorming".to_string(), "sha256:ab".to_string());
+        write_back(&p, "sp", "deadbee", &hashes).unwrap();
+        let body = fs::read_to_string(&p).unwrap();
+        assert!(body.contains("# keep me"), "{body}");
+        assert!(body.contains("deadbee"), "{body}");
+        assert!(body.contains("sha256:ab"), "{body}");
+    }
+}

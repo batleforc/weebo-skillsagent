@@ -35,9 +35,20 @@ fn main() {
                 }
             })
         }
-        Command::Sync { .. } => {
-            eprintln!("not implemented: sync");
-            std::process::exit(1);
+        Command::Sync { source, check } => {
+            let root = wska::target::repo_root(&cwd).expect("repo root");
+            wska::app::sync(&root, &source, check).map(|outcomes| {
+                let mut bad = false;
+                for o in &outcomes {
+                    println!("{o:?}");
+                    if matches!(o, wska::sync::Outcome::MissingLicence { .. }) {
+                        bad = true;
+                    }
+                }
+                if check && bad {
+                    std::process::exit(1);
+                }
+            })
         }
     };
 
