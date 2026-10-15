@@ -38,6 +38,7 @@ items = ["impeccable"]
         &["frontend".to_string()],
         wska::cli::Scope::Project,
         false,
+        false,
         &root,
         &env_none,
     )
@@ -58,6 +59,7 @@ items = ["impeccable"]
         &["frontend".to_string()],
         wska::cli::Scope::Project,
         false,
+        false,
         &root,
         &env_none,
     )
@@ -70,6 +72,7 @@ items = ["impeccable"]
         &root,
         &["base".to_string()],
         wska::cli::Scope::Project,
+        false,
         false,
         &root,
         &env_none,
@@ -97,6 +100,7 @@ fn refuses_to_replace_a_hand_written_directory_and_changes_nothing() {
         &root,
         &["base".to_string()],
         wska::cli::Scope::Project,
+        false,
         false,
         &root,
         &env_none,

@@ -13,6 +13,7 @@ pub enum Action {
     },
     Unlink {
         at: PathBuf,
+        repo_root: PathBuf,
     },
     RunInstaller {
         name: String,
@@ -61,6 +62,7 @@ pub fn build(
     target: &Path,
     repo_root: &Path,
     scope: Scope,
+    run_installers: bool,
 ) -> io::Result<Plan> {
     let mut plan = Plan::default();
 
@@ -100,7 +102,12 @@ pub fn build(
                 scope: want,
                 ..
             } => {
-                if *want == scope {
+                if *want != scope {
+                    plan.actions.push(Action::SkipInstaller {
+                        name: name.clone(),
+                        reason: format!("declared for {want:?} scope, invoked at {scope:?}"),
+                    });
+                } else if run_installers {
                     plan.actions.push(Action::RunInstaller {
                         name: name.clone(),
                         command: command.clone(),
@@ -109,7 +116,7 @@ pub fn build(
                 } else {
                     plan.actions.push(Action::SkipInstaller {
                         name: name.clone(),
-                        reason: format!("declared for {want:?} scope, invoked at {scope:?}"),
+                        reason: "installers run only with --run-installers".to_string(),
                     });
                 }
             }
@@ -140,7 +147,10 @@ pub fn build(
                 Entry::OwnedCorrect
                 | Entry::OwnedWrongTarget { .. }
                 | Entry::OwnedDangling { .. } => {
-                    plan.actions.push(Action::Unlink { at: entry.path() });
+                    plan.actions.push(Action::Unlink {
+                        at: entry.path(),
+                        repo_root: repo_root.to_path_buf(),
+                    });
                 }
                 _ => {}
             }
@@ -207,6 +217,7 @@ mod tests {
             &f.target,
             &f.repo,
             Scope::Project,
+            false,
         )
         .unwrap();
         assert_eq!(plan.actions.len(), 1);
@@ -228,6 +239,7 @@ mod tests {
             &f.target,
             &f.repo,
             Scope::Project,
+            false,
         )
         .unwrap();
         assert!(plan.actions.is_empty(), "{:?}", plan.actions);
@@ -243,6 +255,7 @@ mod tests {
             &f.target,
             &f.repo,
             Scope::Project,
+            false,
         )
         .unwrap();
         assert!(plan
@@ -261,6 +274,7 @@ mod tests {
             &f.target,
             &f.repo,
             Scope::Project,
+            false,
         )
         .unwrap();
         assert_eq!(plan.refusals.len(), 1);
@@ -279,6 +293,7 @@ mod tests {
             &f.target,
             &f.repo,
             Scope::Project,
+            false,
         )
         .unwrap();
         assert_eq!(plan.refusals.len(), 1);
@@ -295,13 +310,14 @@ mod tests {
             &f.target,
             &f.repo,
             Scope::Project,
+            false,
         )
         .unwrap();
         assert!(plan.refusals.is_empty(), "{:?}", plan.refusals);
         assert!(!plan
             .actions
             .iter()
-            .any(|a| matches!(a, Action::Unlink { at } if at.ends_with("handmade"))));
+            .any(|a| matches!(a, Action::Unlink { at, .. } if at.ends_with("handmade"))));
     }
 
     #[test]
@@ -316,13 +332,14 @@ mod tests {
             &f.target,
             &f.repo,
             Scope::Project,
+            false,
         )
         .unwrap();
         assert!(plan.refusals.is_empty(), "{:?}", plan.refusals);
         assert!(!plan
             .actions
             .iter()
-            .any(|a| matches!(a, Action::Unlink { at } if at.ends_with("handmade"))));
+            .any(|a| matches!(a, Action::Unlink { at, .. } if at.ends_with("handmade"))));
     }
 
     #[test]
@@ -353,6 +370,7 @@ mod tests {
             &f.target,
             &f.repo,
             Scope::Project,
+            false,
         )
         .unwrap();
 
@@ -366,15 +384,13 @@ mod tests {
         assert!(
             plan.actions
                 .iter()
-                .any(|a| matches!(a, Action::Unlink { at } if at.ends_with("skills/ponytail"))),
+                .any(|a| matches!(a, Action::Unlink { at, .. } if at.ends_with("skills/ponytail"))),
             "{:?}",
             plan.actions
         );
     }
 
-    #[test]
-    fn runs_a_project_installer_at_project_scope() {
-        let f = fx(&[]);
+    fn bmad_map() -> BTreeMap<String, Item> {
         let mut map = BTreeMap::new();
         map.insert(
             "bmad".to_string(),
@@ -384,23 +400,52 @@ mod tests {
                 scope: Scope::Project,
             },
         );
-        let plan = build(&map, &set(&["bmad"]), &f.target, &f.repo, Scope::Project).unwrap();
+        map
+    }
+
+    #[test]
+    fn skips_a_matching_installer_without_the_run_installers_flag() {
+        let f = fx(&[]);
+        let plan = build(
+            &bmad_map(),
+            &set(&["bmad"]),
+            &f.target,
+            &f.repo,
+            Scope::Project,
+            false,
+        )
+        .unwrap();
+        assert!(matches!(plan.actions[0], Action::SkipInstaller { .. }));
+        assert!(plan.validate().is_ok());
+    }
+
+    #[test]
+    fn runs_a_project_installer_at_project_scope_with_the_flag() {
+        let f = fx(&[]);
+        let plan = build(
+            &bmad_map(),
+            &set(&["bmad"]),
+            &f.target,
+            &f.repo,
+            Scope::Project,
+            true,
+        )
+        .unwrap();
         assert!(matches!(plan.actions[0], Action::RunInstaller { .. }));
     }
 
     #[test]
-    fn skips_a_project_installer_at_user_scope_without_erroring() {
+    fn skips_a_project_installer_at_user_scope_even_with_the_flag() {
         let f = fx(&[]);
-        let mut map = BTreeMap::new();
-        map.insert(
-            "bmad".to_string(),
-            Item::Installer {
-                name: "bmad".into(),
-                command: "echo hi".into(),
-                scope: Scope::Project,
-            },
-        );
-        let plan = build(&map, &set(&["bmad"]), &f.target, &f.repo, Scope::User).unwrap();
+        let plan = build(
+            &bmad_map(),
+            &set(&["bmad"]),
+            &f.target,
+            &f.repo,
+            Scope::User,
+            true,
+        )
+        .unwrap();
         assert!(matches!(plan.actions[0], Action::SkipInstaller { .. }));
         assert!(plan.validate().is_ok());
     }

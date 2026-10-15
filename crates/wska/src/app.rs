@@ -28,6 +28,7 @@ pub fn install(
     profiles: &[String],
     scope: Scope,
     dry_run: bool,
+    run_installers: bool,
     cwd: &Path,
     env: &dyn Fn(&str) -> Option<String>,
 ) -> Result<Applied, AppError> {
@@ -42,7 +43,14 @@ pub fn install(
 
     let target_dir = target::resolve(scope, cwd, env)?;
 
-    let built = plan::build(&items, &wanted, &target_dir, &repo_root, scope)?;
+    let built = plan::build(
+        &items,
+        &wanted,
+        &target_dir,
+        &repo_root,
+        scope,
+        run_installers,
+    )?;
     if let Err(e) = built.validate() {
         for refusal in &built.refusals {
             eprintln!("refuse {}: {}", refusal.path.display(), refusal.reason);

@@ -7,6 +7,7 @@ use std::path::{Path, PathBuf};
 #[derive(Debug)]
 pub enum State {
     Linked,
+    WrongTarget { points_to: PathBuf },
     Dangling { points_to: PathBuf },
     Foreign { points_to: PathBuf },
     RealPath,
@@ -33,7 +34,7 @@ pub fn collect(
                 let at = target.join(kind.subdir()).join(name);
                 match classify(&at, repo_root, Some(path))? {
                     Entry::OwnedCorrect => State::Linked,
-                    Entry::OwnedWrongTarget { .. } => State::MissingFromTarget,
+                    Entry::OwnedWrongTarget { points_to } => State::WrongTarget { points_to },
                     Entry::OwnedDangling { points_to } => State::Dangling { points_to },
                     Entry::Foreign { points_to } => State::Foreign { points_to },
                     Entry::RealPath => State::RealPath,
@@ -67,7 +68,15 @@ mod tests {
         let d = tempfile::tempdir().unwrap();
         let repo = d.path().join("repo");
         let target = d.path().join("proj/.claude");
-        for s in ["ok", "dangly", "alien", "handmade", "absent"] {
+        for s in [
+            "ok",
+            "dangly",
+            "alien",
+            "handmade",
+            "absent",
+            "mismatched",
+            "other",
+        ] {
             fs::create_dir_all(repo.join("skills").join(s)).unwrap();
         }
         fs::create_dir_all(target.join("skills")).unwrap();
@@ -80,20 +89,23 @@ mod tests {
         fs::create_dir_all(&outside).unwrap();
         symlink(&outside, target.join("skills/alien")).unwrap();
         fs::create_dir(target.join("skills/handmade")).unwrap();
+        // Points at a different item in this repo, not the expected one.
+        symlink(repo.join("skills/other"), target.join("skills/mismatched")).unwrap();
 
-        let mut items: BTreeMap<String, Item> = ["ok", "dangly", "alien", "handmade", "absent"]
-            .iter()
-            .map(|n| {
-                (
-                    n.to_string(),
-                    Item::Linked {
-                        name: n.to_string(),
-                        kind: Kind::Skill,
-                        path: repo.join("skills").join(n),
-                    },
-                )
-            })
-            .collect();
+        let mut items: BTreeMap<String, Item> =
+            ["ok", "dangly", "alien", "handmade", "absent", "mismatched"]
+                .iter()
+                .map(|n| {
+                    (
+                        n.to_string(),
+                        Item::Linked {
+                            name: n.to_string(),
+                            kind: Kind::Skill,
+                            path: repo.join("skills").join(n),
+                        },
+                    )
+                })
+                .collect();
         items.insert(
             "bmad".into(),
             Item::Installer {
@@ -109,6 +121,7 @@ mod tests {
         assert!(state_of(&rows, "alien").starts_with("Foreign"));
         assert_eq!(state_of(&rows, "handmade"), "RealPath");
         assert_eq!(state_of(&rows, "absent"), "MissingFromTarget");
+        assert!(state_of(&rows, "mismatched").starts_with("WrongTarget"));
         assert_eq!(state_of(&rows, "bmad"), "InstallerUnmanaged");
     }
 }

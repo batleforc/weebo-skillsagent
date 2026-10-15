@@ -1,3 +1,4 @@
+use crate::ownership::{classify, Entry};
 use crate::plan::{Action, Plan};
 use std::path::{Path, PathBuf};
 use std::process::Command;
@@ -48,12 +49,33 @@ pub fn apply(plan: &Plan, dry_run: bool) -> Result<Applied, ApplyError> {
                 }
                 done.linked += 1;
             }
-            Action::Unlink { at } => {
+            Action::Unlink { at, repo_root } => {
                 println!("unlink {}", at.display());
                 if !dry_run {
-                    remove_if_link(at)?;
+                    // Re-check ownership here, not just at plan time: the
+                    // path may have been replaced by something we do not
+                    // own in the window between planning and applying.
+                    let owned = matches!(
+                        classify(at, repo_root, None).map_err(|source| ApplyError::Io {
+                            op: "inspecting",
+                            path: at.clone(),
+                            source,
+                        })?,
+                        Entry::OwnedCorrect
+                            | Entry::OwnedWrongTarget { .. }
+                            | Entry::OwnedDangling { .. }
+                    );
+                    if owned {
+                        remove_if_link(at)?;
+                        done.unlinked += 1;
+                    } else {
+                        let msg = format!("{} changed since planning, left alone", at.display());
+                        println!("skip   {msg}");
+                        done.skipped.push(msg);
+                    }
+                } else {
+                    done.unlinked += 1;
                 }
-                done.unlinked += 1;
             }
             Action::RunInstaller { name, command, cwd } => {
                 println!("run    {name}: {command}");
@@ -166,20 +188,58 @@ mod tests {
     #[test]
     fn unlink_removes_the_link_only() {
         let d = tempfile::tempdir().unwrap();
-        let from = d.path().join("repo/skills/ponytail");
+        let repo_root = d.path().join("repo");
+        let from = repo_root.join("skills/ponytail");
         fs::create_dir_all(&from).unwrap();
         let to = d.path().join("proj/.claude/skills/ponytail");
         fs::create_dir_all(to.parent().unwrap()).unwrap();
         symlink(&from, &to).unwrap();
 
         let plan = Plan {
-            actions: vec![Action::Unlink { at: to.clone() }],
+            actions: vec![Action::Unlink {
+                at: to.clone(),
+                repo_root: repo_root.clone(),
+            }],
             refusals: vec![],
         };
         let got = apply(&plan, false).unwrap();
         assert_eq!(got.unlinked, 1);
         assert!(!to.exists());
         assert!(from.exists(), "the item itself must survive");
+    }
+
+    // Review Focus 3 / Finding 3: ownership is re-checked right before
+    // removal, not trusted from plan time.
+    #[test]
+    fn unlink_leaves_a_path_that_turned_foreign_since_planning() {
+        let d = tempfile::tempdir().unwrap();
+        let repo_root = d.path().join("repo");
+        let from = repo_root.join("skills/ponytail");
+        fs::create_dir_all(&from).unwrap();
+        let to = d.path().join("proj/.claude/skills/ponytail");
+        fs::create_dir_all(to.parent().unwrap()).unwrap();
+        // Planned against an owned link...
+        symlink(&from, &to).unwrap();
+        let plan = Plan {
+            actions: vec![Action::Unlink {
+                at: to.clone(),
+                repo_root: repo_root.clone(),
+            }],
+            refusals: vec![],
+        };
+
+        // ...but before apply runs, something else replaces it with a
+        // symlink pointing outside the repo.
+        let outside = d.path().join("elsewhere");
+        fs::create_dir_all(&outside).unwrap();
+        fs::remove_file(&to).unwrap();
+        symlink(&outside, &to).unwrap();
+
+        let got = apply(&plan, false).unwrap();
+        assert_eq!(got.unlinked, 0);
+        assert_eq!(got.skipped.len(), 1);
+        assert!(to.exists(), "the foreign link must survive");
+        assert_eq!(fs::read_link(&to).unwrap(), outside);
     }
 
     #[test]

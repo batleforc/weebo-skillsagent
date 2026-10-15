@@ -20,6 +20,9 @@ pub enum Command {
         scope: Scope,
         #[arg(long)]
         dry_run: bool,
+        /// Actually execute installer items (bmad, graphify, ...); otherwise they are skipped
+        #[arg(long)]
+        run_installers: bool,
     },
     /// Report what is linked in a target
     Status {
@@ -68,10 +71,12 @@ mod tests {
                 profile,
                 scope,
                 dry_run,
+                run_installers,
             } => {
                 assert_eq!(profile, vec!["base".to_string(), "frontend".to_string()]);
                 assert_eq!(scope, Scope::User);
                 assert!(!dry_run);
+                assert!(!run_installers);
             }
             other => panic!("expected Install, got {other:?}"),
         }

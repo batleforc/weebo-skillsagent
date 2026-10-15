@@ -11,17 +11,20 @@ fn main() {
             profile,
             scope,
             dry_run,
+            run_installers,
         } => {
             let root = wska::target::repo_root(&cwd).expect("repo root");
-            wska::app::install(&root, &profile, scope, dry_run, &cwd, &env).map(|a| {
-                println!(
-                    "linked {} unlinked {} installers {} skipped {}",
-                    a.linked,
-                    a.unlinked,
-                    a.installers_run.len(),
-                    a.skipped.len()
-                );
-            })
+            wska::app::install(&root, &profile, scope, dry_run, run_installers, &cwd, &env).map(
+                |a| {
+                    println!(
+                        "linked {} unlinked {} installers {} skipped {}",
+                        a.linked,
+                        a.unlinked,
+                        a.installers_run.len(),
+                        a.skipped.len()
+                    );
+                },
+            )
         }
         Command::Status { scope } => {
             let root = wska::target::repo_root(&cwd).expect("repo root");

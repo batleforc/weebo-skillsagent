@@ -1,5 +1,6 @@
 use crate::config::{Provides, Source};
 use crate::hash::hash_dir;
+use crate::item::Kind;
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 use std::process::Command;
@@ -107,7 +108,7 @@ pub fn sync_source(
     let mut fresh: BTreeMap<String, String> = BTreeMap::new();
     let mut any_patched = false;
     for skill in skills {
-        let local = repo_root.join("skills").join(&skill);
+        let local = repo_root.join(Kind::Skill.subdir()).join(&skill);
         let remote = upstream_dir.join(&skill);
         let remote_hash = hash_dir(&remote).map_err(|source| SyncError::Io {
             op: "hashing",
