@@ -32,12 +32,13 @@ pub fn classify(entry: &Path, repo_root: &Path, expected: Option<&Path>) -> io::
     // A relative target is relative to the link's own directory, not to the
     // process working directory.
     let resolved = if stored.is_absolute() {
-        stored.clone()
+        normalize(&stored)
     } else {
         normalize(&entry.parent().unwrap_or(Path::new("/")).join(&stored))
     };
+    let repo_root = normalize(repo_root);
 
-    if !resolved.starts_with(repo_root) {
+    if !resolved.starts_with(&repo_root) {
         return Ok(Entry::Foreign { points_to: resolved });
     }
     if !resolved.exists() {
@@ -169,6 +170,38 @@ mod tests {
         )
         .unwrap();
         assert!(matches!(got, Entry::Foreign { .. }));
+    }
+
+    #[test]
+    fn foreign_for_an_absolute_link_that_escapes_the_repo_via_dotdot() {
+        let f = fixture();
+        let outside = f.repo.parent().unwrap().join("outside");
+        fs::create_dir_all(&outside).unwrap();
+        symlink(f.repo.join("../outside"), f.target.join("ponytail")).unwrap();
+        let got = classify(
+            &f.target.join("ponytail"),
+            &f.repo,
+            Some(&f.repo.join("skills/ponytail")),
+        )
+        .unwrap();
+        assert!(
+            matches!(got, Entry::Foreign { .. }),
+            "dotdot escape misclassified as {got:?}"
+        );
+    }
+
+    #[test]
+    fn owned_correct_when_repo_root_itself_contains_a_dotdot() {
+        let f = fixture();
+        symlink(f.repo.join("skills/ponytail"), f.target.join("ponytail")).unwrap();
+        let messy_root = f.repo.join("skills/other/../..");
+        let got = classify(
+            &f.target.join("ponytail"),
+            &messy_root,
+            Some(&f.repo.join("skills/ponytail")),
+        )
+        .unwrap();
+        assert!(matches!(got, Entry::OwnedCorrect), "got {got:?}");
     }
 
     #[test]
