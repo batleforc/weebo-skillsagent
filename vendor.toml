@@ -5,7 +5,35 @@
 # from an installer-generated _bmad/config.toml that hardcodes the project
 # name; graphify is installed by pipx and writes its own skill directory.
 #
-# [sources.*] tables are added when third-party skills are vendored.
+# [sources.*] record where vendored skills came from; `task skills:sync`
+# refreshes them and `task skills:sync:check` reports drift without writing.
+
+[sources.anthropic-skills]
+upstream = "https://github.com/anthropics/skills"
+ref      = "main"
+subpath  = "skills"
+# A named list, not "*": the repo also ships docx/pdf/pptx/xlsx/skill-creator/
+# claude-api, which this harness already provides as built-ins.
+provides = ["mcp-builder", "webapp-testing", "frontend-design", "theme-factory"]
+licence  = "Apache-2.0"
+commit = "dbd4588"
+hashes = { frontend-design = "sha256:b5c2e1f1e14812a1313248313eaed1b17fdf3762607fcb4b9e2ca35501370a06", mcp-builder = "sha256:5bbe358b4bf2efcac08cb86720df4c0abcb6b6a7f05c206229cad35ce2f3130e", theme-factory = "sha256:6b1609671e9da6726637a51427f5552584e0a1cacfcab4a1e8852a195913808b", webapp-testing = "sha256:2a31b4dbf0e5de705a4d5e8b4a7ef4f418dc2ea9bbfbacaa26269729d81027cc" }
+
+[sources.impeccable]
+upstream = "https://github.com/pbakaus/impeccable"
+ref      = "main"
+# The repo fans the same skill out to ~20 harness directories; .claude/skills
+# is the Claude-ready generated form the plugin itself points at. The authored
+# source under skill/ holds SKILL.src.md, which is a template, not a skill.
+subpath  = ".claude/skills"
+provides = ["impeccable"]
+# Full text in LICENSES/impeccable.txt: it lives at the repo root upstream, so
+# sync (which copies only the subpath) cannot carry it into the skill dir --
+# and adding it there by hand would make the local hash diverge from the
+# recorded upstream hash, marking the skill as patched forever.
+licence  = "Apache-2.0"
+commit = "8a0e198"
+hashes = { impeccable = "sha256:9f09af1dd3b653935ead897b3f41678181aaee58b35fc2a7c54505fc4cb7ee52" }
 
 [installers.bmad]
 command = "npx bmad-method install"
