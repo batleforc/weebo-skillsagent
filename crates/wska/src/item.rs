@@ -77,10 +77,17 @@ pub fn scan(repo_root: &Path, vendor: &Vendor) -> Result<BTreeMap<String, Item>,
             if name.starts_with('.') {
                 continue;
             }
-            let md = std::fs::symlink_metadata(entry.path()).map_err(|source| ScanError::Io {
-                path: entry.path(),
-                source,
-            })?;
+            let md = match std::fs::metadata(entry.path()) {
+                Ok(md) => md,
+                // A dangling entry is junk, not a reason to fail the whole scan.
+                Err(e) if e.kind() == std::io::ErrorKind::NotFound => continue,
+                Err(source) => {
+                    return Err(ScanError::Io {
+                        path: entry.path(),
+                        source,
+                    })
+                }
+            };
             if !md.is_dir() {
                 continue;
             }
@@ -181,17 +188,19 @@ mod tests {
     #[test]
     fn rejects_a_name_claimed_by_two_kinds() {
         let d = repo(&[("skills", "clash"), ("agents", "clash")]);
-        let err = scan(d.path(), &Vendor::default()).unwrap_err().to_string();
-        assert!(err.contains("clash"), "unexpected error: {err}");
+        match scan(d.path(), &Vendor::default()).unwrap_err() {
+            ScanError::DuplicateName { name, .. } => assert_eq!(name, "clash"),
+            other => panic!("expected DuplicateName, got {other:?}"),
+        }
     }
 
     #[test]
     fn rejects_an_installer_shadowing_a_skill() {
         let d = repo(&[("skills", "bmad")]);
-        let err = scan(d.path(), &vendor_with_installer("bmad", Scope::Project))
-            .unwrap_err()
-            .to_string();
-        assert!(err.contains("bmad"), "unexpected error: {err}");
+        match scan(d.path(), &vendor_with_installer("bmad", Scope::Project)).unwrap_err() {
+            ScanError::DuplicateName { name, .. } => assert_eq!(name, "bmad"),
+            other => panic!("expected DuplicateName, got {other:?}"),
+        }
     }
 
     #[test]
@@ -200,6 +209,30 @@ mod tests {
         fs::write(d.path().join("skills/README.md"), "x").unwrap();
         fs::create_dir(d.path().join("skills/.cache")).unwrap();
         let got = scan(d.path(), &Vendor::default()).unwrap();
+        assert_eq!(got.len(), 1);
+    }
+
+    #[test]
+    fn symlink_to_directory_is_included() {
+        use std::os::unix::fs::symlink;
+
+        let d = repo(&[("skills", "ponytail")]);
+        let target = d.path().join("target_dir");
+        fs::create_dir(&target).unwrap();
+        symlink(&target, d.path().join("skills/linked")).unwrap();
+        let got = scan(d.path(), &Vendor::default()).unwrap();
+        assert!(matches!(got["linked"], Item::Linked { kind: Kind::Skill, .. }));
+        assert_eq!(got.len(), 2);
+    }
+
+    #[test]
+    fn dangling_symlink_is_skipped() {
+        use std::os::unix::fs::symlink;
+
+        let d = repo(&[("skills", "ponytail")]);
+        symlink("/nonexistent/target", d.path().join("skills/dangling")).unwrap();
+        let got = scan(d.path(), &Vendor::default()).unwrap();
+        assert!(!got.contains_key("dangling"));
         assert_eq!(got.len(), 1);
     }
 }
