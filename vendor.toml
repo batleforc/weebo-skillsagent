@@ -1,0 +1,16 @@
+# Provenance for vendored third-party skills, plus installer-based items.
+#
+# Installer-based items are not vendorable: each writes project-coupled state
+# that cannot be symlinked from this repo. bmad renders per-project snapshots
+# from an installer-generated _bmad/config.toml that hardcodes the project
+# name; graphify is installed by pipx and writes its own skill directory.
+#
+# [sources.*] tables are added when third-party skills are vendored.
+
+[installers.bmad]
+command = "npx bmad-method install"
+scope   = "project"
+
+[installers.graphify]
+command = "graphify install --project --platform claude"
+scope   = "project"

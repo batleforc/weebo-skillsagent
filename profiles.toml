@@ -1,0 +1,9 @@
+# Named sets of items to install. Scope is always a CLI argument, never recorded
+# here, so one profile serves both `--scope project` and `--scope user`.
+
+[profiles.base]
+items = ["graphify"]
+
+[profiles.planning]
+include = ["base"]
+items = ["bmad"]
