@@ -2,6 +2,7 @@ mod cli;
 mod config;
 mod hash;
 mod item;
+mod profile;
 
 use clap::Parser;
 
