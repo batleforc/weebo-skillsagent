@@ -15,3 +15,6 @@ dist/
 # Local env files
 .env
 .env.local
+
+# wska links this repo's skills in here
+.claude/skills/
