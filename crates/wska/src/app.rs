@@ -57,7 +57,44 @@ pub fn install(
         }
         return Err(AppError::Refused(e.to_string()));
     }
-    Ok(apply(&built, dry_run)?)
+    // Advisory, never blocking: a skill whose tool is absent is still
+    // readable, and the tool may be installed later. Computed here rather
+    // than inside plan::build so the planner needs no PATH resolver.
+    let path_var = env("PATH").unwrap_or_default();
+    let has = |tool: &str| crate::doctor::resolves_in(&path_var, tool);
+    let mut warnings = Vec::new();
+    for name in &wanted {
+        let missing = crate::doctor::unsatisfied(
+            vendor.requires.get(name).map(Vec::as_slice).unwrap_or(&[]),
+            &has,
+        );
+        if !missing.is_empty() {
+            warnings.push(format!("{name}: missing {}", missing.join(", ")));
+        }
+    }
+    for warning in &warnings {
+        eprintln!("warn   {warning}");
+    }
+
+    let mut applied = apply(&built, dry_run)?;
+    applied.warnings = warnings;
+    Ok(applied)
+}
+
+/// Whether each item in the repo can actually work here: its declared tools
+/// resolve on PATH, and (for skills) its SKILL.md is usable. Deliberately
+/// scope-free — whether a link is in place is what `status` answers.
+pub fn doctor(
+    repo_root: &Path,
+    env: &dyn Fn(&str) -> Option<String>,
+) -> Result<Vec<crate::doctor::Row>, AppError> {
+    let repo_root = target::repo_root(repo_root)?;
+    let vendor = config::load_vendor(&repo_root.join("vendor.toml"))?;
+    let items = item::scan(&repo_root, &vendor)?;
+
+    let path_var = env("PATH").unwrap_or_default();
+    let has = |tool: &str| crate::doctor::resolves_in(&path_var, tool);
+    Ok(crate::doctor::collect(&items, &vendor.requires, &has))
 }
 
 pub fn status(

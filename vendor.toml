@@ -35,6 +35,19 @@ licence  = "Apache-2.0"
 commit = "8a0e198"
 hashes = { impeccable = "sha256:9f09af1dd3b653935ead897b3f41678181aaee58b35fc2a7c54505fc4cb7ee52" }
 
+# External commands each item needs. Hand-maintained: wska reads this, it does
+# not infer requirements, so an upstream that starts shelling out to something
+# new goes unnoticed until this table is updated. Alternatives separated by `|`
+# are satisfied when any one resolves, which is how one entry covers a
+# Chrome-ish browser across distributions.
+[requires]
+graphify        = ["graphify"]
+bmad            = ["npx", "uv"]
+mcp-builder     = ["python3", "npx"]
+webapp-testing  = ["python3", "playwright"]
+frontend-design = ["google-chrome|chromium|chrome"]
+impeccable      = ["node", "npx", "google-chrome|chromium|chrome"]
+
 [installers.bmad]
 command = "npx bmad-method install"
 scope   = "project"

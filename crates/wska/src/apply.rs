@@ -9,6 +9,9 @@ pub struct Applied {
     pub unlinked: usize,
     pub installers_run: Vec<String>,
     pub skipped: Vec<String>,
+    /// Items that were linked but whose declared tools are not installed.
+    /// Advisory only: a skill is still readable without its tools.
+    pub warnings: Vec<String>,
 }
 
 #[derive(Debug, thiserror::Error)]

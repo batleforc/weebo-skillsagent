@@ -42,6 +42,29 @@ fn main() {
                 }
             })
         }
+        Command::Doctor => {
+            let root = wska::target::repo_root(&cwd).expect("repo root");
+            wska::app::doctor(&root, &env).map(|rows| {
+                let mut unhealthy = 0;
+                for row in &rows {
+                    match &row.health {
+                        wska::doctor::Health::Ok => println!("{:<28} ok", row.name),
+                        wska::doctor::Health::Missing(tools) => {
+                            unhealthy += 1;
+                            println!("{:<28} missing: {}", row.name, tools.join(", "));
+                        }
+                        wska::doctor::Health::Invalid(reason) => {
+                            unhealthy += 1;
+                            println!("{:<28} invalid: {reason}", row.name);
+                        }
+                    }
+                }
+                if unhealthy > 0 {
+                    eprintln!("{unhealthy} item(s) cannot work here");
+                    std::process::exit(1);
+                }
+            })
+        }
         Command::Sync { source, check } => {
             let root = wska::target::repo_root(&cwd).expect("repo root");
             wska::app::sync(&root, &source, check).map(|outcomes| {

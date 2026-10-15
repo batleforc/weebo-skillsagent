@@ -34,6 +34,9 @@ pub enum Command {
         #[arg(long)]
         profiles: bool,
     },
+    /// Check whether each item can actually work here: declared tools on PATH,
+    /// and a usable SKILL.md. Exits non-zero if anything is unhealthy.
+    Doctor,
     /// Refresh vendored sources from upstream
     Sync {
         source: Vec<String>,

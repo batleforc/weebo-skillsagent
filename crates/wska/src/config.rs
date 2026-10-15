@@ -39,6 +39,11 @@ pub struct Vendor {
     pub sources: BTreeMap<String, Source>,
     #[serde(default)]
     pub installers: BTreeMap<String, Installer>,
+    /// External commands each item needs, keyed by item name. An entry may
+    /// list alternatives separated by `|` ("google-chrome|chromium"), which
+    /// is satisfied when any one of them resolves.
+    #[serde(default)]
+    pub requires: BTreeMap<String, Vec<String>>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -194,5 +199,31 @@ licence = "MIT"
         let missing = d.path().join("nope.toml");
         assert!(load_profiles(&missing).unwrap().profiles.is_empty());
         assert!(load_vendor(&missing).unwrap().sources.is_empty());
+    }
+
+    #[test]
+    fn parses_requires_table_keyed_by_item_name() {
+        let (_d, p) = tmp(r#"
+[requires]
+graphify = ["graphify"]
+bmad = ["npx", "uv"]
+frontend-design = ["google-chrome|chromium"]
+"#);
+        let got = load_vendor(&p).unwrap();
+        assert_eq!(
+            got.requires["bmad"],
+            vec!["npx".to_string(), "uv".to_string()]
+        );
+        assert_eq!(got.requires["graphify"], vec!["graphify".to_string()]);
+        assert_eq!(
+            got.requires["frontend-design"],
+            vec!["google-chrome|chromium".to_string()]
+        );
+    }
+
+    #[test]
+    fn requires_table_is_optional() {
+        let (_d, p) = tmp("[installers.x]\ncommand = \"true\"\nscope = \"project\"\n");
+        assert!(load_vendor(&p).unwrap().requires.is_empty());
     }
 }

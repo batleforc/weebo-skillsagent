@@ -16,6 +16,12 @@ fn env_none(_: &str) -> Option<String> {
     None
 }
 
+/// The real process environment, as `main.rs` passes it — needed by the tests
+/// that exercise PATH lookup for a skill's required tools.
+fn env_real(key: &str) -> Option<String> {
+    std::env::var(key).ok()
+}
+
 #[test]
 fn installs_a_profile_then_converges_on_a_second_run() {
     let d = tempfile::tempdir().unwrap();
@@ -114,4 +120,111 @@ fn refuses_to_replace_a_hand_written_directory_and_changes_nothing() {
         "mine"
     );
     assert!(!root.join(".claude/skills/graphify").exists());
+}
+
+#[test]
+fn install_links_a_skill_whose_required_tool_is_missing_and_warns_about_it() {
+    let d = tempfile::tempdir().unwrap();
+    let root = d.path().join("repo");
+    repo(
+        &root,
+        &["needy", "content"],
+        "[profiles.base]\nitems = [\"needy\", \"content\"]\n",
+    );
+    fs::write(
+        root.join("vendor.toml"),
+        "[requires]\nneedy = [\"definitely-not-installed-anywhere\"]\n",
+    )
+    .unwrap();
+
+    let got = wska::app::install(
+        &root,
+        &["base".to_string()],
+        wska::cli::Scope::Project,
+        false,
+        false,
+        &root,
+        &env_real,
+    )
+    .unwrap();
+
+    // A missing tool must not block the link: the skill is still readable,
+    // and the tool may be installed later.
+    assert_eq!(got.linked, 2);
+    assert!(root.join(".claude/skills/needy").exists());
+
+    // But the user has to be told, naming the item and the tool.
+    assert_eq!(got.warnings.len(), 1, "warnings: {:?}", got.warnings);
+    let warning = &got.warnings[0];
+    assert!(warning.contains("needy"), "warning: {warning}");
+    assert!(
+        warning.contains("definitely-not-installed-anywhere"),
+        "warning: {warning}"
+    );
+}
+
+#[test]
+fn install_warns_about_nothing_when_every_requirement_is_satisfied() {
+    let d = tempfile::tempdir().unwrap();
+    let root = d.path().join("repo");
+    repo(&root, &["fine"], "[profiles.base]\nitems = [\"fine\"]\n");
+    // `sh` exists on any machine that can run this test suite at all.
+    fs::write(root.join("vendor.toml"), "[requires]\nfine = [\"sh\"]\n").unwrap();
+
+    let got = wska::app::install(
+        &root,
+        &["base".to_string()],
+        wska::cli::Scope::Project,
+        false,
+        false,
+        &root,
+        &env_real,
+    )
+    .unwrap();
+    assert_eq!(got.linked, 1);
+    assert!(got.warnings.is_empty(), "warnings: {:?}", got.warnings);
+}
+
+#[test]
+fn doctor_reports_missing_tools_and_unusable_skills() {
+    let d = tempfile::tempdir().unwrap();
+    let root = d.path().join("repo");
+    repo(
+        &root,
+        &["needy", "fine"],
+        "[profiles.base]\nitems = [\"fine\"]\n",
+    );
+    // `repo()` writes a stub SKILL.md with no frontmatter, so give the two
+    // skills real ones and leave a third deliberately broken.
+    for s in ["needy", "fine"] {
+        fs::write(
+            root.join("skills").join(s).join("SKILL.md"),
+            format!("---\nname: {s}\ndescription: Real enough.\n---\n"),
+        )
+        .unwrap();
+    }
+    let broken = root.join("skills/broken");
+    fs::create_dir_all(&broken).unwrap();
+    fs::write(broken.join("SKILL.md"), "no frontmatter\n").unwrap();
+
+    fs::write(
+        root.join("vendor.toml"),
+        "[requires]\nneedy = [\"definitely-not-installed-anywhere\"]\nfine = [\"sh\"]\n",
+    )
+    .unwrap();
+
+    let rows = wska::app::doctor(&root, &env_real).unwrap();
+    let health = |name: &str| format!("{:?}", rows.iter().find(|r| r.name == name).unwrap().health);
+
+    assert_eq!(health("fine"), "Ok");
+    assert_eq!(
+        health("needy"),
+        r#"Missing(["definitely-not-installed-anywhere"])"#
+    );
+    assert!(
+        health("broken").starts_with("Invalid"),
+        "{}",
+        health("broken")
+    );
+    assert_eq!(rows.len(), 3);
 }

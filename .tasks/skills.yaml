@@ -28,6 +28,11 @@ tasks:
     cmds:
       - '{{.WSKA}} list {{if .PROFILES}}--profiles{{end}}'
 
+  doctor:
+    desc: "Check every item can work here: required tools on PATH and a usable SKILL.md"
+    cmds:
+      - '{{.WSKA}} doctor'
+
   sync:
     desc: "Refresh vendored sources from upstream (usage: task skills:sync [SOURCE=superpowers])"
     cmds:
