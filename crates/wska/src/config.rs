@@ -6,9 +6,15 @@ use std::path::{Path, PathBuf};
 #[derive(Debug, thiserror::Error)]
 pub enum ConfigError {
     #[error("reading {path}: {source}")]
-    Io { path: PathBuf, source: std::io::Error },
+    Io {
+        path: PathBuf,
+        source: std::io::Error,
+    },
     #[error("parsing {path}: {source}")]
-    Parse { path: PathBuf, source: toml::de::Error },
+    Parse {
+        path: PathBuf,
+        source: toml::de::Error,
+    },
     #[error("source `{source_name}`: provides must be \"*\" or a list of names, got \"{got}\"")]
     Provides { source_name: String, got: String },
 }
@@ -110,26 +116,26 @@ mod tests {
 
     #[test]
     fn parses_profiles_with_include_and_defaults() {
-        let (_d, p) = tmp(
-            r#"
+        let (_d, p) = tmp(r#"
 [profiles.base]
 items = ["ponytail"]
 
 [profiles.frontend]
 include = ["base"]
 items = ["impeccable"]
-"#,
-        );
+"#);
         let got = load_profiles(&p).unwrap();
         assert_eq!(got.profiles["base"].include, Vec::<String>::new());
         assert_eq!(got.profiles["frontend"].include, vec!["base".to_string()]);
-        assert_eq!(got.profiles["frontend"].items, vec!["impeccable".to_string()]);
+        assert_eq!(
+            got.profiles["frontend"].items,
+            vec!["impeccable".to_string()]
+        );
     }
 
     #[test]
     fn parses_vendor_source_with_star_provides() {
-        let (_d, p) = tmp(
-            r#"
+        let (_d, p) = tmp(r#"
 [sources.superpowers]
 upstream = "https://example.invalid/x"
 ref = "main"
@@ -142,8 +148,7 @@ hashes = { brainstorming = "sha256:00" }
 [installers.bmad]
 command = "npx bmad-method install"
 scope = "project"
-"#,
-        );
+"#);
         let got = load_vendor(&p).unwrap();
         let s = &got.sources["superpowers"];
         assert_eq!(s.git_ref, "main");
@@ -154,16 +159,14 @@ scope = "project"
 
     #[test]
     fn parses_vendor_source_with_named_provides() {
-        let (_d, p) = tmp(
-            r#"
+        let (_d, p) = tmp(r#"
 [sources.two]
 upstream = "https://example.invalid/x"
 ref = "v1"
 subpath = "skills"
 provides = ["a", "b"]
 licence = "MIT"
-"#,
-        );
+"#);
         let got = load_vendor(&p).unwrap();
         match &got.sources["two"].provides {
             Provides::Named(v) => assert_eq!(v, &vec!["a".to_string(), "b".to_string()]),
@@ -173,16 +176,14 @@ licence = "MIT"
 
     #[test]
     fn rejects_provides_string_that_is_not_star() {
-        let (_d, p) = tmp(
-            r#"
+        let (_d, p) = tmp(r#"
 [sources.bad]
 upstream = "https://example.invalid/x"
 ref = "main"
 subpath = "skills"
 provides = "everything"
 licence = "MIT"
-"#,
-        );
+"#);
         let err = load_vendor(&p).unwrap_err().to_string();
         assert!(err.contains("provides"), "unexpected error: {err}");
     }

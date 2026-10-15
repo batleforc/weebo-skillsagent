@@ -7,10 +7,22 @@ use std::path::{Path, PathBuf};
 
 #[derive(Debug)]
 pub enum Action {
-    Link { from: PathBuf, to: PathBuf },
-    Unlink { at: PathBuf },
-    RunInstaller { name: String, command: String, cwd: PathBuf },
-    SkipInstaller { name: String, reason: String },
+    Link {
+        from: PathBuf,
+        to: PathBuf,
+    },
+    Unlink {
+        at: PathBuf,
+    },
+    RunInstaller {
+        name: String,
+        command: String,
+        cwd: PathBuf,
+    },
+    SkipInstaller {
+        name: String,
+        reason: String,
+    },
 }
 
 #[derive(Debug)]
@@ -54,13 +66,17 @@ pub fn build(
 
     // Wanted items: link what is missing, refuse what we do not own.
     for name in wanted {
-        let Some(item) = items.get(name) else { continue };
+        let Some(item) = items.get(name) else {
+            continue;
+        };
         match item {
             Item::Linked { kind, path, .. } => {
                 let at = target.join(kind.subdir()).join(name);
                 match classify(&at, repo_root, Some(path))? {
                     Entry::OwnedCorrect => {}
-                    Entry::Absent | Entry::OwnedWrongTarget { .. } | Entry::OwnedDangling { .. } => {
+                    Entry::Absent
+                    | Entry::OwnedWrongTarget { .. }
+                    | Entry::OwnedDangling { .. } => {
                         plan.actions.push(Action::Link {
                             from: path.clone(),
                             to: at,
@@ -68,7 +84,10 @@ pub fn build(
                     }
                     Entry::Foreign { points_to } => plan.refusals.push(Refusal {
                         path: at,
-                        reason: format!("symlink points outside this repo, at {}", points_to.display()),
+                        reason: format!(
+                            "symlink points outside this repo, at {}",
+                            points_to.display()
+                        ),
                     }),
                     Entry::RealPath => plan.refusals.push(Refusal {
                         path: at,
@@ -76,15 +95,16 @@ pub fn build(
                     }),
                 }
             }
-            Item::Installer { command, scope: want, .. } => {
+            Item::Installer {
+                command,
+                scope: want,
+                ..
+            } => {
                 if *want == scope {
                     plan.actions.push(Action::RunInstaller {
                         name: name.clone(),
                         command: command.clone(),
-                        cwd: target
-                            .parent()
-                            .unwrap_or(target)
-                            .to_path_buf(),
+                        cwd: target.parent().unwrap_or(target).to_path_buf(),
                     });
                 } else {
                     plan.actions.push(Action::SkipInstaller {
@@ -117,7 +137,9 @@ pub fn build(
                 continue;
             }
             match classify(&entry.path(), repo_root, None)? {
-                Entry::OwnedCorrect | Entry::OwnedWrongTarget { .. } | Entry::OwnedDangling { .. } => {
+                Entry::OwnedCorrect
+                | Entry::OwnedWrongTarget { .. }
+                | Entry::OwnedDangling { .. } => {
                     plan.actions.push(Action::Unlink { at: entry.path() });
                 }
                 _ => {}
@@ -223,7 +245,10 @@ mod tests {
             Scope::Project,
         )
         .unwrap();
-        assert!(plan.actions.iter().any(|a| matches!(a, Action::Unlink { .. })));
+        assert!(plan
+            .actions
+            .iter()
+            .any(|a| matches!(a, Action::Unlink { .. })));
     }
 
     #[test]
@@ -306,7 +331,11 @@ mod tests {
         let agent_path = f.repo.join("agents").join("ponytail");
         fs::create_dir_all(&agent_path).unwrap();
         // Stale link left over from when `ponytail` lived under skills/.
-        symlink(f.repo.join("skills/ponytail"), f.target.join("skills/ponytail")).unwrap();
+        symlink(
+            f.repo.join("skills/ponytail"),
+            f.target.join("skills/ponytail"),
+        )
+        .unwrap();
 
         let mut map = BTreeMap::new();
         map.insert(
@@ -318,7 +347,14 @@ mod tests {
             },
         );
 
-        let plan = build(&map, &set(&["ponytail"]), &f.target, &f.repo, Scope::Project).unwrap();
+        let plan = build(
+            &map,
+            &set(&["ponytail"]),
+            &f.target,
+            &f.repo,
+            Scope::Project,
+        )
+        .unwrap();
 
         assert!(
             plan.actions

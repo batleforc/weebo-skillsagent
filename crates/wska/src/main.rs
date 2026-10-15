@@ -7,7 +7,11 @@ fn main() {
     let env = |k: &str| std::env::var(k).ok();
 
     let result = match cli.command {
-        Command::Install { profile, scope, dry_run } => {
+        Command::Install {
+            profile,
+            scope,
+            dry_run,
+        } => {
             let root = wska::target::repo_root(&cwd).expect("repo root");
             wska::app::install(&root, &profile, scope, dry_run, &cwd, &env).map(|a| {
                 println!(

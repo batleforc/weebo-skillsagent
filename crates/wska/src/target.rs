@@ -6,7 +6,10 @@ pub enum TargetError {
     #[error("cannot determine the user config directory: set CLAUDE_CONFIG_DIR or HOME")]
     NoUserDir,
     #[error("canonicalizing {path}: {source}")]
-    Io { path: PathBuf, source: std::io::Error },
+    Io {
+        path: PathBuf,
+        source: std::io::Error,
+    },
 }
 
 /// The `.claude` directory for a scope, canonicalized when it already exists
@@ -23,7 +26,7 @@ pub fn resolve(
         },
         Scope::Project => git_root(cwd)?.join(".claude"),
     };
-    Ok(canonical_or_as_is(&raw)?)
+    canonical_or_as_is(&raw)
 }
 
 /// The repository root containing `start`, canonicalized. Falls back to

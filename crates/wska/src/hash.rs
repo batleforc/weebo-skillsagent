@@ -23,11 +23,7 @@ pub fn hash_dir(root: &Path) -> io::Result<String> {
     Ok(format!("sha256:{}", hex::encode(h.finalize())))
 }
 
-fn collect(
-    dir: &Path,
-    rel_dir: &Path,
-    out: &mut Vec<(Vec<u8>, u8, Vec<u8>)>,
-) -> io::Result<()> {
+fn collect(dir: &Path, rel_dir: &Path, out: &mut Vec<(Vec<u8>, u8, Vec<u8>)>) -> io::Result<()> {
     for entry in std::fs::read_dir(dir)? {
         let entry = entry?;
         let name = entry.file_name();

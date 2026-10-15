@@ -1,7 +1,10 @@
 use clap::{Parser, Subcommand, ValueEnum};
 
 #[derive(Debug, Parser)]
-#[command(name = "wska", about = "Link this repo's skills into a Claude Code target")]
+#[command(
+    name = "wska",
+    about = "Link this repo's skills into a Claude Code target"
+)]
 pub struct Cli {
     #[command(subcommand)]
     pub command: Command,
@@ -51,10 +54,21 @@ mod tests {
     #[test]
     fn parses_install_with_two_profiles_and_scope() {
         let cli = Cli::parse_from([
-            "wska", "install", "--profile", "base", "--profile", "frontend", "--scope", "user",
+            "wska",
+            "install",
+            "--profile",
+            "base",
+            "--profile",
+            "frontend",
+            "--scope",
+            "user",
         ]);
         match cli.command {
-            Command::Install { profile, scope, dry_run } => {
+            Command::Install {
+                profile,
+                scope,
+                dry_run,
+            } => {
                 assert_eq!(profile, vec!["base".to_string(), "frontend".to_string()]);
                 assert_eq!(scope, Scope::User);
                 assert!(!dry_run);

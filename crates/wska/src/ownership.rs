@@ -39,14 +39,20 @@ pub fn classify(entry: &Path, repo_root: &Path, expected: Option<&Path>) -> io::
     let repo_root = normalize(repo_root);
 
     if !resolved.starts_with(&repo_root) {
-        return Ok(Entry::Foreign { points_to: resolved });
+        return Ok(Entry::Foreign {
+            points_to: resolved,
+        });
     }
     if !resolved.exists() {
-        return Ok(Entry::OwnedDangling { points_to: resolved });
+        return Ok(Entry::OwnedDangling {
+            points_to: resolved,
+        });
     }
     match expected {
         Some(want) if normalize(want) == resolved => Ok(Entry::OwnedCorrect),
-        _ => Ok(Entry::OwnedWrongTarget { points_to: resolved }),
+        _ => Ok(Entry::OwnedWrongTarget {
+            points_to: resolved,
+        }),
     }
 }
 

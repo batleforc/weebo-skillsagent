@@ -46,7 +46,10 @@ items = ["impeccable"]
 
     let links: PathBuf = root.join(".claude/skills");
     for s in ["ponytail", "graphify", "impeccable"] {
-        assert!(fs::symlink_metadata(links.join(s)).unwrap().file_type().is_symlink());
+        assert!(fs::symlink_metadata(links.join(s))
+            .unwrap()
+            .file_type()
+            .is_symlink());
     }
 
     // Idempotent
@@ -102,6 +105,9 @@ fn refuses_to_replace_a_hand_written_directory_and_changes_nothing() {
     assert!(err.to_string().contains("own"), "unexpected error: {err}");
 
     // Nothing was written, including the item that would have succeeded.
-    assert_eq!(fs::read_to_string(handmade.join("SKILL.md")).unwrap(), "mine");
+    assert_eq!(
+        fs::read_to_string(handmade.join("SKILL.md")).unwrap(),
+        "mine"
+    );
     assert!(!root.join(".claude/skills/graphify").exists());
 }

@@ -150,7 +150,9 @@ mod tests {
         let p = profiles(&[("x", &["y"], &[]), ("y", &["x"], &[])]);
         let err = resolve(&p, &["x".into()], &items(&["a"])).unwrap_err();
         match err {
-            ProfileError::Cycle(path) => assert!(path.contains("x"), "cycle path missing 'x': {path}"),
+            ProfileError::Cycle(path) => {
+                assert!(path.contains("x"), "cycle path missing 'x': {path}")
+            }
             other => panic!("expected Cycle, got {other:?}"),
         }
     }
@@ -184,7 +186,7 @@ mod tests {
         let p = profiles(&[("all", &[], &["a"])]);
         let err = resolve(&p, &["all".into()], &items(&["a", "b"])).unwrap_err();
         match err {
-            ProfileError::ReservedName => {}, // expected
+            ProfileError::ReservedName => {} // expected
             other => panic!("expected ReservedName, got {other:?}"),
         }
     }

@@ -49,7 +49,10 @@ impl Item {
 #[derive(Debug, thiserror::Error)]
 pub enum ScanError {
     #[error("reading {path}: {source}")]
-    Io { path: PathBuf, source: std::io::Error },
+    Io {
+        path: PathBuf,
+        source: std::io::Error,
+    },
     #[error("item name `{name}` is claimed twice: {first} and {second}")]
     DuplicateName {
         name: String,
@@ -91,30 +94,34 @@ pub fn scan(repo_root: &Path, vendor: &Vendor) -> Result<BTreeMap<String, Item>,
             if !md.is_dir() {
                 continue;
             }
-            insert(&mut out, Item::Linked {
-                name: name.clone(),
-                kind,
-                path: entry.path(),
-            }, kind.subdir())?;
+            insert(
+                &mut out,
+                Item::Linked {
+                    name: name.clone(),
+                    kind,
+                    path: entry.path(),
+                },
+                kind.subdir(),
+            )?;
         }
     }
 
     for (name, installer) in &vendor.installers {
-        insert(&mut out, Item::Installer {
-            name: name.clone(),
-            command: installer.command.clone(),
-            scope: installer.scope,
-        }, "installers")?;
+        insert(
+            &mut out,
+            Item::Installer {
+                name: name.clone(),
+                command: installer.command.clone(),
+                scope: installer.scope,
+            },
+            "installers",
+        )?;
     }
 
     Ok(out)
 }
 
-fn insert(
-    out: &mut BTreeMap<String, Item>,
-    item: Item,
-    origin: &str,
-) -> Result<(), ScanError> {
+fn insert(out: &mut BTreeMap<String, Item>, item: Item, origin: &str) -> Result<(), ScanError> {
     let name = item.name().to_string();
     if let Some(existing) = out.get(&name) {
         let first = match existing {
@@ -151,7 +158,10 @@ mod tests {
         let mut v = Vendor::default();
         v.installers.insert(
             name.to_string(),
-            Installer { command: "echo hi".into(), scope },
+            Installer {
+                command: "echo hi".into(),
+                scope,
+            },
         );
         v
     }
@@ -160,8 +170,20 @@ mod tests {
     fn finds_skills_and_agents() {
         let d = repo(&[("skills", "ponytail"), ("agents", "committer")]);
         let got = scan(d.path(), &Vendor::default()).unwrap();
-        assert!(matches!(got["ponytail"], Item::Linked { kind: Kind::Skill, .. }));
-        assert!(matches!(got["committer"], Item::Linked { kind: Kind::Agent, .. }));
+        assert!(matches!(
+            got["ponytail"],
+            Item::Linked {
+                kind: Kind::Skill,
+                ..
+            }
+        ));
+        assert!(matches!(
+            got["committer"],
+            Item::Linked {
+                kind: Kind::Agent,
+                ..
+            }
+        ));
         assert_eq!(got.len(), 2);
     }
 
@@ -221,7 +243,13 @@ mod tests {
         fs::create_dir(&target).unwrap();
         symlink(&target, d.path().join("skills/linked")).unwrap();
         let got = scan(d.path(), &Vendor::default()).unwrap();
-        assert!(matches!(got["linked"], Item::Linked { kind: Kind::Skill, .. }));
+        assert!(matches!(
+            got["linked"],
+            Item::Linked {
+                kind: Kind::Skill,
+                ..
+            }
+        ));
         assert_eq!(got.len(), 2);
     }
 
