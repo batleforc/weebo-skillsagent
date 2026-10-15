@@ -108,7 +108,12 @@ pub fn build(
         for entry in read {
             let entry = entry?;
             let name = entry.file_name().to_string_lossy().to_string();
-            if wanted.contains(&name) {
+            let keep = wanted.contains(&name)
+                && matches!(
+                    items.get(&name),
+                    Some(Item::Linked { kind: item_kind, .. }) if *item_kind == kind
+                );
+            if keep {
                 continue;
             }
             match classify(&entry.path(), repo_root, None)? {
@@ -256,7 +261,7 @@ mod tests {
     }
 
     #[test]
-    fn leaves_an_unwanted_foreign_entry_alone_without_refusing() {
+    fn leaves_an_unwanted_real_directory_alone_without_refusing() {
         let f = fx(&["ponytail"]);
         fs::create_dir(f.target.join("skills/handmade")).unwrap();
         let plan = build(
@@ -272,6 +277,63 @@ mod tests {
             .actions
             .iter()
             .any(|a| matches!(a, Action::Unlink { at } if at.ends_with("handmade"))));
+    }
+
+    #[test]
+    fn leaves_an_unwanted_foreign_symlink_alone_without_refusing() {
+        let f = fx(&["ponytail"]);
+        let outside = f.repo.parent().unwrap().join("elsewhere");
+        fs::create_dir_all(&outside).unwrap();
+        symlink(&outside, f.target.join("skills/handmade")).unwrap();
+        let plan = build(
+            &items(&f.repo, &["ponytail"]),
+            &set(&["ponytail"]),
+            &f.target,
+            &f.repo,
+            Scope::Project,
+        )
+        .unwrap();
+        assert!(plan.refusals.is_empty(), "{:?}", plan.refusals);
+        assert!(!plan
+            .actions
+            .iter()
+            .any(|a| matches!(a, Action::Unlink { at } if at.ends_with("handmade"))));
+    }
+
+    #[test]
+    fn converges_when_an_item_moves_to_a_different_kind() {
+        let f = fx(&[]);
+        let agent_path = f.repo.join("agents").join("ponytail");
+        fs::create_dir_all(&agent_path).unwrap();
+        // Stale link left over from when `ponytail` lived under skills/.
+        symlink(f.repo.join("skills/ponytail"), f.target.join("skills/ponytail")).unwrap();
+
+        let mut map = BTreeMap::new();
+        map.insert(
+            "ponytail".to_string(),
+            Item::Linked {
+                name: "ponytail".to_string(),
+                kind: Kind::Agent,
+                path: agent_path,
+            },
+        );
+
+        let plan = build(&map, &set(&["ponytail"]), &f.target, &f.repo, Scope::Project).unwrap();
+
+        assert!(
+            plan.actions
+                .iter()
+                .any(|a| matches!(a, Action::Link { to, .. } if to.ends_with("agents/ponytail"))),
+            "{:?}",
+            plan.actions
+        );
+        assert!(
+            plan.actions
+                .iter()
+                .any(|a| matches!(a, Action::Unlink { at } if at.ends_with("skills/ponytail"))),
+            "{:?}",
+            plan.actions
+        );
     }
 
     #[test]
