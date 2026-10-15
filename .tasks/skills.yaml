@@ -1,0 +1,44 @@
+version: "3"
+
+vars:
+  WSKA: '{{.WSKA | default "cargo run --quiet -p wska --"}}'
+  SCOPE: '{{.SCOPE | default "project"}}'
+
+tasks:
+  build:
+    desc: "Build the wska binary"
+    cmds:
+      - cargo build --release -p wska
+
+  install:
+    desc: "Link the items of one or more profiles into a target (usage: task skills:install PROFILE=base [SCOPE=project|user])"
+    preconditions:
+      - sh: 'test -n "{{.PROFILE}}"'
+        msg: "pass PROFILE=<name>, or PROFILE=all for everything"
+    cmds:
+      - '{{.WSKA}} install --profile {{.PROFILE}} --scope {{.SCOPE}}'
+
+  status:
+    desc: "Show what is linked in a target (usage: task skills:status [SCOPE=project|user])"
+    cmds:
+      - '{{.WSKA}} status --scope {{.SCOPE}}'
+
+  list:
+    desc: "List the items in this repo (usage: task skills:list [PROFILES=1])"
+    cmds:
+      - '{{.WSKA}} list {{if .PROFILES}}--profiles{{end}}'
+
+  sync:
+    desc: "Refresh vendored sources from upstream (usage: task skills:sync [SOURCE=superpowers])"
+    cmds:
+      - '{{.WSKA}} sync {{.SOURCE}}'
+
+  sync:check:
+    desc: "Report vendored drift, patched skills and missing licences without writing"
+    cmds:
+      - '{{.WSKA}} sync --check'
+
+  test:
+    desc: "Run the wska test suite"
+    cmds:
+      - cargo test -p wska

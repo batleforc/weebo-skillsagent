@@ -4,6 +4,7 @@ includes:
   mise: ./.tasks/mise.yaml
   claude: ./.tasks/claude.yaml
   template: ./.tasks/template.yaml
+  skills: ./.tasks/skills.yaml
 
 tasks:
   init:
@@ -12,18 +13,21 @@ tasks:
       - task mise:install
       - task claude:install
       - cog install-hook -a -o
+      - task skills:install PROFILE=all SCOPE=project
 
   recu:
     desc: "Recuring job like regenerating Swagger spec"
     cmds:
-      - echo "Your future spec generating cmd"
+      - echo "nothing to regenerate yet"
 
   lint:
     desc: "Linting your project to apply good practice"
     cmds:
-      - echo "Something like cargo fmt && cargo clippy"
+      - cargo fmt --all --check
+      - cargo clippy --all-targets -- -D warnings
 
   audit:
     desc: "Check dependencies and Containerfile for CVE"
     cmds:
-      - echo "Something like cargo audit, pnpm audit or trivy fs ."
+      - cargo audit
+      - task skills:sync:check
