@@ -444,3 +444,71 @@ Ordered, because step 4 is the point of no easy return.
   until the CLI's happy path works.
 - Symlinked-skill discovery is upstream behaviour, verified once, not
   guaranteed.
+
+## Amendments made during implementation
+
+Recorded after the fact so this document does not contradict the code. Each
+was decided during the 13-task implementation; the rationale lives in the
+implementation ledger.
+
+### Third-party vendoring is cancelled (supersedes "Third-party skills are vendored" and migration steps 3-4)
+
+`ponytail`, `superpowers` and `impeccable` are not merely collections of
+skills. Each ships hooks, slash commands and agents as part of its plugin,
+and ponytail's `SessionStart` hook is what activates its mode at all.
+Vendoring only their `skills/` directories and retiring the plugin
+declarations would therefore have silently dropped that behaviour, changed
+every `/plugin:skill` invocation to a bare `/skill`, and lost impeccable's
+agents.
+
+The user's decision: **keep them installed as plugins and vendor nothing.**
+`.claude/settings.json` keeps its `enabledPlugins` and
+`extraKnownMarketplaces` untouched, including the `weebo` marketplace entry,
+which is now simply stale rather than repointed.
+
+What `wska` manages, consequently, is the author's own skills plus
+installer-based items. `skills/` starts empty and fills when
+`batlehub-design` and `weebo-operator-kit` are written. The `sync` command
+and the whole `[sources.*]` half of `vendor.toml` are implemented and tested
+but currently unused — they exist for skills vendored later, under the
+original rules.
+
+Two values in this document's `vendor.toml` example were also wrong, and are
+left only as illustration: superpowers' real upstream is
+`https://github.com/obra/superpowers.git` (pinned by sha in the Anthropic
+marketplace directory, not hosted in it), and impeccable is Apache-2.0, not
+MIT. Treat every illustrative value here as needing verification.
+
+### The directory hash includes a kind byte
+
+The pinned definition gains one byte per entry: `b'f'` for a file, `b'l'`
+for a symlink, contributed between the NUL separator and the content length.
+Without it, a file containing `../y` hashes identically to a symlink whose
+target is `../y`.
+
+### `commit` advances only when nothing was patched
+
+`sync` records a source's new upstream commit only if no skill in that source
+came back `Patched`. Advancing it unconditionally made `vendor.toml` claim a
+revision the vendored content was never at. Per-skill `hashes` remain the
+authority for patch detection either way.
+
+### Fast-forward copies before it destroys
+
+Overwriting an unpatched skill copies into a sibling temporary directory
+first and only then removes the original and renames the copy into place, so
+a failed copy cannot leave the skill deleted. The remove-and-rename pair is
+still not atomic; the code carries a `shortcut:` comment saying when to
+upgrade it.
+
+### `graphify`'s installer command
+
+`graphify install --project --platform claude`, verified against
+`graphify install --help`. The `graphify install-skill .` form used in the
+plan does not exist.
+
+### Missing config files load as empty
+
+`load_profiles` and `load_vendor` return defaults when their file is absent,
+rather than erroring, so `list` and `status` work in a repository that has
+vendored nothing yet. Other IO errors still fail.
