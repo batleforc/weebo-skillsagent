@@ -3,6 +3,7 @@ mod config;
 mod hash;
 mod item;
 mod ownership;
+mod plan;
 mod profile;
 mod target;
 
