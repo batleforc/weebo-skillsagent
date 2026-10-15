@@ -1,4 +1,5 @@
 mod cli;
+mod hash;
 
 use clap::Parser;
 
