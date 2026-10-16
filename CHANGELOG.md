@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## [v0.2.0](https://github.com/batleforc/weebo-skillsagent/compare/bd26166dabbd8e1522e2b2b5c50fd1d9fbb8dfae..v0.2.0) - 2026-10-16
+#### Features
+- wip - ([bd26166](https://github.com/batleforc/weebo-skillsagent/commit/bd26166dabbd8e1522e2b2b5c50fd1d9fbb8dfae)) - Max Batleforc
+
+- - -
+
 ## [v0.1.0](https://github.com/batleforc/weebo-skillsagent/compare/0c03f06cec0554d2bc9fd20c219b1e7e42ffd0d2..v0.1.0) - 2026-10-16
 #### Features
 - (**wska**) fail sync --check when a source is behind upstream - ([e5225e9](https://github.com/batleforc/weebo-skillsagent/commit/e5225e9004698607085ab521c64a95709c51649b)) - Max Batleforc, Claude Opus 5 (1M context)
