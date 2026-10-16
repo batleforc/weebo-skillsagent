@@ -165,6 +165,20 @@ arriving without a licence fails the audit.
 After a sync, read `git diff skills/` before committing — upstream content lands
 in your tree unreviewed.
 
+### `completions`
+
+```bash
+wska completions <bash|zsh|fish|elvish|powershell>
+```
+
+Prints a shell completion script. Works outside this repo and never clones it.
+
+```bash
+wska completions bash > ~/.local/share/bash-completion/completions/wska
+wska completions zsh  > "${fpath[1]}/_wska"
+wska completions fish > ~/.config/fish/completions/wska.fish
+```
+
 ### Errors
 
 Any command exits 1 with `error: <message>` on failure. The specific one worth

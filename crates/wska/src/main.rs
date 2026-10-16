@@ -6,6 +6,12 @@ const REPO_URL: &str = "https://github.com/batleforc/weebo-skillsagent";
 
 fn main() {
     let cli = Cli::parse();
+    // Before items_root: completions must work anywhere, without cloning the repo.
+    if let Command::Completions { shell } = cli.command {
+        use clap::CommandFactory;
+        clap_complete::generate(shell, &mut Cli::command(), "wska", &mut std::io::stdout());
+        return;
+    }
     let cwd = std::env::current_dir().expect("current directory");
     let env = |k: &str| std::env::var(k).ok();
     let root = match wska::target::items_root(&cwd, &env, REPO_URL) {
@@ -89,6 +95,7 @@ fn main() {
                 std::process::exit(code);
             }
         }),
+        Command::Completions { .. } => unreachable!("handled above"),
     };
 
     if let Err(e) = result {

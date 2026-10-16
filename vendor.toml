@@ -32,8 +32,8 @@ provides = ["impeccable"]
 # and adding it there by hand would make the local hash diverge from the
 # recorded upstream hash, marking the skill as patched forever.
 licence  = "Apache-2.0"
-commit = "8a0e198"
-hashes = { impeccable = "sha256:f662ef25e26db89b4b27b725ac8815d38772f4645b50fbec2bcf384f7b261ec3" }
+commit = "6af45ac"
+hashes = { impeccable = "sha256:fe36514a563a8e1d42e0edb948e1a5fb7fa705914b0ca7349523dc99bdb7bafc" }
 
 [sources.blender-game-skills]
 upstream = "https://github.com/majidmanzarpour/blender-game-skills"
@@ -76,8 +76,8 @@ provides = ["ponytail", "ponytail-audit", "ponytail-debt", "ponytail-gain", "pon
 # invoked as a skill, not armed by a hook, and ponytail-gain's benchmark
 # numbers (read from the plugin's benchmarks/) are not there to show.
 licence  = "MIT"
-commit = "84740e3"
-hashes = { ponytail = "sha256:b3260ca5d1e0a4af7aa851c97f1d2a45db3efc853ea83b9d49761e57c4b4c0f6", ponytail-audit = "sha256:990428458f4dce2bfc6f2fba0124522795b71d0410958154db22a8b6884495ae", ponytail-debt = "sha256:69fd443d41a89d105f4796bba4bad7e04200d4000cc024b8f952dd38c32f885e", ponytail-gain = "sha256:b128a0b9329504626839bcf082f367ebc26518ac9c5afba1dc79df146ca0ba9b", ponytail-help = "sha256:2c0645d1d1e0c309696fb94630dc7a11c46b3f5dec8003137f1fd9336258ea4a", ponytail-review = "sha256:0fcee427e152792c559f7c45a9f55b68e8c2bba731adaac1ac303d9bc08da98c" }
+commit = "6f1c2bf"
+hashes = { ponytail = "sha256:c0bd4968ae5f789f6e208df40a57ea3d0abbb66c642677d4d02fb9a62f0ea9ad", ponytail-audit = "sha256:990428458f4dce2bfc6f2fba0124522795b71d0410958154db22a8b6884495ae", ponytail-debt = "sha256:69fd443d41a89d105f4796bba4bad7e04200d4000cc024b8f952dd38c32f885e", ponytail-gain = "sha256:b128a0b9329504626839bcf082f367ebc26518ac9c5afba1dc79df146ca0ba9b", ponytail-help = "sha256:8459fa0177b389ec8d69439b64d84f6ded49e3ad011d138b3d478b87cae9115f", ponytail-review = "sha256:0fcee427e152792c559f7c45a9f55b68e8c2bba731adaac1ac303d9bc08da98c" }
 
 [sources.mattpocock-skills]
 upstream = "https://github.com/mattpocock/skills"

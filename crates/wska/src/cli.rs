@@ -44,6 +44,8 @@ pub enum Command {
         #[arg(long)]
         check: bool,
     },
+    /// Print a shell completion script, e.g. `wska completions bash > ~/.local/share/bash-completion/completions/wska`
+    Completions { shell: clap_complete::Shell },
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, ValueEnum, serde::Deserialize)]
