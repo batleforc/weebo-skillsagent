@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## [v0.3.0](https://github.com/batleforc/weebo-skillsagent/compare/d7ad37b3d3273eaae00b608f46a04dcee4e1612f..v0.3.0) - 2026-10-16
+#### Features
+- Add version - ([d7ad37b](https://github.com/batleforc/weebo-skillsagent/commit/d7ad37b3d3273eaae00b608f46a04dcee4e1612f)) - Max Batleforc
+
+- - -
+
 ## [v0.2.0](https://github.com/batleforc/weebo-skillsagent/compare/bd26166dabbd8e1522e2b2b5c50fd1d9fbb8dfae..v0.2.0) - 2026-10-16
 #### Features
 - wip - ([bd26166](https://github.com/batleforc/weebo-skillsagent/commit/bd26166dabbd8e1522e2b2b5c50fd1d9fbb8dfae)) - Max Batleforc
