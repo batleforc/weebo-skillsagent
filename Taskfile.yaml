@@ -6,6 +6,7 @@ includes:
   template: ./.tasks/template.yaml
   skills: ./.tasks/skills.yaml
   agent: ./.tasks/agents.yaml
+  techdoc: ./.tasks/techdoc.yaml
 
 tasks:
   init:
@@ -28,6 +29,8 @@ tasks:
       - cargo clippy --all-targets -- -D warnings
       - uvx ruff check judge
       - uvx ruff format --check judge
+      - uvx ruff check skills/weebo-techdoc
+      - uvx ruff format --check skills/weebo-techdoc
 
   release:
     desc: "Bump the version from conventional commits and tag it (usage: task release, then git push --follow-tags to publish binaries)"

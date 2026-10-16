@@ -27,7 +27,7 @@ items = ["webapp-testing"]
 
 [profiles.mcp]
 include = ["base"]
-items = ["mcp-builder"]
+items = ["mcp-builder", "mlab"]
 
 [profiles.game-design]
 # frontend brings the three UI/UX voices plus webapp-testing, which is how a
@@ -45,3 +45,9 @@ include = ["base"]
 # judge is the CLI; doc-review the agent `judge doc-review` runs. rfc-ready
 # needs no agent, so planning carries judge alone.
 items = ["judge", "doc-review"]
+
+[profiles.docs]
+include = ["base"]
+# weebo-techdoc writes docs/techdoc/ for the IDP; pair it with `review` if you
+# want doc-review to check changes are documented.
+items = ["weebo-techdoc"]

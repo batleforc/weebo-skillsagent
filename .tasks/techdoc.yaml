@@ -1,0 +1,12 @@
+version: "3"
+
+tasks:
+  test:
+    desc: "Run the weebo-techdoc script tests (no network, no LLM)"
+    cmds:
+      - uvx pytest skills/weebo-techdoc/tests -q
+
+  eval:
+    desc: "Run weebo-techdoc twice on the fixture through claude -p (costs API credits; not for CI)"
+    cmds:
+      - skills/weebo-techdoc/tests/eval.sh

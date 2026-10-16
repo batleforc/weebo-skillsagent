@@ -1,0 +1,15 @@
+version: "3"
+
+tasks:
+  audit:
+    desc: "Check dependencies for CVE"
+    cmds:
+      - echo "cargo audit - 0 vulnerabilities found"
+  lint:
+    desc: "Lint the project"
+    cmds:
+      - echo ok
+  test:
+    desc: "Run the tests"
+    cmds:
+      - echo ok

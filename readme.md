@@ -58,9 +58,10 @@ one profile serves both `--scope project` and `--scope user`.
 | `planning` | `base`    | `bmad`, `batlehub-rfc`, `judge`            |
 | `design`   | `base`    | `frontend-design`, `theme-factory`, `impeccable`, `batlehub-design`, `monofolio-design` |
 | `frontend` | `design`  | `webapp-testing`                           |
-| `mcp`      | `base`    | `mcp-builder`                              |
+| `mcp`      | `base`    | `mcp-builder`, `mlab`                      |
 | `game-design` | `frontend` | `bmad-gds`, `blender-image-to-3d`, `3dviz-pro-max` |
 | `review`   | `base`    | `judge`, `doc-review`                      |
+| `docs`     | `base`    | `weebo-techdoc`                            |
 
 `game-design` carries BMGD (bmad's game dev studio module) as its own item,
 `bmad-gds`, because the bmad installer takes `--modules` as the whole install:
@@ -112,8 +113,10 @@ named `all`.
 | `batlehub-design` | symlink     | snapshot of `batlehub/batlehub`'s design system | —                                 |
 | `batlehub-rfc`    | symlink     | derived from `batlehub/batlehub`'s rfc skill + template, with security blocks | —   |
 | `monofolio-design`, `batlehub` | installer | Claude plugins from `batleforc/weebo-skills` | `claude`                    |
+| `mlab`            | installer   | `claude mcp add` of the remote `mlab.sh/mcp` server (OAuth via `/mcp`) | `claude` |
 | `judge`           | installer   | `uv tool install --editable "$WSKA_REPO/judge"`: headless review gates `rfc-ready`, `doc-review` ([docs/judge.md](docs/judge.md)) | `uv` |
 | `doc-review`      | symlink (agent) | ours: read-only documentation reviewer run by `judge doc-review` | `claude`, `judge` |
+| `weebo-techdoc`   | symlink     | ours: technical docs in `docs/techdoc/` (components, Mermaid, maintenance checks) for the IDP | `python3`, `git` |
 
 Requirements are hand-maintained in `vendor.toml`'s `[requires]` table — `wska`
 reads it, it does not infer anything — so an upstream that starts shelling out

@@ -137,7 +137,9 @@ blender-image-to-3d = ["blender", "python3", "py:PIL"]
 impeccable      = ["node", "npx", "google-chrome|chromium|chrome"]
 monofolio-design = ["claude"]
 batlehub        = ["claude"]
+mlab            = ["claude"]
 judge           = ["uv"]
+weebo-techdoc   = ["python3", "git"]
 doc-review      = ["claude", "judge"]
 
 [installers.bmad]
@@ -174,6 +176,14 @@ scope   = "project"
 
 [installers.batlehub]
 command = "claude plugin marketplace add batleforc/weebo-skills --scope project; claude plugin install batlehub@weebo --scope project"
+scope   = "project"
+
+# mlab.sh's remote MCP server (https://github.com/mlab-sh/mcp, MIT listing,
+# closed server), written into the target's .mcp.json. OAuth, so no token lands
+# in the repo: run /mcp in Claude Code once to sign in. remove-then-add because
+# `claude mcp add` fails on a name that already exists, which would break reruns.
+[installers.mlab]
+command = "claude mcp remove mlab --scope project; claude mcp add --transport http --scope project mlab https://mlab.sh/mcp"
 scope   = "project"
 
 # The judge CLI (rfc-ready, doc-review), installed machine-wide by uv. scope
