@@ -1,0 +1,13 @@
+# The finding filter. `{id}` is replaced with each finding's id; all findings
+# go in one request, so each question must say which one it is about.
+version: 1
+
+questions:
+  actionable:
+    type: noul
+    instructions: >-
+      Finding {id}: its claim is true of the doc and code excerpts shown for
+      it, which are the real file contents, and a maintainer would change
+      something because of it.
+
+threshold: 0.6

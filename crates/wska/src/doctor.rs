@@ -292,7 +292,7 @@ mod tests {
         assert!(err.contains("description"), "unexpected reason: {err}");
     }
 
-    use crate::cli::Scope;
+    use crate::config::InstallerScope;
 
     fn requires(pairs: &[(&str, &[&str])]) -> BTreeMap<String, Vec<String>> {
         pairs
@@ -382,7 +382,7 @@ mod tests {
             Item::Installer {
                 name: "bmad".to_string(),
                 command: "npx bmad-method install".to_string(),
-                scope: Scope::Project,
+                scope: InstallerScope::Project,
             },
         );
         let rows = collect(

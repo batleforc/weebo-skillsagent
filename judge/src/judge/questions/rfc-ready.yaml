@@ -1,0 +1,55 @@
+# Rubric for `judge rfc-ready`. Fixed and versioned on purpose: the same
+# questions, judged the same way, every run. Move a threshold here, not in
+# code. The rules mechanised are batlehub-rfc's §4 (mandatory blocks) and §7
+# (review order).
+version: 1
+
+questions:
+  block-quality:
+    type: score
+    instructions: >-
+      This is one mandatory block of an RFC (design document). Rate how well it
+      is written. A block may validly say nothing applies, but only with a
+      reason specific to this change.
+    # Order matters: rfc_ready.LEVELS names these four, lowest first.
+    criteria:
+      - "placeholder: template text, angle-bracket stubs, N/A, or empty"
+      - "bare none: says nothing applies without saying why"
+      - "reasoned none: says nothing applies and gives a reason specific to this change"
+      - "substantive: real content about this change"
+  security-enforced:
+    type: noul
+    instructions: >-
+      Every security claim in §7 names the code (file, function or test) that
+      enforces it. Answer yes when §7 makes no security claim.
+  negative-tests:
+    type: noul
+    instructions: >-
+      Every threat row in §7's threat model has a matching negative test in
+      §14: the bypass attempted, refused. Answer yes when §7 lists no threat.
+  safe-defaults:
+    type: noul
+    instructions: >-
+      Every new default and control in §4.1 and §10.2 is the safe side and
+      controls fail closed, or the text argues explicitly why not.
+  probed-numbers:
+    type: noul
+    instructions: >-
+      Numbers in this RFC (sizes, latencies, counts, limits) come from stated
+      probes or measurements, not estimates. Answer yes when it states none.
+
+thresholds:
+  # Probability that a block is at least "reasoned none".
+  block-quality: 0.5
+  security-enforced: 0.5
+  negative-tests: 0.5
+  safe-defaults: 0.5
+
+# Claim trust: weighted mean of these. `symbols` is the share of code-like
+# tokens that exist in the repo; the rest are Noul probabilities.
+weights:
+  symbols: 1
+  security-enforced: 1
+  negative-tests: 1
+  safe-defaults: 1
+  probed-numbers: 1

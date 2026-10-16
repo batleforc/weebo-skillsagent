@@ -55,11 +55,12 @@ one profile serves both `--scope project` and `--scope user`.
 | Profile    | Includes  | Adds                                       |
 | ---------- | --------- | ------------------------------------------ |
 | `base`     | —         | `graphify`, `rtk`, `ponytail`, `grill-me`, `grilling` |
-| `planning` | `base`    | `bmad`, `batlehub-rfc`                     |
+| `planning` | `base`    | `bmad`, `batlehub-rfc`, `judge`            |
 | `design`   | `base`    | `frontend-design`, `theme-factory`, `impeccable`, `batlehub-design`, `monofolio-design` |
 | `frontend` | `design`  | `webapp-testing`                           |
 | `mcp`      | `base`    | `mcp-builder`                              |
 | `game-design` | `frontend` | `bmad-gds`, `blender-image-to-3d`, `3dviz-pro-max` |
+| `review`   | `base`    | `judge`, `doc-review`                      |
 
 `game-design` carries BMGD (bmad's game dev studio module) as its own item,
 `bmad-gds`, because the bmad installer takes `--modules` as the whole install:
@@ -111,6 +112,8 @@ named `all`.
 | `batlehub-design` | symlink     | snapshot of `batlehub/batlehub`'s design system | —                                 |
 | `batlehub-rfc`    | symlink     | derived from `batlehub/batlehub`'s rfc skill + template, with security blocks | —   |
 | `monofolio-design`, `batlehub` | installer | Claude plugins from `batleforc/weebo-skills` | `claude`                    |
+| `judge`           | installer   | `uv tool install --editable "$WSKA_REPO/judge"`: headless review gates `rfc-ready`, `doc-review` ([docs/judge.md](docs/judge.md)) | `uv` |
+| `doc-review`      | symlink (agent) | ours: read-only documentation reviewer run by `judge doc-review` | `claude`, `judge` |
 
 Requirements are hand-maintained in `vendor.toml`'s `[requires]` table — `wska`
 reads it, it does not infer anything — so an upstream that starts shelling out
@@ -133,6 +136,8 @@ not live inside the vendored subtree are kept in `LICENSES/`.
 
 ```
 skills/              vendored and authored skills, one directory each
+agents/              Claude agents, one directory each (agents/<name>/<name>.md)
+judge/               the judge CLI: headless review gates (Python, uv)
 crates/wska/         the CLI
 profiles.toml        named sets of items
 vendor.toml          provenance, installers, per-item tool requirements
@@ -141,16 +146,17 @@ docs/                documentation
 LICENSES/            licence texts for vendored skills that need them
 ```
 
-`agents/` and `mcp/` are reserved. `wska` already scans both and dispatches on
-item kind, so adding an agent is content plus one enum variant, not a new
-mechanism. MCP needs config merging into `.mcp.json` and is specified but not
-built.
+`mcp/` is reserved: it needs config merging into `.mcp.json` and is specified
+but not built. Agents link into `.claude/agents/<name>/`, where Claude Code finds
+them.
 
 `.claude/skills/` is gitignored — it is generated output, the links `wska`
 writes into this repo as its own target.
 
 ## Documentation
 
+- [`docs/judge.md`](docs/judge.md) — the judge CLI: rfc-ready, doc-review, the
+  report and exit-code contract, question files.
 - [`docs/wska.md`](docs/wska.md) — CLI and config reference: every command, the
   ownership model, both TOML schemas, sync semantics, exit codes.
 - [`docs/superpowers/`](docs/superpowers/) — the design spec, the implementation
@@ -160,8 +166,9 @@ writes into this repo as its own target.
 
 ```bash
 task skills:test   # cargo test -p wska
-task lint          # cargo fmt --check, clippy -D warnings
-task audit         # cargo audit, then vendored drift and licence check
+task agent:test    # judge's pytest suite (no key, network or LLM)
+task lint          # cargo fmt --check, clippy -D warnings, ruff on judge/
+task audit         # cargo audit, vendored drift and licence check, pip-audit on judge/
 ```
 
 Commits follow [Conventional Commits](https://www.conventionalcommits.org),

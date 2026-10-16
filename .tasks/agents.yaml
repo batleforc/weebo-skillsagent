@@ -1,0 +1,17 @@
+version: "3"
+
+tasks:
+  rfc-ready:
+    desc: "Judge whether RFCs are ready for sign-off (usage: task agent:rfc-ready [FILE=docs/rfc/0001-x.md]); exit 0 pass, 1 fail, 2 error, 3 unjudged"
+    cmds:
+      - judge rfc-ready {{.FILE}}
+
+  doc-review:
+    desc: "Check the change is documented: doc-review agent, filtered by Jev (usage: task agent:doc-review [BASE=origin/main] [ALL=1])"
+    cmds:
+      - judge doc-review {{if .ALL}}--all{{else}}--base {{.BASE | default "origin/main"}}{{end}}
+
+  test:
+    desc: "Run the judge test suite (no key, network or LLM needed)"
+    cmds:
+      - uv run --project judge pytest judge/tests

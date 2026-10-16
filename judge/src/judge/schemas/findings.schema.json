@@ -1,0 +1,36 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["findings"],
+  "properties": {
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["file", "line", "kind", "claim", "code_ref", "suggestion"],
+        "properties": {
+          "file": {"type": "string", "minLength": 1},
+          "line": {"type": ["integer", "null"], "minimum": 1},
+          "kind": {"enum": ["missing", "stale", "wrong", "unclear"]},
+          "claim": {"type": "string", "minLength": 1},
+          "code_ref": {
+            "anyOf": [
+              {"type": "null"},
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["file", "line"],
+                "properties": {
+                  "file": {"type": "string", "minLength": 1},
+                  "line": {"type": ["integer", "null"], "minimum": 1}
+                }
+              }
+            ]
+          },
+          "suggestion": {"type": "string"}
+        }
+      }
+    }
+  }
+}

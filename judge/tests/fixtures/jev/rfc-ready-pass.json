@@ -1,0 +1,14 @@
+{
+  "model": "jev-1.13.0",
+  "answers": {
+    "block-quality": {
+      "type": "score", "score": 2.88, "confidence": 0.9,
+      "legend": {"0": "placeholder", "1": "bare none", "2": "reasoned none", "3": "substantive"},
+      "probabilities": {"0": 0.0, "1": 0.02, "2": 0.08, "3": 0.9}
+    },
+    "security-enforced": {"type": "noul", "noul": 0.9},
+    "negative-tests": {"type": "noul", "noul": 0.85},
+    "safe-defaults": {"type": "noul", "noul": 0.8},
+    "probed-numbers": {"type": "noul", "noul": 0.7}
+  }
+}

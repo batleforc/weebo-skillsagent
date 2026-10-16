@@ -5,6 +5,7 @@ includes:
   claude: ./.tasks/claude.yaml
   template: ./.tasks/template.yaml
   skills: ./.tasks/skills.yaml
+  agent: ./.tasks/agents.yaml
 
 tasks:
   init:
@@ -25,6 +26,8 @@ tasks:
     cmds:
       - cargo fmt --all --check
       - cargo clippy --all-targets -- -D warnings
+      - uvx ruff check judge
+      - uvx ruff format --check judge
 
   release:
     desc: "Bump the version from conventional commits and tag it (usage: task release, then git push --follow-tags to publish binaries)"
@@ -36,3 +39,7 @@ tasks:
     cmds:
       - cargo audit
       - task skills:sync:check
+      # Python CVEs in judge's locked dependencies; the hashed export lets
+      # pip-audit check the exact pins without resolving anything.
+      - mkdir -p .task && uv export --project judge --frozen --no-emit-project -o .task/judge-requirements.txt
+      - uvx pip-audit --disable-pip -r .task/judge-requirements.txt

@@ -79,10 +79,32 @@ pub struct External {
     pub licence: Option<String>,
 }
 
+/// Where an installer runs. `Any` runs at whichever scope install is invoked
+/// with: a machine-wide tool (judge, via `uv tool`) that a project-scoped
+/// item needs would otherwise be skipped by the default `--scope project`.
+/// Kept apart from `cli::Scope` so `--scope any` never becomes a CLI value.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum InstallerScope {
+    Project,
+    User,
+    Any,
+}
+
+impl InstallerScope {
+    pub fn admits(self, scope: Scope) -> bool {
+        match self {
+            InstallerScope::Any => true,
+            InstallerScope::Project => scope == Scope::Project,
+            InstallerScope::User => scope == Scope::User,
+        }
+    }
+}
+
 #[derive(Debug, Deserialize)]
 pub struct Installer {
     pub command: String,
-    pub scope: Scope,
+    pub scope: InstallerScope,
 }
 
 pub fn load_profiles(path: &Path) -> Result<Profiles, ConfigError> {
@@ -172,7 +194,7 @@ scope = "project"
         assert_eq!(s.git_ref, "main");
         assert!(matches!(s.provides, Provides::Star(ref v) if v == "*"));
         assert_eq!(s.hashes["brainstorming"], "sha256:00");
-        assert_eq!(got.installers["bmad"].scope, crate::cli::Scope::Project);
+        assert_eq!(got.installers["bmad"].scope, InstallerScope::Project);
     }
 
     #[test]
@@ -253,5 +275,22 @@ licence = "Apache-2.0"
     fn requires_table_is_optional() {
         let (_d, p) = tmp("[installers.x]\ncommand = \"true\"\nscope = \"project\"\n");
         assert!(load_vendor(&p).unwrap().requires.is_empty());
+    }
+
+    #[test]
+    fn parses_an_any_scope_installer() {
+        let (_d, p) = tmp("[installers.judge]\ncommand = \"true\"\nscope = \"any\"\n");
+        let got = load_vendor(&p).unwrap();
+        assert_eq!(got.installers["judge"].scope, InstallerScope::Any);
+    }
+
+    #[test]
+    fn any_admits_both_scopes_and_the_others_only_their_own() {
+        use crate::cli::Scope;
+        assert!(InstallerScope::Any.admits(Scope::Project));
+        assert!(InstallerScope::Any.admits(Scope::User));
+        assert!(InstallerScope::Project.admits(Scope::Project));
+        assert!(!InstallerScope::Project.admits(Scope::User));
+        assert!(!InstallerScope::User.admits(Scope::Project));
     }
 }

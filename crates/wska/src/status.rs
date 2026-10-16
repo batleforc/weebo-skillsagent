@@ -53,7 +53,7 @@ pub fn collect(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::cli::Scope;
+    use crate::config::InstallerScope;
     use crate::item::{Item, Kind};
     use std::collections::BTreeMap;
     use std::fs;
@@ -111,7 +111,7 @@ mod tests {
             Item::Installer {
                 name: "bmad".into(),
                 command: "true".into(),
-                scope: Scope::Project,
+                scope: InstallerScope::Project,
             },
         );
 

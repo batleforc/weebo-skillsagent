@@ -19,6 +19,9 @@ pub enum Action {
         name: String,
         command: String,
         cwd: PathBuf,
+        /// This repo's root, exported to the installer as `WSKA_REPO` so its
+        /// command can reference files here (`uv tool install "$WSKA_REPO/judge"`).
+        repo_root: PathBuf,
     },
     SkipInstaller {
         name: String,
@@ -102,7 +105,7 @@ pub fn build(
                 scope: want,
                 ..
             } => {
-                if *want != scope {
+                if !want.admits(scope) {
                     plan.actions.push(Action::SkipInstaller {
                         name: name.clone(),
                         reason: format!("declared for {want:?} scope, invoked at {scope:?}"),
@@ -112,6 +115,7 @@ pub fn build(
                         name: name.clone(),
                         command: command.clone(),
                         cwd: target.parent().unwrap_or(target).to_path_buf(),
+                        repo_root: repo_root.to_path_buf(),
                     });
                 } else {
                     plan.actions.push(Action::SkipInstaller {
@@ -163,6 +167,7 @@ pub fn build(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::config::InstallerScope;
     use crate::item::Kind;
     use std::fs;
     use std::os::unix::fs::symlink;
@@ -397,7 +402,7 @@ mod tests {
             Item::Installer {
                 name: "bmad".into(),
                 command: "echo hi".into(),
-                scope: Scope::Project,
+                scope: InstallerScope::Project,
             },
         );
         map
@@ -448,5 +453,26 @@ mod tests {
         .unwrap();
         assert!(matches!(plan.actions[0], Action::SkipInstaller { .. }));
         assert!(plan.validate().is_ok());
+    }
+
+    #[test]
+    fn an_any_scope_installer_runs_at_both_scopes() {
+        let f = fx(&[]);
+        let mut map = BTreeMap::new();
+        map.insert(
+            "judge".to_string(),
+            Item::Installer {
+                name: "judge".into(),
+                command: "true".into(),
+                scope: InstallerScope::Any,
+            },
+        );
+        for scope in [Scope::Project, Scope::User] {
+            let plan = build(&map, &set(&["judge"]), &f.target, &f.repo, scope, true).unwrap();
+            match &plan.actions[0] {
+                Action::RunInstaller { repo_root, .. } => assert_eq!(repo_root, &f.repo),
+                other => panic!("expected RunInstaller at {scope:?}, got {other:?}"),
+            }
+        }
     }
 }

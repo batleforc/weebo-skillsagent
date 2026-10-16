@@ -21,3 +21,12 @@ dist/
 
 # wska links this repo's skills in here
 .claude/skills/
+
+# wska links this repo's agents in here
+.claude/agents/
+
+# Python (judge/)
+__pycache__/
+.venv/
+.pytest_cache/
+.ruff_cache/

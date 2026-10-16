@@ -9,7 +9,8 @@ items = ["graphify", "rtk", "ponytail", "grill-me", "grilling"]
 [profiles.planning]
 include = ["base"]
 # batlehub-rfc is the house design-document form; bmad plans around it.
-items = ["bmad", "batlehub-rfc"]
+# judge brings rfc-ready, the batlehub-rfc review mechanised.
+items = ["bmad", "batlehub-rfc", "judge"]
 
 [profiles.design]
 include = ["base"]
@@ -38,3 +39,9 @@ include = ["frontend"]
 # gated reference-image-to-game-asset pipeline, 3dviz-pro-max is broader scene
 # and Three.js work. Drop whichever one your project does not need.
 items = ["bmad-gds", "blender-image-to-3d", "3dviz-pro-max"]
+
+[profiles.review]
+include = ["base"]
+# judge is the CLI; doc-review the agent `judge doc-review` runs. rfc-ready
+# needs no agent, so planning carries judge alone.
+items = ["judge", "doc-review"]

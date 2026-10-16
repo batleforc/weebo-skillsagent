@@ -1,4 +1,4 @@
-use crate::cli::Scope;
+use crate::config::InstallerScope;
 use crate::config::Vendor;
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
@@ -34,7 +34,7 @@ pub enum Item {
     Installer {
         name: String,
         command: String,
-        scope: Scope,
+        scope: InstallerScope,
     },
 }
 
@@ -184,7 +184,7 @@ mod tests {
         d
     }
 
-    fn vendor_with_installer(name: &str, scope: Scope) -> Vendor {
+    fn vendor_with_installer(name: &str, scope: InstallerScope) -> Vendor {
         let mut v = Vendor::default();
         v.installers.insert(
             name.to_string(),
@@ -212,7 +212,7 @@ mod tests {
     #[test]
     fn accepts_a_requires_key_for_an_installer() {
         let d = repo(&[]);
-        let mut v = vendor_with_installer("bmad", Scope::Project);
+        let mut v = vendor_with_installer("bmad", InstallerScope::Project);
         v.requires
             .insert("bmad".to_string(), vec!["npx".to_string()]);
         assert!(scan(d.path(), &v).is_ok());
@@ -249,11 +249,15 @@ mod tests {
     #[test]
     fn includes_installers_from_vendor() {
         let d = repo(&[("skills", "ponytail")]);
-        let got = scan(d.path(), &vendor_with_installer("bmad", Scope::Project)).unwrap();
+        let got = scan(
+            d.path(),
+            &vendor_with_installer("bmad", InstallerScope::Project),
+        )
+        .unwrap();
         match &got["bmad"] {
             Item::Installer { command, scope, .. } => {
                 assert_eq!(command, "echo hi");
-                assert_eq!(*scope, Scope::Project);
+                assert_eq!(*scope, InstallerScope::Project);
             }
             other => panic!("expected Installer, got {other:?}"),
         }
@@ -271,7 +275,12 @@ mod tests {
     #[test]
     fn rejects_an_installer_shadowing_a_skill() {
         let d = repo(&[("skills", "bmad")]);
-        match scan(d.path(), &vendor_with_installer("bmad", Scope::Project)).unwrap_err() {
+        match scan(
+            d.path(),
+            &vendor_with_installer("bmad", InstallerScope::Project),
+        )
+        .unwrap_err()
+        {
             ScanError::DuplicateName { name, .. } => assert_eq!(name, "bmad"),
             other => panic!("expected DuplicateName, got {other:?}"),
         }

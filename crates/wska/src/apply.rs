@@ -80,13 +80,19 @@ pub fn apply(plan: &Plan, dry_run: bool) -> Result<Applied, ApplyError> {
                     done.unlinked += 1;
                 }
             }
-            Action::RunInstaller { name, command, cwd } => {
+            Action::RunInstaller {
+                name,
+                command,
+                cwd,
+                repo_root,
+            } => {
                 println!("run    {name}: {command}");
                 if !dry_run {
                     let status = Command::new("sh")
                         .arg("-c")
                         .arg(command)
                         .current_dir(cwd)
+                        .env("WSKA_REPO", repo_root)
                         .status()
                         .map_err(|source| ApplyError::Io {
                             op: "spawning installer in",
@@ -255,6 +261,7 @@ mod tests {
                 name: "touchy".into(),
                 command: "touch marker".into(),
                 cwd: cwd.clone(),
+                repo_root: d.path().to_path_buf(),
             }],
             refusals: vec![],
         };
@@ -271,9 +278,32 @@ mod tests {
                 name: "nope".into(),
                 command: "exit 3".into(),
                 cwd: d.path().to_path_buf(),
+                repo_root: d.path().to_path_buf(),
             }],
             refusals: vec![],
         };
         assert!(apply(&plan, false).is_err());
+    }
+
+    #[test]
+    fn an_installer_sees_the_repo_root_as_wska_repo() {
+        let d = tempfile::tempdir().unwrap();
+        let cwd = d.path().join("proj");
+        fs::create_dir_all(&cwd).unwrap();
+        let repo = d.path().join("repo");
+        let plan = Plan {
+            actions: vec![Action::RunInstaller {
+                name: "env".into(),
+                command: "printf %s \"$WSKA_REPO\" > marker".into(),
+                cwd: cwd.clone(),
+                repo_root: repo.clone(),
+            }],
+            refusals: vec![],
+        };
+        apply(&plan, false).unwrap();
+        assert_eq!(
+            fs::read_to_string(cwd.join("marker")).unwrap(),
+            repo.to_string_lossy()
+        );
     }
 }

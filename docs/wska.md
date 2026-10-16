@@ -321,9 +321,18 @@ scope   = "project"
 ```
 
 The item exists by virtue of this entry — there is no directory under `skills/`
-for it. `scope` says which scope it belongs to; invoked at the other one, it is
-skipped with a reason. The command runs with its working directory set to the
-parent of the target's `.claude/`.
+for it. `scope` is `project`, `user` or `any`: invoked at a scope it does not
+admit, it is skipped with a reason. `any` runs at whichever scope `install` is
+invoked with, for a machine-wide tool a project-scoped item needs (`judge`, a
+`uv tool`). The command runs with its working directory set to the parent of
+the target's `.claude/`, and with `WSKA_REPO` set to this repo's root so it
+can reference files here:
+
+```toml
+[installers.judge]
+command = 'uv tool install --force --editable "$WSKA_REPO/judge"'
+scope   = "any"
+```
 
 A Claude plugin is installed the same way — `claude plugin install` is
 idempotent, and `marketplace add` is joined with `;` because it may fail when
