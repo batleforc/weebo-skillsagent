@@ -25,6 +25,16 @@ pub enum Command {
         #[arg(long)]
         run_installers: bool,
     },
+    /// Pull the items repo (`git pull --ff-only`), then re-install the given profiles, if any
+    Update {
+        #[arg(long)]
+        profile: Vec<String>,
+        #[arg(long, value_enum, default_value_t = Scope::Project)]
+        scope: Scope,
+        /// Actually execute installer items when re-installing
+        #[arg(long)]
+        run_installers: bool,
+    },
     /// Report what is linked in a target
     Status {
         #[arg(long, value_enum, default_value_t = Scope::Project)]

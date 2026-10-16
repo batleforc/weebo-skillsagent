@@ -92,6 +92,24 @@ pub fn install(
     Ok(applied)
 }
 
+/// Pull the items repo, then re-link `profiles` if any are given. Links are
+/// symlinks into the repo, so the pull alone refreshes linked items; the
+/// re-install picks up items newly added to a profile, and installers.
+pub fn update(
+    repo_root: &Path,
+    profiles: &[String],
+    scope: Scope,
+    run_installers: bool,
+    cwd: &Path,
+    env: &dyn Fn(&str) -> Option<String>,
+) -> Result<Option<Applied>, AppError> {
+    target::pull(repo_root)?;
+    if profiles.is_empty() {
+        return Ok(None);
+    }
+    install(repo_root, profiles, scope, false, run_installers, cwd, env).map(Some)
+}
+
 /// Whether each item in the repo can actually work here: its declared tools
 /// resolve on PATH, and (for skills) its SKILL.md is usable. Deliberately
 /// scope-free — whether a link is in place is what `status` answers.

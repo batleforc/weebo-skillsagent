@@ -23,6 +23,13 @@ tasks:
     cmds:
       - '{{.WSKA}} install --profile {{.PROFILE}} --scope {{.SCOPE}} {{if ne .RUN_INSTALLERS "0"}}--run-installers{{end}}'
 
+  update:
+    desc: "Pull the items repo, then re-install profiles if given (usage: task skills:update [PROFILE=base] [SCOPE=project|user] [RUN_INSTALLERS=0])"
+    vars:
+      RUN_INSTALLERS: '{{.RUN_INSTALLERS | default "1"}}'
+    cmds:
+      - '{{.WSKA}} update {{if .PROFILE}}--profile {{.PROFILE}}{{end}} --scope {{.SCOPE}} {{if ne .RUN_INSTALLERS "0"}}--run-installers{{end}}'
+
   status:
     desc: "Show what is linked in a target (usage: task skills:status [SCOPE=project|user])"
     cmds:

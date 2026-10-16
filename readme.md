@@ -30,6 +30,7 @@ Rust, Task, cocogitto and most of what the items themselves need: `node`, `uv`,
 task init                                         # full bootstrap: mise, plugins, hooks, all items into this repo
 task skills:install PROFILE=design                # one profile into this repo's .claude/
 task skills:install PROFILE=frontend SCOPE=user   # the same into ~/.claude/
+task skills:update PROFILE=base                   # git pull --ff-only the items repo, then re-install
 task skills:status                                # what is linked where
 task skills:doctor                                # can each item actually work on this machine
 ```

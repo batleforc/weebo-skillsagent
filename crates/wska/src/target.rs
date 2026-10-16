@@ -13,6 +13,8 @@ pub enum TargetError {
         dir: PathBuf,
         detail: String,
     },
+    #[error("`git pull --ff-only` in {dir} failed{detail}")]
+    Pull { dir: PathBuf, detail: String },
     #[error("no profiles.toml in {0}: not a weebo-skillsagent repo")]
     NotItemsRepo(PathBuf),
     #[error("canonicalizing {path}: {source}")]
@@ -95,6 +97,24 @@ fn clone(url: &str, dir: &Path) -> Result<(), TargetError> {
     let status = std::process::Command::new("git")
         .args(["clone", "--quiet", url])
         .arg(dir)
+        .status()
+        .map_err(|e| fail(format!(": {e}")))?;
+    if !status.success() {
+        return Err(fail(format!(" ({status})")));
+    }
+    Ok(())
+}
+
+/// Fast-forward the items repo to its upstream. `--ff-only` so local commits
+/// or a diverged branch stop the update instead of creating a merge.
+pub fn pull(root: &Path) -> Result<(), TargetError> {
+    let fail = |detail: String| TargetError::Pull {
+        dir: root.to_path_buf(),
+        detail,
+    };
+    let status = std::process::Command::new("git")
+        .args(["pull", "--ff-only", "--quiet"])
+        .current_dir(root)
         .status()
         .map_err(|e| fail(format!(": {e}")))?;
     if !status.success() {
@@ -242,6 +262,46 @@ mod tests {
         );
         // Second run must not re-clone (a clone into a non-empty dir would fail).
         assert_eq!(items_root(&project, &env, &url).unwrap(), got);
+    }
+
+    #[test]
+    fn pull_fast_forwards_the_clone_to_upstream() {
+        let d = tempfile::tempdir().unwrap();
+        let upstream = d.path().join("upstream");
+        let url = upstream_repo(&upstream);
+        let clone_dir = d.path().join("clone");
+        clone(&url, &clone_dir).unwrap();
+
+        fs::write(upstream.join("new.toml"), "").unwrap();
+        for args in [
+            &["add", "."][..],
+            &[
+                "-c",
+                "user.name=t",
+                "-c",
+                "user.email=t@t",
+                "commit",
+                "-qm",
+                "new",
+            ],
+        ] {
+            let ok = std::process::Command::new("git")
+                .args(args)
+                .current_dir(&upstream)
+                .status()
+                .unwrap()
+                .success();
+            assert!(ok);
+        }
+
+        pull(&clone_dir).unwrap();
+        assert!(clone_dir.join("new.toml").exists());
+    }
+
+    #[test]
+    fn pull_fails_outside_a_git_repo() {
+        let d = tempfile::tempdir().unwrap();
+        assert!(matches!(pull(d.path()), Err(TargetError::Pull { .. })));
     }
 
     #[test]

@@ -39,6 +39,22 @@ fn main() {
                 );
             },
         ),
+        Command::Update {
+            profile,
+            scope,
+            run_installers,
+        } => wska::app::update(&root, &profile, scope, run_installers, &cwd, &env).map(|applied| {
+            println!("updated {}", root.display());
+            if let Some(a) = applied {
+                println!(
+                    "linked {} unlinked {} installers {} skipped {}",
+                    a.linked,
+                    a.unlinked,
+                    a.installers_run.len(),
+                    a.skipped.len()
+                );
+            }
+        }),
         Command::Status { scope } => wska::app::status(&root, scope, &cwd, &env).map(|rows| {
             for row in rows {
                 println!("{:<28} {:?}", row.name, row.state);
