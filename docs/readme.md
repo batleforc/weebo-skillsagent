@@ -5,7 +5,7 @@ plus the design history is the whole of it. Switch to
 [fumadocs](https://fumadocs.dev/) if that ever stops being true.
 
 - [`wska.md`](wska.md) — CLI and config reference. Every command and its exit
-  codes, the ownership rules that decide what `wska` will and will not touch,
+  codes, using it from another project, cutting a release, the ownership rules that decide what `wska` will and will not touch,
   the `profiles.toml` and `vendor.toml` schemas, and how `sync` treats a locally
   patched skill.
 - [`superpowers/`](superpowers/) — how the spine was built, kept for the

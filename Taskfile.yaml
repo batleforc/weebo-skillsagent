@@ -26,6 +26,11 @@ tasks:
       - cargo fmt --all --check
       - cargo clippy --all-targets -- -D warnings
 
+  release:
+    desc: "Bump the version from conventional commits and tag it (usage: task release, then git push --follow-tags to publish binaries)"
+    cmds:
+      - cog bump --auto
+
   audit:
     desc: "Check dependencies and Containerfile for CVE"
     cmds:

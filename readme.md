@@ -34,6 +34,11 @@ task skills:status                                # what is linked where
 task skills:doctor                                # can each item actually work on this machine
 ```
 
+To use the skills from **another project**, install the released binary and run
+`wska install` there — it clones this repo on first use; see
+[Using wska in another project](docs/wska.md#using-wska-in-another-project).
+Releases are cut with `task release`; see [Releasing](docs/wska.md#releasing).
+
 Install is idempotent — run it twice and the second run changes nothing — and it
 never writes over a path it does not own. A real directory, or a symlink
 pointing outside this repo, is refused and named rather than replaced.

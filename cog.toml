@@ -6,11 +6,14 @@ generate_mono_repository_global_tag = true
 branch_whitelist = []
 skip_ci = "[skip ci]"
 skip_untracked = false
-post_bump_hooks = []
 post_package_bump_hooks = []
 tag_prefix = "v"
 
-pre_bump_hooks = []
+# Keep the crate version on the tag, and Cargo.lock in step with it.
+pre_bump_hooks = [
+    "sed -i 's/^version = \".*\"/version = \"{{version}}\"/' crates/wska/Cargo.toml",
+    "cargo update -p wska --offline",
+]
 
 
 [git_hooks]

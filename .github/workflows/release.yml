@@ -1,0 +1,34 @@
+name: release
+
+# Tags come from `cog bump --auto` (tag_prefix "v"); each one publishes wska
+# binaries as GitHub release assets named wska-<target>.tar.gz, which is the
+# shape mise's github: backend picks up.
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - { os: ubuntu-24.04, target: x86_64-unknown-linux-musl }
+          - { os: ubuntu-24.04-arm, target: aarch64-unknown-linux-musl }
+          - { os: macos-14, target: aarch64-apple-darwin }
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install musl tools
+        if: contains(matrix.target, 'musl')
+        run: sudo apt-get update && sudo apt-get install -y musl-tools
+      - run: rustup target add ${{ matrix.target }}
+      - run: cargo test -p wska
+      - run: cargo build --release --locked -p wska --target ${{ matrix.target }}
+      - name: Package
+        run: tar -czf wska-${{ matrix.target }}.tar.gz -C target/${{ matrix.target }}/release wska
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: wska-${{ matrix.target }}.tar.gz

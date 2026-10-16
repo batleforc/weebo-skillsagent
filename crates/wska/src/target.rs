@@ -5,6 +5,16 @@ use std::path::{Path, PathBuf};
 pub enum TargetError {
     #[error("cannot determine the user config directory: set CLAUDE_CONFIG_DIR or HOME")]
     NoUserDir,
+    #[error("cannot pick where to clone the items repo: set WSKA_REPO, XDG_DATA_HOME or HOME")]
+    NoCloneDir,
+    #[error("`git clone {url} {dir}` failed{detail}")]
+    Clone {
+        url: String,
+        dir: PathBuf,
+        detail: String,
+    },
+    #[error("no profiles.toml in {0}: not a weebo-skillsagent repo")]
+    NotItemsRepo(PathBuf),
     #[error("canonicalizing {path}: {source}")]
     Io {
         path: PathBuf,
@@ -34,6 +44,63 @@ pub fn resolve(
 /// plain directory.
 pub fn repo_root(start: &Path) -> Result<PathBuf, TargetError> {
     git_root(start)
+}
+
+/// Where items come from. `$WSKA_REPO` if set; else the repo containing
+/// `cwd` when it holds a `profiles.toml` (working inside this repo); else a
+/// clone of `url` that wska owns under `$XDG_DATA_HOME/wska` (or
+/// `~/.local/share/wska`). A `$WSKA_REPO` or owned clone that does not exist
+/// yet is cloned first, so a fresh machine needs only the binary.
+pub fn items_root(
+    cwd: &Path,
+    env: &dyn Fn(&str) -> Option<String>,
+    url: &str,
+) -> Result<PathBuf, TargetError> {
+    let dir = match env("WSKA_REPO") {
+        Some(dir) => PathBuf::from(dir),
+        None => {
+            let here = git_root(cwd)?;
+            if here.join("profiles.toml").exists() {
+                return Ok(here);
+            }
+            let data = match env("XDG_DATA_HOME") {
+                Some(d) => PathBuf::from(d),
+                None => {
+                    PathBuf::from(env("HOME").ok_or(TargetError::NoCloneDir)?).join(".local/share")
+                }
+            };
+            data.join("wska/weebo-skillsagent")
+        }
+    };
+    if !dir.exists() {
+        clone(url, &dir)?;
+    }
+    let root = git_root(&dir)?;
+    if !root.join("profiles.toml").exists() {
+        return Err(TargetError::NotItemsRepo(root));
+    }
+    Ok(root)
+}
+
+fn clone(url: &str, dir: &Path) -> Result<(), TargetError> {
+    let fail = |detail: String| TargetError::Clone {
+        url: url.to_string(),
+        dir: dir.to_path_buf(),
+        detail,
+    };
+    if let Some(parent) = dir.parent() {
+        std::fs::create_dir_all(parent).map_err(|e| fail(format!(": {e}")))?;
+    }
+    eprintln!("cloning {url} into {}", dir.display());
+    let status = std::process::Command::new("git")
+        .args(["clone", "--quiet", url])
+        .arg(dir)
+        .status()
+        .map_err(|e| fail(format!(": {e}")))?;
+    if !status.success() {
+        return Err(fail(format!(" ({status})")));
+    }
+    Ok(())
 }
 
 fn git_root(start: &Path) -> Result<PathBuf, TargetError> {
@@ -130,6 +197,69 @@ mod tests {
         let env = env_from(&[]);
         let got = resolve(Scope::Project, d.path(), &env).unwrap();
         assert_eq!(got, d.path().canonicalize().unwrap().join(".claude"));
+    }
+
+    fn upstream_repo(dir: &Path) -> String {
+        fs::create_dir_all(dir).unwrap();
+        fs::write(dir.join("profiles.toml"), "").unwrap();
+        for args in [
+            &["init", "-q"][..],
+            &["add", "."],
+            &[
+                "-c",
+                "user.name=t",
+                "-c",
+                "user.email=t@t",
+                "commit",
+                "-qm",
+                "init",
+            ],
+        ] {
+            let ok = std::process::Command::new("git")
+                .args(args)
+                .current_dir(dir)
+                .status()
+                .unwrap()
+                .success();
+            assert!(ok);
+        }
+        dir.to_str().unwrap().to_string()
+    }
+
+    #[test]
+    fn items_root_clones_into_the_data_dir_once_then_reuses_it() {
+        let d = tempfile::tempdir().unwrap();
+        let url = upstream_repo(&d.path().join("upstream"));
+        let project = d.path().join("project");
+        fs::create_dir_all(project.join(".git")).unwrap();
+        let data = d.path().join("data");
+        let env = env_from(&[("XDG_DATA_HOME", data.to_str().unwrap())]);
+
+        let got = items_root(&project, &env, &url).unwrap();
+        assert_eq!(
+            got,
+            data.join("wska/weebo-skillsagent").canonicalize().unwrap()
+        );
+        // Second run must not re-clone (a clone into a non-empty dir would fail).
+        assert_eq!(items_root(&project, &env, &url).unwrap(), got);
+    }
+
+    #[test]
+    fn items_root_prefers_the_current_repo_when_it_has_profiles() {
+        let d = tempfile::tempdir().unwrap();
+        fs::create_dir_all(d.path().join(".git")).unwrap();
+        fs::write(d.path().join("profiles.toml"), "").unwrap();
+        let env = env_from(&[]);
+        let got = items_root(d.path(), &env, "unused").unwrap();
+        assert_eq!(got, d.path().canonicalize().unwrap());
+    }
+
+    #[test]
+    fn items_root_rejects_a_wska_repo_without_profiles() {
+        let d = tempfile::tempdir().unwrap();
+        let env = env_from(&[("WSKA_REPO", d.path().to_str().unwrap())]);
+        let result = items_root(d.path(), &env, "unused");
+        assert!(matches!(result, Err(TargetError::NotItemsRepo(_))));
     }
 
     // Review Focus 2

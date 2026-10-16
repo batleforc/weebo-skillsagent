@@ -179,6 +179,70 @@ error: refusing to change 1 path(s) this tool does not own
 Nothing is written when a plan is refused — the refusal happens before any
 action. Move or delete the path yourself, then re-run.
 
+## Using wska in another project
+
+`wska` reads items from one place and writes links to another. **The target**
+is always resolved from the working directory (`--scope project`) or the user
+config dir (`--scope user`). **Items** come from the first of:
+
+1. `$WSKA_REPO`, if set — cloned there first if the directory does not exist;
+2. the git root of the working directory, if it holds a `profiles.toml` (you
+   are inside this repo);
+3. a clone wska owns at `$XDG_DATA_HOME/wska/weebo-skillsagent` (else
+   `~/.local/share/wska/weebo-skillsagent`), made from
+   `https://github.com/batleforc/weebo-skillsagent` on first use.
+
+So a fresh machine needs only the binary:
+
+```bash
+mise use -g github:batleforc/weebo-skillsagent       # release asset
+cargo install --git https://github.com/batleforc/weebo-skillsagent wska   # or build from source
+```
+
+then, from anywhere inside the other project:
+
+```bash
+wska install --profile base --profile planning --run-installers   # clones on first run
+wska status
+```
+
+Set `WSKA_REPO` only to use a clone you edit yourself (for example in the
+project's `mise.toml`: `[env] WSKA_REPO = "{{env.HOME}}/git/weebo-skillsagent"`).
+
+Gitignore what it wrote, because the links are absolute paths into the clone
+and mean nothing on another machine:
+
+```gitignore
+.claude/skills/
+```
+
+Each machine re-runs `wska install` after cloning. Installer items (`bmad`,
+`graphify`, …) run with that project as working directory, so their output
+belongs to the project and is committed or ignored as that tool expects.
+
+Updating skills is a `git pull` in the clone (`git -C
+~/.local/share/wska/weebo-skillsagent pull` for the owned one) — links are
+live, nothing to reinstall; wska never pulls on its own. Updating the binary is re-running the install line above.
+
+A `WSKA_REPO` pointing at an existing directory with no `profiles.toml` stops
+every command with `error: no profiles.toml in <dir>`; wska never clones into a
+directory that already exists.
+
+## Releasing
+
+Versions come from the Conventional Commits history via cocogitto
+(`tag_prefix = "v"`).
+
+```bash
+task release              # cog bump --auto: sets crates/wska version, updates Cargo.lock, changelog, commit, tag
+git push --follow-tags    # the v* tag triggers .github/workflows/release.yml
+```
+
+The workflow runs the tests, then builds `wska` for `x86_64-unknown-linux-musl`,
+`aarch64-unknown-linux-musl` and `aarch64-apple-darwin` and attaches each as
+`wska-<target>.tar.gz` to the GitHub release for the tag. That naming is what
+`mise use github:…` looks for.
+
 ## Ownership model
 
 `wska` only ever modifies a symlink whose resolved target lies inside this
