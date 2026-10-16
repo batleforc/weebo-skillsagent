@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## [v0.4.0](https://github.com/batleforc/weebo-skillsagent/compare/e3ed574a58b5b08afbfe7963589ff0f4015ecbe3..v0.4.0) - 2026-10-16
+#### Miscellaneous Chores
+- (**skills**) sync impeccable and ponytail from upstream - ([e3ed574](https://github.com/batleforc/weebo-skillsagent/commit/e3ed574a58b5b08afbfe7963589ff0f4015ecbe3)) - Max Batleforc, Claude Opus 5.5
+
+- - -
+
 ## [v0.3.0](https://github.com/batleforc/weebo-skillsagent/compare/d7ad37b3d3273eaae00b608f46a04dcee4e1612f..v0.3.0) - 2026-10-16
 #### Features
 - Add version - ([d7ad37b](https://github.com/batleforc/weebo-skillsagent/commit/d7ad37b3d3273eaae00b608f46a04dcee4e1612f)) - Max Batleforc
