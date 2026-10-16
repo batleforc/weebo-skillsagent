@@ -1,0 +1,33 @@
+name: audit
+
+# Weekly `task audit` (cargo audit, vendored-skill drift, pip-audit, postmortem),
+# so a new advisory against an unchanged lockfile still surfaces. A failed
+# scheduled run emails whoever last changed this cron.
+on:
+  schedule:
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write # postmortem SARIF -> Code Scanning
+
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: jdx/mise-action@9b200bcecbfd6303e69a4a261b2e09e3757440a7 # v5.2.0
+        with:
+          # Only what `task audit` needs, not the whole dev toolchain.
+          install_args: task rust uv cargo-binstall cargo:cargo-audit github:mlab-sh/postmortem
+      - run: task audit
+      - name: postmortem SARIF
+        if: always()
+        run: postmortem scan . --sarif -o postmortem.sarif --no-progress
+      - uses: github/codeql-action/upload-sarif@6f2ac81f5cd81fe351a197ba0b00d91d03cd2aee # v4
+        if: always()
+        with:
+          sarif_file: postmortem.sarif

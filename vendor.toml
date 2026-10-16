@@ -136,6 +136,7 @@ blender-image-to-3d = ["blender", "python3", "py:PIL"]
 3dviz-pro-max = ["python3", "node", "py:playwright|google-chrome|chromium|chrome"]
 impeccable      = ["node", "npx", "google-chrome|chromium|chrome"]
 monofolio-design = ["claude"]
+ponytail-plugin = ["claude", "node"]
 batlehub        = ["claude"]
 mlab            = ["claude"]
 judge           = ["uv"]
@@ -176,6 +177,13 @@ scope   = "project"
 
 [installers.batlehub]
 command = "claude plugin marketplace add batleforc/weebo-skills --scope project; claude plugin install batlehub@weebo --scope project"
+scope   = "project"
+
+# Ponytail as upstream ships it: the plugin, whose SessionStart hook arms
+# ponytail mode in every session, which the vendored `ponytail` skill cannot do.
+# Its skills come namespaced (ponytail:*), so it can sit beside the vendored ones.
+[installers.ponytail-plugin]
+command = "claude plugin marketplace add DietrichGebert/ponytail --scope project; claude plugin install ponytail@ponytail --scope project"
 scope   = "project"
 
 # mlab.sh's remote MCP server (https://github.com/mlab-sh/mcp, MIT listing,

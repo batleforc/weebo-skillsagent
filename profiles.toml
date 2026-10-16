@@ -3,8 +3,9 @@
 
 [profiles.base]
 # grilling travels with grill-me: the latter is a three-line shim whose body is
-# "call the Skill tool with grilling".
-items = ["graphify", "rtk", "ponytail", "grill-me", "grilling"]
+# "call the Skill tool with grilling". ponytail-plugin keeps upstream's
+# session-start hook that arms ponytail mode; the vendored skill alone does not.
+items = ["graphify", "rtk", "ponytail", "ponytail-plugin", "grill-me", "grilling"]
 
 [profiles.planning]
 include = ["base"]

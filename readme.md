@@ -54,7 +54,7 @@ one profile serves both `--scope project` and `--scope user`.
 
 | Profile    | Includes  | Adds                                       |
 | ---------- | --------- | ------------------------------------------ |
-| `base`     | —         | `graphify`, `rtk`, `ponytail`, `grill-me`, `grilling` |
+| `base`     | —         | `graphify`, `rtk`, `ponytail`, `ponytail-plugin`, `grill-me`, `grilling` |
 | `planning` | `base`    | `bmad`, `batlehub-rfc`, `judge`            |
 | `design`   | `base`    | `frontend-design`, `theme-factory`, `impeccable`, `batlehub-design`, `monofolio-design` |
 | `frontend` | `design`  | `webapp-testing`                           |
@@ -83,7 +83,8 @@ vendored but not in `base` — add the one you want to a profile.
 Upstream ships ponytail as a Claude plugin whose hooks arm ponytail mode at
 session start. Vendoring carries the skills only: `ponytail` is invoked as a
 skill rather than armed by a hook, and `ponytail-gain` has no benchmark data to
-read. Install the plugin instead if you want the hook.
+read. `base` therefore also installs `ponytail-plugin`, the upstream plugin,
+which keeps the hook (and the benchmarks) in project scope.
 
 `design` overlaps deliberately: `frontend-design` and `theme-factory` are
 references, `impeccable` is opinionated. Loading all three gives three voices
@@ -109,6 +110,7 @@ named `all`.
 | `rtk`             | installer   | `rtk init --auto-patch`                       | `rtk`                               |
 | `ponytail`        | symlink     | vendored from `DietrichGebert/ponytail`       | —                                   |
 | `ponytail-audit`, `-debt`, `-gain`, `-help`, `-review` | symlink | vendored from `DietrichGebert/ponytail` | — |
+| `ponytail-plugin` | installer   | Claude plugin `ponytail@ponytail`: the session-start hook that arms ponytail mode | `claude`, `node` |
 | `grill-me`, `grilling` | symlink | vendored from `mattpocock/skills`             | —                                   |
 | `batlehub-design` | symlink     | snapshot of `batlehub/batlehub`'s design system | —                                 |
 | `batlehub-rfc`    | symlink     | derived from `batlehub/batlehub`'s rfc skill + template, with security blocks | —   |
