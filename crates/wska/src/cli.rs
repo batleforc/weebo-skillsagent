@@ -3,6 +3,7 @@ use clap::{Parser, Subcommand, ValueEnum};
 #[derive(Debug, Parser)]
 #[command(
     name = "wska",
+    version,
     about = "Link this repo's skills into a Claude Code target"
 )]
 pub struct Cli {
