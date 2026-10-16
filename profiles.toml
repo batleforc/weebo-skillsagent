@@ -8,14 +8,17 @@ items = ["graphify", "rtk", "ponytail", "grill-me", "grilling"]
 
 [profiles.planning]
 include = ["base"]
-items = ["bmad"]
+# batlehub-rfc is the house design-document form; bmad plans around it.
+items = ["bmad", "batlehub-rfc"]
 
 [profiles.design]
 include = ["base"]
 # These three overlap deliberately — frontend-design and theme-factory are
 # references, impeccable is opinionated. Loading all three gives you three
 # voices that can disagree; trim to the one you trust per project.
-items = ["frontend-design", "theme-factory", "impeccable"]
+# batlehub-design is the house baseline; monofolio-design (a weebo plugin) is
+# the portfolio's own system on the same OKLCH palette.
+items = ["frontend-design", "theme-factory", "impeccable", "batlehub-design", "monofolio-design"]
 
 [profiles.frontend]
 include = ["design"]

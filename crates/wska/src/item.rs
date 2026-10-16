@@ -120,6 +120,21 @@ pub fn scan(repo_root: &Path, vendor: &Vendor) -> Result<BTreeMap<String, Item>,
         )?;
     }
 
+    // An external is an ordinary linked skill whose directory lives in the
+    // fetch cache. The cache is inside the repo, so ownership, status, doctor
+    // and the unlink pass treat it like any vendored skill.
+    for (name, external) in &vendor.external {
+        insert(
+            &mut out,
+            Item::Linked {
+                name: name.clone(),
+                kind: Kind::Skill,
+                path: external_dir(repo_root, name).join(&external.path),
+            },
+            "external",
+        )?;
+    }
+
     // A [requires] key that names nothing would silently disable that item's
     // health check, so a typo must fail loudly rather than report Ok.
     for name in vendor.requires.keys() {
@@ -129,6 +144,11 @@ pub fn scan(repo_root: &Path, vendor: &Vendor) -> Result<BTreeMap<String, Item>,
     }
 
     Ok(out)
+}
+
+/// Where an external skill's repo is cloned.
+pub fn external_dir(repo_root: &Path, name: &str) -> PathBuf {
+    repo_root.join(".task/wska-cache/external").join(name)
 }
 
 fn insert(out: &mut BTreeMap<String, Item>, item: Item, origin: &str) -> Result<(), ScanError> {
@@ -253,6 +273,43 @@ mod tests {
         let d = repo(&[("skills", "bmad")]);
         match scan(d.path(), &vendor_with_installer("bmad", Scope::Project)).unwrap_err() {
             ScanError::DuplicateName { name, .. } => assert_eq!(name, "bmad"),
+            other => panic!("expected DuplicateName, got {other:?}"),
+        }
+    }
+
+    fn vendor_with_external(name: &str) -> Vendor {
+        let mut v = Vendor::default();
+        v.external.insert(
+            name.to_string(),
+            crate::config::External {
+                upstream: "https://example.invalid/x".into(),
+                git_ref: "main".into(),
+                path: "skills/x".into(),
+                licence: None,
+            },
+        );
+        v
+    }
+
+    #[test]
+    fn external_is_a_linked_skill_in_the_cache() {
+        let d = repo(&[]);
+        let got = scan(d.path(), &vendor_with_external("rfc")).unwrap();
+        match &got["rfc"] {
+            Item::Linked {
+                kind: Kind::Skill,
+                path,
+                ..
+            } => assert_eq!(path, &external_dir(d.path(), "rfc").join("skills/x")),
+            other => panic!("expected Linked, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn rejects_an_external_shadowing_a_skill() {
+        let d = repo(&[("skills", "rfc")]);
+        match scan(d.path(), &vendor_with_external("rfc")).unwrap_err() {
+            ScanError::DuplicateName { name, .. } => assert_eq!(name, "rfc"),
             other => panic!("expected DuplicateName, got {other:?}"),
         }
     }

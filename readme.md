@@ -50,8 +50,8 @@ one profile serves both `--scope project` and `--scope user`.
 | Profile    | Includes  | Adds                                       |
 | ---------- | --------- | ------------------------------------------ |
 | `base`     | —         | `graphify`, `rtk`, `ponytail`, `grill-me`, `grilling` |
-| `planning` | `base`    | `bmad`                                     |
-| `design`   | `base`    | `frontend-design`, `theme-factory`, `impeccable` |
+| `planning` | `base`    | `bmad`, `batlehub-rfc`                     |
+| `design`   | `base`    | `frontend-design`, `theme-factory`, `impeccable`, `batlehub-design`, `monofolio-design` |
 | `frontend` | `design`  | `webapp-testing`                           |
 | `mcp`      | `base`    | `mcp-builder`                              |
 | `game-design` | `frontend` | `bmad-gds`, `blender-image-to-3d`, `3dviz-pro-max` |
@@ -103,6 +103,9 @@ named `all`.
 | `ponytail`        | symlink     | vendored from `DietrichGebert/ponytail`       | —                                   |
 | `ponytail-audit`, `-debt`, `-gain`, `-help`, `-review` | symlink | vendored from `DietrichGebert/ponytail` | — |
 | `grill-me`, `grilling` | symlink | vendored from `mattpocock/skills`             | —                                   |
+| `batlehub-design` | symlink     | snapshot of `batlehub/batlehub`'s design system | —                                 |
+| `batlehub-rfc`    | symlink     | derived from `batlehub/batlehub`'s rfc skill + template, with security blocks | —   |
+| `monofolio-design`, `batlehub` | installer | Claude plugins from `batleforc/weebo-skills` | `claude`                    |
 
 Requirements are hand-maintained in `vendor.toml`'s `[requires]` table — `wska`
 reads it, it does not infer anything — so an upstream that starts shelling out

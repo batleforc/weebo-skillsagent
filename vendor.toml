@@ -93,6 +93,20 @@ licence  = "MIT"
 commit = "49dd158"
 hashes = { grill-me = "sha256:a2253d86abb930490613ecd40db7166d53451c0ae03271f4acce36fdf47c5ef3", grilling = "sha256:9fd4deb13b57d10876a782f9a6aa4adb47587be511231a0763835d35c7de6034" }
 
+# skills/batlehub-design is a hand-made snapshot, not a [sources] entry:
+# upstream (https://github.com/batlehub/batlehub, Apache-2.0, commit 2336695)
+# keeps its design system as loose files rather than a skill directory, so sync
+# has nothing to copy. Copied verbatim: DESIGN.md, docs/.vitepress/theme/
+# tokens.css -> tokens.css, ui/design-proof/ -> reference/. SKILL.md is ours.
+# Refresh by re-copying those paths and bumping the commit here and in
+# SKILL.md. Licence text in LICENSES/batlehub.txt.
+#
+# skills/batlehub-rfc is ours, derived (not copied) from the same commit's
+# .claude/skills/rfc and docs/internal/0000-rfc-template.md: made portable to
+# any repo, and extended with mandatory security, supply-chain, privacy and
+# operability blocks. Re-read upstream's two files when refreshing the design
+# snapshot, and port what changed by hand.
+
 # External commands each item needs. Hand-maintained: wska reads this, it does
 # not infer requirements, so an upstream that starts shelling out to something
 # new goes unnoticed until this table is updated. Alternatives separated by `|`
@@ -121,6 +135,8 @@ blender-image-to-3d = ["blender", "python3", "py:PIL"]
 # Playwright, or a visible browser.
 3dviz-pro-max = ["python3", "node", "py:playwright|google-chrome|chromium|chrome"]
 impeccable      = ["node", "npx", "google-chrome|chromium|chrome"]
+monofolio-design = ["claude"]
+batlehub        = ["claude"]
 
 [installers.bmad]
 command = "npx bmad-method install"
@@ -145,3 +161,25 @@ scope   = "project"
 [installers.rtk]
 command = "rtk init --auto-patch"
 scope   = "project"
+
+# Claude plugins from the weebo marketplace (batleforc/weebo-skills), installed
+# rather than vendored. `;` not `&&`: adding a marketplace that is already
+# there may fail, and the install's exit code is the one that matters.
+# Removing one from a profile does not uninstall it, like every installer.
+[installers.monofolio-design]
+command = "claude plugin marketplace add batleforc/weebo-skills --scope project; claude plugin install monofolio-design@weebo --scope project"
+scope   = "project"
+
+[installers.batlehub]
+command = "claude plugin marketplace add batleforc/weebo-skills --scope project; claude plugin install batlehub@weebo --scope project"
+scope   = "project"
+
+# Skills fetched from a git repo at install time, never committed here. Cloned
+# into .task/wska-cache/external/<name> and linked like a vendored skill;
+# `task skills:sync` re-clones. Not hash-tracked, so review upstream yourself.
+#
+# [external.<item>]
+# upstream = "https://github.com/batlehub/batlehub"
+# ref      = "main"                 # branch or tag
+# path     = ".claude/skills/rfc"   # the skill directory inside the repo
+# licence  = "Apache-2.0"

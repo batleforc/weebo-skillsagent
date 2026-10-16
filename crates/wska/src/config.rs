@@ -44,6 +44,9 @@ pub struct Vendor {
     /// is satisfied when any one of them resolves.
     #[serde(default)]
     pub requires: BTreeMap<String, Vec<String>>,
+    /// Skills fetched from a git repo at install time rather than vendored.
+    #[serde(default)]
+    pub external: BTreeMap<String, External>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -64,6 +67,16 @@ pub struct Source {
 pub enum Provides {
     Star(String),
     Named(Vec<String>),
+}
+
+#[derive(Debug, Deserialize)]
+pub struct External {
+    pub upstream: String,
+    #[serde(rename = "ref")]
+    pub git_ref: String,
+    /// The skill directory inside the clone.
+    pub path: String,
+    pub licence: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -219,6 +232,21 @@ frontend-design = ["google-chrome|chromium"]
             got.requires["frontend-design"],
             vec!["google-chrome|chromium".to_string()]
         );
+    }
+
+    #[test]
+    fn parses_external_skill() {
+        let (_d, p) = tmp(r#"
+[external.rfc]
+upstream = "https://example.invalid/x"
+ref = "main"
+path = ".claude/skills/rfc"
+licence = "Apache-2.0"
+"#);
+        let got = load_vendor(&p).unwrap();
+        let e = &got.external["rfc"];
+        assert_eq!(e.git_ref, "main");
+        assert_eq!(e.path, ".claude/skills/rfc");
     }
 
     #[test]

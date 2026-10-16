@@ -1,4 +1,4 @@
-use crate::config::{Provides, Source};
+use crate::config::{External, Provides, Source};
 use crate::hash::hash_dir;
 use crate::item::Kind;
 use std::collections::BTreeMap;
@@ -21,6 +21,10 @@ pub enum Outcome {
     MissingLicence {
         source: String,
     },
+    /// An external skill was cloned (fresh, or re-cloned by sync).
+    Fetched {
+        skill: String,
+    },
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -37,6 +41,8 @@ pub enum SyncError {
     UnknownSource(String),
     #[error("refusing upstream symlink {path}: target `{target}` leaves the skill directory")]
     UnsafeLink { path: PathBuf, target: String },
+    #[error("external `{name}`: no SKILL.md at {path}")]
+    NotASkill { name: String, path: PathBuf },
     #[error("parsing vendor.toml: {0}")]
     Edit(#[from] toml_edit::TomlError),
 }
@@ -324,6 +330,54 @@ fn copy_into(from: &Path, to: &Path, root: &Path) -> Result<(), SyncError> {
     Ok(())
 }
 
+/// Clone an external skill's repo into `cache/<name>` unless it is already
+/// there; `refresh` re-clones. Returns whether a clone happened.
+// shortcut: no commit/hash tracking, so `--check` cannot see drift; add it when an external needs pinning.
+pub fn fetch_external(
+    name: &str,
+    ext: &External,
+    cache: &Path,
+    refresh: bool,
+) -> Result<bool, SyncError> {
+    let clone = cache.join(name);
+    let fetched = refresh || !clone.exists();
+    if fetched {
+        if clone.exists() {
+            std::fs::remove_dir_all(&clone).map_err(|source| SyncError::Io {
+                op: "clearing",
+                path: clone.clone(),
+                source,
+            })?;
+        }
+        std::fs::create_dir_all(cache).map_err(|source| SyncError::Io {
+            op: "creating",
+            path: cache.to_path_buf(),
+            source,
+        })?;
+        git(
+            cache,
+            &[
+                "clone",
+                "--quiet",
+                "--depth",
+                "1",
+                "--branch",
+                &ext.git_ref,
+                &ext.upstream,
+                name,
+            ],
+        )?;
+    }
+    let skill_md = clone.join(&ext.path).join("SKILL.md");
+    if !skill_md.is_file() {
+        return Err(SyncError::NotASkill {
+            name: name.to_string(),
+            path: skill_md,
+        });
+    }
+    Ok(fetched)
+}
+
 fn git(cwd: &Path, args: &[&str]) -> Result<(), SyncError> {
     let status = Command::new("git")
         .args(args)
@@ -457,6 +511,43 @@ mod tests {
             commit: None,
             hashes: BTreeMap::new(),
         }
+    }
+
+    fn external(upstream_dir: &Path, path: &str) -> External {
+        External {
+            upstream: format!("file://{}", upstream_dir.display()),
+            git_ref: "main".into(),
+            path: path.into(),
+            licence: Some("MIT".into()),
+        }
+    }
+
+    #[test]
+    fn fetch_external_clones_once_then_reuses() {
+        let d = tempfile::tempdir().unwrap();
+        let up = d.path().join("up");
+        upstream(&up, "---\nname: b\n---\n");
+        let cache = d.path().join("cache");
+        let ext = external(&up, "skills/brainstorming");
+        assert!(fetch_external("b", &ext, &cache, false).unwrap());
+        assert!(cache.join("b/skills/brainstorming/SKILL.md").is_file());
+        assert!(!fetch_external("b", &ext, &cache, false).unwrap());
+        assert!(fetch_external("b", &ext, &cache, true).unwrap());
+    }
+
+    #[test]
+    fn fetch_external_rejects_a_path_without_skill_md() {
+        let d = tempfile::tempdir().unwrap();
+        let up = d.path().join("up");
+        upstream(&up, "x");
+        let err = fetch_external(
+            "b",
+            &external(&up, "skills"),
+            &d.path().join("cache"),
+            false,
+        )
+        .unwrap_err();
+        assert!(matches!(err, SyncError::NotASkill { .. }), "got {err:?}");
     }
 
     #[test]

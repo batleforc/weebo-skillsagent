@@ -43,6 +43,17 @@ pub fn install(
 
     let target_dir = target::resolve(scope, cwd, env)?;
 
+    // Externals must be on disk before planning, or their links classify as
+    // pointing at nothing. Clone-if-missing keeps a second install a no-op.
+    if !dry_run {
+        let cache = repo_root.join(".task/wska-cache/external");
+        for (name, ext) in &vendor.external {
+            if wanted.contains(name) && crate::sync::fetch_external(name, ext, &cache, false)? {
+                println!("fetch  {name}: {}", ext.upstream);
+            }
+        }
+    }
+
     let built = plan::build(
         &items,
         &wanted,
@@ -131,7 +142,7 @@ pub fn sync(
     // A name that matches nothing would otherwise sync nothing and report
     // Clean, so a typo reads as "everything is up to date".
     for name in sources {
-        if !vendor.sources.contains_key(name) {
+        if !vendor.sources.contains_key(name) && !vendor.external.contains_key(name) {
             return Err(crate::sync::SyncError::UnknownSource(name.clone()).into());
         }
     }
@@ -144,6 +155,24 @@ pub fn sync(
         out.extend(crate::sync::sync_source(
             name, source, repo_root, &cache, check,
         )?);
+    }
+    // Externals carry no hashes, so --check has nothing to compare and only
+    // the licence is reported; a real sync re-clones them.
+    for (name, ext) in &vendor.external {
+        if !sources.is_empty() && !sources.contains(name) {
+            continue;
+        }
+        if ext.licence.is_none() {
+            out.push(crate::sync::Outcome::MissingLicence {
+                source: name.clone(),
+            });
+        }
+        if !check {
+            crate::sync::fetch_external(name, ext, &cache.join("external"), true)?;
+            out.push(crate::sync::Outcome::Fetched {
+                skill: name.clone(),
+            });
+        }
     }
     Ok(out)
 }

@@ -207,7 +207,7 @@ serves both scopes.
 
 ## `vendor.toml`
 
-Three independent tables.
+Four independent tables.
 
 ### `[sources.<name>]` — where a vendored skill came from
 
@@ -260,6 +260,40 @@ The item exists by virtue of this entry — there is no directory under `skills/
 for it. `scope` says which scope it belongs to; invoked at the other one, it is
 skipped with a reason. The command runs with its working directory set to the
 parent of the target's `.claude/`.
+
+A Claude plugin is installed the same way — `claude plugin install` is
+idempotent, and `marketplace add` is joined with `;` because it may fail when
+the marketplace is already declared:
+
+```toml
+[installers.monofolio-design]
+command = "claude plugin marketplace add batleforc/weebo-skills --scope project; claude plugin install monofolio-design@weebo --scope project"
+scope   = "project"
+```
+
+Dropping an installer item from a profile does not uninstall it: `wska` never
+owned what the command wrote.
+
+### `[external.<item>]` — skills fetched from git, not vendored
+
+```toml
+[external.batlehub-rfc]
+upstream = "https://github.com/batlehub/batlehub"
+ref      = "main"                 # branch or tag
+path     = ".claude/skills/rfc"   # the skill directory inside the repo
+licence  = "Apache-2.0"
+```
+
+`install` shallow-clones the repo into `.task/wska-cache/external/<item>/` if
+it is not already there (never on `--dry-run`), checks `<path>/SKILL.md`
+exists, then links it like any vendored skill. The cache is inside the repo,
+so ownership, `status`, `doctor` and the unlink pass treat it unchanged.
+
+`sync` (or `sync <item>`) re-clones; `sync --check` only reports a missing
+licence. Externals record no commit or hash, so drift is invisible and nothing
+upstream is reviewed before it is linked — use a tag as `ref` when that
+matters. A fresh checkout has no cache: links into it read `Dangling` until
+the next install fetches again.
 
 ## Known limits
 
