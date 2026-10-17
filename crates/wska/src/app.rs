@@ -37,6 +37,36 @@ pub fn install(
     cwd: &Path,
     env: &dyn Fn(&str) -> Option<String>,
 ) -> Result<Applied, AppError> {
+    let selection = if selection.is_empty() {
+        let target_dir = target::resolve(scope, cwd, env)?;
+        Selection::load(&target_dir)?
+            .filter(|s| !s.is_empty())
+            .ok_or_else(|| SelectionError::Missing(target_dir.join(crate::selection::FILE)))?
+    } else {
+        selection.clone()
+    };
+    apply_selection(
+        repo_root,
+        &selection,
+        scope,
+        dry_run,
+        run_installers,
+        cwd,
+        env,
+    )
+}
+
+/// Link exactly `selection` — empty means unlink everything wska owns there —
+/// and record it in the target's wska.toml.
+fn apply_selection(
+    repo_root: &Path,
+    selection: &Selection,
+    scope: Scope,
+    dry_run: bool,
+    run_installers: bool,
+    cwd: &Path,
+    env: &dyn Fn(&str) -> Option<String>,
+) -> Result<Applied, AppError> {
     // Canonicalize once, up front: item paths and the ownership comparison
     // base must share a prefix or nothing ever classifies as already-correct.
     let repo_root = target::repo_root(repo_root)?;
@@ -45,13 +75,6 @@ pub fn install(
     let vendor = config::load_vendor(&repo_root.join("vendor.toml"))?;
     let items = item::scan(&repo_root, &vendor)?;
     let target_dir = target::resolve(scope, cwd, env)?;
-    let selection = if selection.is_empty() {
-        Selection::load(&target_dir)?
-            .filter(|s| !s.is_empty())
-            .ok_or_else(|| SelectionError::Missing(target_dir.join(crate::selection::FILE)))?
-    } else {
-        selection.clone()
-    };
     let wanted = profile::resolve(&profiles_cfg, &selection.profiles, &selection.items, &items)?;
 
     // Externals must be on disk before planning, or their links classify as
@@ -132,6 +155,62 @@ pub fn add(
         cwd,
         env,
     )
+}
+
+/// Install the target's recorded selection minus `gone`. Every name must be
+/// recorded: an item that only comes through a recorded profile would stay
+/// linked, so that is refused rather than silently doing nothing.
+pub fn remove(
+    repo_root: &Path,
+    gone: &Selection,
+    scope: Scope,
+    dry_run: bool,
+    run_installers: bool,
+    cwd: &Path,
+    env: &dyn Fn(&str) -> Option<String>,
+) -> Result<Applied, AppError> {
+    if gone.is_empty() {
+        return Err(AppError::Refused(
+            "nothing to remove: pass --profile or --item".into(),
+        ));
+    }
+    let target_dir = target::resolve(scope, cwd, env)?;
+    let recorded = Selection::load(&target_dir)?
+        .ok_or_else(|| SelectionError::Missing(target_dir.join(crate::selection::FILE)))?;
+    let absent: Vec<String> = gone
+        .profiles
+        .iter()
+        .filter(|n| !recorded.profiles.contains(n))
+        .map(|n| format!("profile `{n}`"))
+        .chain(
+            gone.items
+                .iter()
+                .filter(|n| !recorded.items.contains(n))
+                .map(|n| format!("item `{n}`")),
+        )
+        .collect();
+    if !absent.is_empty() {
+        return Err(AppError::Refused(format!(
+            "not recorded in {}: {} (an item that comes from a profile can only go with that profile)",
+            target_dir.join(crate::selection::FILE).display(),
+            absent.join(", ")
+        )));
+    }
+    let kept = Selection {
+        profiles: recorded
+            .profiles
+            .iter()
+            .filter(|n| !gone.profiles.contains(n))
+            .cloned()
+            .collect(),
+        items: recorded
+            .items
+            .iter()
+            .filter(|n| !gone.items.contains(n))
+            .cloned()
+            .collect(),
+    };
+    apply_selection(repo_root, &kept, scope, dry_run, run_installers, cwd, env)
 }
 
 /// Pull the items repo, then re-link `selection`, or the target's recorded one

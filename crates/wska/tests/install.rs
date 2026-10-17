@@ -339,3 +339,90 @@ fn add_extends_the_recorded_selection_instead_of_replacing_it() {
     let bare = wska::selection::Selection::default();
     assert!(wska::app::add(&root, &bare, scope, false, false, &root, &env_none).is_err());
 }
+
+#[test]
+fn remove_drops_recorded_names_and_refuses_unrecorded_ones() {
+    let d = tempfile::tempdir().unwrap();
+    let root = d.path().join("repo");
+    repo(
+        &root,
+        &["ponytail", "techdoc"],
+        "[profiles.base]\nitems = [\"ponytail\"]\n",
+    );
+    let scope = wska::cli::Scope::Project;
+    let sel = |profiles: &[&str], items: &[&str]| wska::selection::Selection {
+        profiles: profiles.iter().map(|s| s.to_string()).collect(),
+        items: items.iter().map(|s| s.to_string()).collect(),
+    };
+    let target = root.join(".claude");
+
+    // Nothing recorded yet.
+    assert!(wska::app::remove(
+        &root,
+        &sel(&[], &["techdoc"]),
+        scope,
+        false,
+        false,
+        &root,
+        &env_none
+    )
+    .is_err());
+
+    wska::app::install(
+        &root,
+        &sel(&["base"], &["techdoc"]),
+        scope,
+        false,
+        false,
+        &root,
+        &env_none,
+    )
+    .unwrap();
+
+    // ponytail comes from `base`, not from --item: refused, nothing changes.
+    let err = wska::app::remove(
+        &root,
+        &sel(&[], &["ponytail"]),
+        scope,
+        false,
+        false,
+        &root,
+        &env_none,
+    )
+    .unwrap_err();
+    assert!(err.to_string().contains("item `ponytail`"), "{err}");
+    assert!(fs::symlink_metadata(root.join(".claude/skills/ponytail")).is_ok());
+
+    let removed = wska::app::remove(
+        &root,
+        &sel(&[], &["techdoc"]),
+        scope,
+        false,
+        false,
+        &root,
+        &env_none,
+    )
+    .unwrap();
+    assert_eq!(removed.unlinked, 1);
+    assert_eq!(
+        wska::selection::Selection::load(&target).unwrap(),
+        Some(sel(&["base"], &[]))
+    );
+
+    // Removing the last name unlinks everything and records an empty selection.
+    let emptied = wska::app::remove(
+        &root,
+        &sel(&["base"], &[]),
+        scope,
+        false,
+        false,
+        &root,
+        &env_none,
+    )
+    .unwrap();
+    assert_eq!(emptied.unlinked, 1);
+    assert_eq!(
+        wska::selection::Selection::load(&target).unwrap(),
+        Some(sel(&[], &[]))
+    );
+}

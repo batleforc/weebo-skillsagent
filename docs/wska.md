@@ -93,7 +93,26 @@ bare `install`/`update` keeps it.
 wska add --item weebo-techdoc    # same as: wska install --profile base --item weebo-techdoc
 ```
 
-There is no `remove`: edit `wska.toml` and run a bare `wska install`.
+### `remove`
+
+```bash
+wska remove [--profile <name>…] [--item <name>…] [--scope project|user] [--dry-run] [--run-installers]
+task skills:remove [PROFILE=design] [ITEM=weebo-techdoc] [SCOPE=project|user] [RUN_INSTALLERS=0]
+```
+
+The inverse of `add`: installs the recorded `wska.toml` minus the given
+profiles and items, which unlinks what only they brought, and writes the
+result back. At least one name is required, and every name must be recorded
+there — otherwise it refuses and changes nothing. That catches the case that
+would otherwise silently do nothing: an item that comes from a recorded
+profile stays linked as long as the profile does, so it can only leave with
+that profile (or by replacing the selection with `install`).
+
+Removing the last name unlinks every wska link in the target and records an
+empty selection; a bare `install` then errors until something is added.
+
+Like every install, dropping an installer item does not uninstall what its
+command wrote.
 
 ### `update`
 

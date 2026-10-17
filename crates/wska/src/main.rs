@@ -69,6 +69,20 @@ fn main() {
             wska::app::add(&root, &extra, scope, dry_run, run_installers, &cwd, &env)
                 .map(|a| print_applied(&a))
         }
+        Command::Remove {
+            profile,
+            item,
+            scope,
+            dry_run,
+            run_installers,
+        } => {
+            let gone = wska::selection::Selection {
+                profiles: profile,
+                items: item,
+            };
+            wska::app::remove(&root, &gone, scope, dry_run, run_installers, &cwd, &env)
+                .map(|a| print_applied(&a))
+        }
         Command::Update {
             profile,
             item,

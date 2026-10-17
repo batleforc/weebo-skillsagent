@@ -21,8 +21,8 @@ to put Weebo skills into a project. Full reference: `docs/wska.md` in that repo.
   `claude mcp add` yourself. A one-off copy goes stale and `wska` cannot see
   or update it. If something must be installed by a command, it becomes an
   `[installers.<item>]` entry in the repo's `vendor.toml`.
-- **To add something, use `wska add`**, which keeps what `.claude/wska.toml`
-  already records. `install --profile/--item` is declarative: it *removes*
+- **To add or drop something, use `wska add` / `wska remove`**, which keep
+  the rest of what `.claude/wska.toml` records. `install --profile/--item` is declarative: it *removes*
   every wska link not named, so use it only to replace the whole selection.
 - Running installers executes commands (`npx`, `uv tool install`, …). Tell the
   user which profiles and installers you are about to run and get a yes first.
@@ -49,6 +49,7 @@ wska list --profiles         # base, planning, design, frontend, mcp, game-desig
 wska list                    # single items, for --item
 wska add --profile planning --item weebo-techdoc --dry-run         # check the plan
 wska add --profile planning --item weebo-techdoc --run-installers  # apply, appends to wska.toml
+wska remove --item weebo-techdoc                                   # drop a recorded name, unlink what only it brought
 wska doctor                  # every item: tools present, SKILL.md usable
 ```
 

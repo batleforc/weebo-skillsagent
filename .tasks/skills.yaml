@@ -27,6 +27,13 @@ tasks:
     cmds:
       - '{{.WSKA}} add{{if .PROFILE}}{{range splitList "," .PROFILE}} --profile {{.}}{{end}}{{end}}{{if .ITEM}}{{range splitList "," .ITEM}} --item {{.}}{{end}}{{end}} --scope {{.SCOPE}} {{if ne .RUN_INSTALLERS "0"}}--run-installers{{end}}'
 
+  remove:
+    desc: "Remove profiles or single items from the target's .claude/wska.toml and install what is left (usage: task skills:remove [PROFILE=design] [ITEM=weebo-techdoc] [SCOPE=project|user] [RUN_INSTALLERS=0])"
+    vars:
+      RUN_INSTALLERS: '{{.RUN_INSTALLERS | default "1"}}'
+    cmds:
+      - '{{.WSKA}} remove{{if .PROFILE}}{{range splitList "," .PROFILE}} --profile {{.}}{{end}}{{end}}{{if .ITEM}}{{range splitList "," .ITEM}} --item {{.}}{{end}}{{end}} --scope {{.SCOPE}} {{if ne .RUN_INSTALLERS "0"}}--run-installers{{end}}'
+
   update:
     desc: "Pull the items repo, then re-install the given profiles/items, else the target's .claude/wska.toml if any (usage: task skills:update [PROFILE=base,planning] [ITEM=weebo-techdoc] [SCOPE=project|user] [RUN_INSTALLERS=0])"
     vars:
