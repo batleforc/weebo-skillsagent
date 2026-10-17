@@ -33,13 +33,13 @@ url = "https://github.com/cocogitto/cocogitto/releases/download/7.0.0/cocogitto-
 url_api = "https://api.github.com/repos/cocogitto/cocogitto/releases/assets/366659350"
 
 [[tools."github:batleforc/weebo-skillsagent"]]
-version = "0.10.0"
+version = "0.11.0"
 backend = "github:batleforc/weebo-skillsagent"
 
 [tools."github:batleforc/weebo-skillsagent"."platforms.linux-x64"]
-checksum = "sha256:0fefc0194ae207006f125a05c458440247fe89e1a34cd7af13cd52e0011947f3"
-url = "https://github.com/batleforc/weebo-skillsagent/releases/download/v0.10.0/wska-x86_64-unknown-linux-musl.tar.gz"
-url_api = "https://api.github.com/repos/batleforc/weebo-skillsagent/releases/assets/650087160"
+checksum = "sha256:5ef7033d3fa065628c29d9c872ee6a4d7f073c234adbcc12b660e9781d55bffc"
+url = "https://github.com/batleforc/weebo-skillsagent/releases/download/v0.11.0/wska-x86_64-unknown-linux-musl.tar.gz"
+url_api = "https://api.github.com/repos/batleforc/weebo-skillsagent/releases/assets/650787041"
 
 [[tools."github:mlab-sh/postmortem"]]
 version = "2.9.0"
