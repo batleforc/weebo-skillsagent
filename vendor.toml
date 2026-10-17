@@ -101,6 +101,10 @@ hashes = { grill-me = "sha256:a2253d86abb930490613ecd40db7166d53451c0ae03271f4ac
 # Refresh by re-copying those paths and bumping the commit here and in
 # SKILL.md. Licence text in LICENSES/batlehub.txt.
 #
+# skills/weebo-* are ours; their templates/ are trimmed copies of batlehub
+# files at commit 20879e5, each naming its source in a header. Refresh by
+# re-reading those files upstream and bumping the commit in the headers.
+#
 # skills/batlehub-rfc is ours, derived (not copied) from the same commit's
 # .claude/skills/rfc and docs/internal/0000-rfc-template.md: made portable to
 # any repo, and extended with mandatory security, supply-chain, privacy and
@@ -139,6 +143,18 @@ ponytail-plugin = ["claude", "node"]
 mlab            = ["claude"]
 judge           = ["uv"]
 weebo-techdoc   = ["python3", "git"]
+# cargo-fuzz and k6 serve conditional layers, but are listed so a red row
+# says what is missing before the skill asks for it.
+weebo-testing   = ["cargo", "cargo-llvm-cov", "cargo-fuzz", "k6"]
+# Only what the skill's own local tasks run; the CI-only scanners, signers and
+# image builders (semgrep, cosign, buildx, ...) run in GitHub Actions. That is
+# also why weebo-containerfile has no row: no container engine in a CDE.
+weebo-taskfile-mise = ["task", "mise", "cog", "gitleaks", "git"]
+weebo-security      = ["cargo-audit", "cargo-deny", "pnpm", "trivy"]
+weebo-api-contract  = ["cargo", "pnpm", "npx"]
+weebo-release       = ["cog", "git", "task"]
+weebo-cde           = ["kubectl", "task"]
+weebo-helm          = ["helm", "helm-docs"]
 wska            = ["wska|cargo"]
 doc-review      = ["claude", "judge"]
 

@@ -1,0 +1,10 @@
+{{- /* source: batlehub@20879e5 (helm/batlehub/templates/NOTES.txt), trimmed. */ -}}
+my-server has been deployed.
+
+Get the application URL:
+{{- if .Values.ingress.enabled }}
+  https://{{ .Values.ingress.host }}
+{{- else }}
+  kubectl port-forward --namespace {{ .Release.Namespace }} svc/{{ include "my-server.fullname" . }} 8080:{{ .Values.service.port }}
+  echo "Visit http://localhost:8080"
+{{- end }}

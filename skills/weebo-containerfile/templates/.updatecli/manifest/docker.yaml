@@ -1,0 +1,40 @@
+# source: batlehub@20879e5 (.updatecli/manifest/docker.yaml), trimmed.
+# Dependabot has no docker ecosystem entry in batlehub; updatecli autodiscovery
+# opens one PR that moves each FROM's tag and digest together.
+name: Upgrade docker
+
+scms:
+  default:
+    kind: gitea
+    spec:
+      user: "{{ .github.user }}"
+      email: "{{ .github.email }}"
+      owner: "{{ .github.owner}}"
+      repository: "{{ .github.repository}}"
+      token: "{{ requiredEnv .github.token }}"
+      username: "{{ .github.username }}"
+      url: "https://git.example.com"
+      branch: main
+
+actions:
+  default:
+    kind: gitea/pullrequest
+    scmid: default
+    spec:
+      title: "ci: Upgrade Containerfile"
+      automerge: false
+      description: |
+        Upgrade the base images in the Containerfiles to their latest version.
+      labels:
+        - "Upgrade"
+        - "UpdateCLI"
+
+autodiscovery:
+  scmid: default
+  actionid: default
+  crawlers:
+    dockerfile:
+      # List every Containerfile, or its bases never move.
+      filematch:
+        - "Containerfile"
+        - "Containerfile.hardened"

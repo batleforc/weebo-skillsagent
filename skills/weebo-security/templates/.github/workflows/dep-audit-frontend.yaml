@@ -1,0 +1,53 @@
+# source: batlehub@20879e5 (.github/workflows/dep-audit-frontend.yaml), trimmed.
+name: Frontend dependency audit
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - "ui/package.json"
+      - "ui/pnpm-lock.yaml"
+      - ".github/workflows/dep-audit-frontend.yaml"
+  pull_request:
+    branches: ["main"]
+    paths:
+      - "ui/package.json"
+      - "ui/pnpm-lock.yaml"
+      - ".github/workflows/dep-audit-frontend.yaml"
+  # Daily so a CVE disclosed against an already-pinned dependency trips CI even
+  # when nothing in the repo changed.
+  schedule:
+    - cron: "50 23 * * *"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  audit:
+    name: pnpm audit — ${{ matrix.workspace }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - workspace: ui
+            audit-args: ""
+          # A docs site whose build tooling ships nothing gets `--prod`
+          # (keep in sync with its `docs:audit` task):
+          # - workspace: docs
+          #   audit-args: "--prod"
+    defaults:
+      run:
+        working-directory: ${{ matrix.workspace }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+      # Corepack is not used: Node stopped distributing it in v25.
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+        with:
+          version: 11
+      # Audit resolves straight from the committed pnpm-lock.yaml — no install,
+      # no lifecycle scripts. It covers the whole tree (direct + transitive) and
+      # fails the job on any high/critical advisory.
+      - name: pnpm audit
+        run: pnpm audit --audit-level high ${{ matrix.audit-args }}

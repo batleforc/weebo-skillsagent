@@ -1,0 +1,48 @@
+# source: batlehub@20879e5 (.tasks/test.yaml + .tasks/rust.yaml), trimmed.
+version: "3"
+
+tasks:
+  test:
+    desc: Run all workspace tests
+    cmds:
+      - cargo test --workspace
+
+  test:all:
+    desc: Run backend and frontend test suites in parallel
+    deps:
+      - task: test
+      - task: ui:test
+
+  # One task per real backend: start it, export its env var, run its binary.
+  # Without the var the tests print `SKIPPED:` and pass, so `task test` needs no Podman.
+  # test:pg-cache:
+  #   desc: Run the Postgres cache integration tests against a throwaway Postgres (Podman)
+  #   env:
+  #     DATABASE_URL: postgresql://postgres:testpass@127.0.0.1:25432/postgres
+  #   cmds:
+  #     - defer: podman rm -f my-test-pg 2>/dev/null || true
+  #     - podman run -d --name my-test-pg -p 25432:5432 -e POSTGRES_PASSWORD=testpass postgres:17-alpine
+  #     - until podman exec my-test-pg pg_isready -U postgres; do sleep 1; done
+  #     - cargo test -p my-adapters --test pg_cache
+
+  fuzz:
+    desc: "Run a fuzz target for up to MAX_TIME seconds (default: 30). TARGET is one of `cargo fuzz list`"
+    dir: fuzz
+    vars:
+      TARGET: '{{.TARGET | default "fuzz_example"}}'
+      MAX_TIME: '{{.MAX_TIME | default "30"}}'
+    cmds:
+      # --target: the toolchain's host, not cargo-fuzz's build triple (static musl cannot carry ASan).
+      # detect_leaks=0: LeakSanitizer cannot start under a restricted ptrace_scope and
+      # reports a 0-byte crash artefact that looks like a finding.
+      - >-
+        ASAN_OPTIONS=detect_leaks=0
+        cargo +nightly fuzz run --target "$(rustc +nightly -vV | sed -n 's/^host: //p')"
+        {{.TARGET}} -- -max_total_time={{.MAX_TIME}}
+        $(test -f dicts/{{.TARGET}}.dict && echo "-dict=$PWD/dicts/{{.TARGET}}.dict")
+
+  fuzz:check:
+    desc: "Every fuzz target still compiles — what CI gates on each PR (no nightly needed)"
+    cmds:
+      # fuzz/ is its own workspace: `cargo check --workspace` and clippy never see it.
+      - cargo check --manifest-path fuzz/Cargo.toml --bins --all-targets

@@ -1,0 +1,23 @@
+# source: weebo-skillsagent (cog.toml) + batlehub@20879e5 (cog.toml: tag_prefix), trimmed.
+# Hooks only. Bump, changelog and release settings belong to the weebo-release
+# skill. `task init` writes these into .git/hooks with `cog install-hook -a -o`;
+# re-run it after editing a script below.
+tag_prefix = "v"
+
+[git_hooks.commit-msg]
+script = """#!/bin/sh
+set -e
+cog verify --file "$1"
+"""
+
+[git_hooks.pre-commit]
+script = """#!/bin/sh
+set -e
+task recu
+git add -u # in case recu needed to regenerate files, add need to be done before linting (-u: tracked files only)
+task lint
+git add -u # in case linting fixed anything
+.hooks/end-of-line.sh
+.hooks/whitespace-fixer.sh
+gitleaks git --pre-commit --redact --staged --verbose
+"""

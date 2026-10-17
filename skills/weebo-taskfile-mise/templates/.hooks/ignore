@@ -1,0 +1,5 @@
+# source: weebo-skillsagent (.hooks/ignore), trimmed.
+# Glob patterns, one per line, of paths the whitespace and end-of-line hooks
+# must not touch: content the repo vendors rather than authors. Reformatting it
+# diverges the local copy from its upstream, so the next sync sees a local patch.
+LICENSES/*

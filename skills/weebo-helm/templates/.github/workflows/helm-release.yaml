@@ -1,0 +1,65 @@
+# source: batlehub@20879e5 (.github/workflows/build.yaml, job `chart`), trimmed.
+# In batlehub this is one job of the tag-triggered release workflow (see
+# weebo-release); paste it there as a job, with `meta` the job that strips the
+# `v` from the tag.
+name: Release chart
+on:
+  push:
+    tags:
+      - "v*"
+permissions:
+  contents: read
+env:
+  REGISTRY: ghcr.io
+  CHART_NAMESPACE: oci://ghcr.io/${{ github.repository }}/charts
+jobs:
+  chart:
+    name: Package and push Helm chart
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      id-token: write # keyless signing of the pushed chart
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: azure/setup-helm@9bc31f4ebc9c6b171d7bfbaa5d006ae7abdb4310 # v5.0.1
+        with:
+          version: v3.22.0
+      - uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
+      - name: Log in to GHCR
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Package chart
+        shell: bash
+        run: |
+          set -euo pipefail
+          version="${GITHUB_REF_NAME#v}"
+          echo "VERSION=${version}" >> "$GITHUB_ENV"
+          helm dependency build helm/my-server
+          mkdir -p dist
+          helm package helm/my-server \
+            --destination dist \
+            --version "${version}" \
+            --app-version "${version}"
+      # The digest comes out of `helm push`, which prints it to **stderr** along
+      # with the pushed reference. A chart in an OCI registry is an image as far
+      # as cosign is concerned, so signing it is the same operation as signing
+      # the container images — and a cluster that pulls charts over OCI can hold
+      # them to the same admission policy.
+      - name: Push chart to GHCR and sign it
+        shell: bash
+        run: |
+          set -euo pipefail
+          helm push "dist/my-server-${VERSION}.tgz" "${CHART_NAMESPACE}" 2>&1 \
+            | tee push.log
+          digest=$(grep -oE 'sha256:[0-9a-f]{64}' push.log | head -n1)
+          if [ -z "${digest}" ]; then
+            echo "helm push printed no digest — refusing to sign a tag" >&2
+            exit 1
+          fi
+          repo="${CHART_NAMESPACE#oci://}/my-server"
+          echo "Signing ${repo}@${digest}"
+          cosign sign --yes "${repo}@${digest}"

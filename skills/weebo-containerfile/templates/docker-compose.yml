@@ -1,0 +1,48 @@
+# source: batlehub@20879e5 (docker-compose.yml), trimmed.
+services:
+
+  # ── PostgreSQL ───────────────────────────────────────────────────────────────
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: my_server
+      POSTGRES_USER: my_server
+      POSTGRES_PASSWORD: changeme # local development only
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U my_server" ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    user: "postgres"
+
+  # ── server, built from the Containerfile ─────────────────────────────────────
+  # Commented out in batlehub: the day-to-day loop is `task compose:db` + cargo run.
+  # Uncomment to run the image itself.
+  # server:
+  #   build: .
+  #   restart: unless-stopped
+  #   depends_on:
+  #     postgres:
+  #       condition: service_healthy
+  #   ports:
+  #     - "8080:8080"
+  #   volumes:
+  #     - ./config.example.toml:/etc/my-server/config.toml:ro
+  #     - artifact_cache:/var/cache/my-server
+  #   environment:
+  #     # Override the DB URL so the server reaches the compose-internal hostname.
+  #     MY_SERVER__DATABASE__URL: "postgresql://my_server:changeme@postgres:5432/my_server"
+  #     # Serve the built SPA from the image.
+  #     MY_SERVER__SERVER__STATIC_DIR: "/app/ui/dist"
+  #   # No healthcheck: the distroless runtime has no shell and no curl, so a
+  #   # CMD-SHELL/curl check can never pass. Probe from outside (the chart's
+  #   # livenessProbe/readinessProbe) instead.
+
+volumes:
+  postgres_data:
+  artifact_cache:

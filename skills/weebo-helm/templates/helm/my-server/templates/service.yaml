@@ -1,0 +1,16 @@
+{{- /* source: batlehub@20879e5 (helm/batlehub/templates/service.yaml), trimmed. */ -}}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "my-server.fullname" . }}
+  labels:
+    {{- include "my-server.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.service.type }}
+  ports:
+    - port: {{ .Values.service.port }}
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "my-server.selectorLabels" . | nindent 4 }}

@@ -1,0 +1,33 @@
+# source: batlehub@20879e5 (Taskfile.yml) + weebo-skillsagent (Taskfile.yml: init, recu, lint), trimmed.
+version: "3"
+
+# One Taskfile per domain, all flattened into a single namespace: `flatten: true`
+# means a task keeps the exact name it is declared with, so `task ui:dev` and
+# `task lint` stay what CI, the docs, the hooks and the devfile call however the
+# files are split. Included files inherit the vars and the dotenv below, resolve
+# a relative `dir:` against this directory, and can call each other's tasks by
+# plain name.
+includes:
+  # Toolbox files with generic task names (install, lock:gen) keep a prefix.
+  mise: .tasks/mise.yaml
+  rust: { taskfile: .tasks/rust.yaml, flatten: true }
+  # test / coverage / security / ui / release ... : one line each, same shape.
+
+dotenv: [ .env ]
+
+tasks:
+  init:
+    desc: "Init the project: tools, git hooks"
+    cmds:
+      - task mise:install
+      - cog install-hook -a -o
+
+  recu:
+    desc: "Recurring job like regenerating the OpenAPI spec (run by the pre-commit hook)"
+    cmds:
+      - echo "nothing to regenerate yet"
+
+  lint:
+    desc: "Lint the whole project (run by the pre-commit hook)"
+    cmds:
+      - task: rust:lint

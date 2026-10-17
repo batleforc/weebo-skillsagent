@@ -1,0 +1,28 @@
+# source: batlehub@20879e5 (.tasks/cde.yaml), trimmed.
+# Included unflattened from the root Taskfile (`cde: .tasks/cde.yaml`), so the
+# names are `cde:init`, `cde:db:init`, `cde:server:start`.
+version: "3"
+
+tasks:
+  init:
+    desc: "Init the Cloud Dev Environment (run once per fresh workspace)"
+    cmds:
+      - echo "Provisioning database ..."
+      - task cde:db:init
+      - echo "Done!"
+
+  db:init:
+    desc: "Create the extra databases in the postgres sidecar"
+    silent: true
+    cmds:
+      # `\$POSTGRES_USER` is escaped so it expands inside the sidecar, where the
+      # devfile set it, not in the tools container where it is unset.
+      - kubectl exec -c postgres -it $HOSTNAME -- psql -U \$POSTGRES_USER -c 'CREATE DATABASE my_crate_test;'
+
+  # The second step of a sidecar that runs `sleep infinity` (see
+  # references/sidecars.md): the container stays up, and its real process is
+  # started on demand from here.
+  server:start:
+    desc: "Start my-server inside its sidecar"
+    cmds:
+      - kubectl exec -c my-server -it $HOSTNAME -- my-server

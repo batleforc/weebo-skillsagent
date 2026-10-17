@@ -1,0 +1,31 @@
+{
+  "@context": "https://openvex.dev/ns/v0.2.0",
+  "@id": "https://example.org/my-project/vex/my-project",
+  "author": "my-project maintainers",
+  "role": "Project maintainers",
+  "timestamp": "2026-09-15T00:00:00Z",
+  "version": 1,
+  "tooling": "source: batlehub@20879e5 (vex/batlehub.openvex.json), trimmed; hand-maintained, validated and rendered by .github/scripts/vex.py",
+  "statements": [
+    {
+      "vulnerability": {
+        "name": "CVE-2026-84304",
+        "description": "gRPC-go: heap memory exhaustion via HTTP/2 DATA frame fragmentation"
+      },
+      "timestamp": "2026-09-15T00:00:00Z",
+      "products": [
+        {
+          "@id": "pkg:oci/my-server",
+          "subcomponents": [
+            { "@id": "pkg:golang/google.golang.org/grpc@v1.82.1" }
+          ]
+        }
+      ],
+      "status": "not_affected",
+      "justification": "vulnerable_code_not_in_execute_path",
+      "impact_statement": "The vulnerable grpc-go is vendored inside the upstream Trivy release binary the image carries (/usr/local/bin/trivy), not in my-project code. It only ever runs as a client; nothing in the image terminates an HTTP/2 connection of its own.",
+      "action_statement": "Bump TRIVY_VERSION to the first Trivy release whose go.mod carries grpc-go >= 1.83.1, and delete this statement together with its .trivyignore.yaml entry.",
+      "action_statement_timestamp": "2026-09-15T00:00:00Z"
+    }
+  ]
+}

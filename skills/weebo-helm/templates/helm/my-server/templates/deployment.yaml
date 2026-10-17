@@ -1,0 +1,98 @@
+{{- /* source: batlehub@20879e5 (helm/batlehub/templates/deployment.yaml), trimmed. */ -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "my-server.fullname" . }}
+  labels:
+    {{- include "my-server.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "my-server.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      annotations:
+        # A config change rolls the pods. Leave this off any Secret the server
+        # hot-reloads, or a rotation becomes a rollout.
+        checksum/config: {{ include "my-server.config" . | sha256sum }}
+        {{- with .Values.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      labels:
+        {{- include "my-server.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "my-server.serviceAccountName" . }}
+      automountServiceAccountToken: {{ .Values.serviceAccount.automountServiceAccountToken }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      volumes:
+        - name: config
+          secret:
+            secretName: {{ include "my-server.fullname" . }}-config
+            items:
+              - key: config.toml
+                path: config.toml
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          args:
+            - --config
+            - /etc/my-server/config.toml
+          {{- with .Values.env }}
+          env:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.envFrom }}
+          envFrom:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.config.server.port }}
+              protocol: TCP
+          # Probes must stay on unauthenticated endpoints: the kubelet sends no
+          # credentials, so an authenticated route answers 403 and the pod never
+          # becomes Ready.
+          #
+          # Liveness checks the process only. Readiness is what reacts to a
+          # dependency outage — /healthz answers 503 when the database is
+          # unreachable, which drops the pod from the Service endpoints without
+          # restarting it. Restarting would not reach the dependency.
+          livenessProbe:
+            httpGet:
+              path: /livez
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+            - name: config
+              mountPath: /etc/my-server
+              readOnly: true
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

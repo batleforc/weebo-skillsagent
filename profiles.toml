@@ -6,7 +6,14 @@
 # grilling travels with grill-me: the latter is a three-line shim whose body is
 # "call the Skill tool with grilling". ponytail-plugin keeps upstream's
 # session-start hook that arms ponytail mode; the vendored skill alone does not.
-items = ["wska", "graphify", "rtk", "ponytail", "ponytail-plugin", "grill-me", "grilling"]
+# weebo-testing is the house test practice; every Weebo project has tests.
+items = ["wska", "graphify", "rtk", "ponytail", "ponytail-plugin", "grill-me", "grilling", "weebo-testing"]
+
+[profiles.weebo]
+include = ["base"]
+# The house practices, each modelled on batlehub (weebo-testing is in base).
+# weebo-helm stays out: add it with ITEM= when the project ships a chart.
+items = ["weebo-taskfile-mise", "weebo-security", "weebo-containerfile", "weebo-api-contract", "weebo-release", "weebo-cde"]
 
 [profiles.planning]
 include = ["base"]

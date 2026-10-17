@@ -1,0 +1,39 @@
+# source: batlehub@20879e5 (cog.toml) + weebo-skillsagent (cog.toml), trimmed.
+# Release half of cog.toml. Merge it into the file weebo-taskfile-mise writes
+# (that one holds tag_prefix and the [git_hooks]); keep one cog.toml per repo.
+#
+# `cog bump --auto` (or `--minor`, or `--version 1.2.0`) runs the pre-bump
+# hooks, commits what they changed as `chore(version): vX.Y.Z`, and tags that
+# commit. The user runs it, never an agent: the bump commit is signed.
+
+# Every tag is `v`-prefixed; the release workflow triggers on `v*` and the
+# changelog compare links are built from these names.
+tag_prefix = "v"
+
+# Pick ONE changelog mode (see references/cocogitto.md):
+# - batlehub: CHANGELOG.md is written by hand (Keep a Changelog, an
+#   `[Unreleased]` section renamed at the cut), because a generated list of
+#   commit subjects reads `wip`, `wip` and cog refuses non-conventional commits.
+disable_changelog = true
+# - weebo-skillsagent: cog generates CHANGELOG.md from the conventional commits.
+# disable_changelog = false
+# [changelog]
+# path = "CHANGELOG.md"
+# template = "remote"
+# remote = "github.com"
+# owner = "batleforc"
+# repository = "my-crate"
+
+# `{{version}}` is the bare version (`1.2.0`, not `v1.2.0`), which is what every
+# file wants. Changes the hook makes are staged into the bump commit, so the tag
+# can never point at a tree that still declares the previous version.
+pre_bump_hooks = [
+  "task version:set VERSION={{version}}",
+]
+
+# Optional (weebo-skillsagent does this, batlehub does not): cog's tag is
+# lightweight, which `git push --follow-tags` skips, so push the bump commit and
+# its tag together or the v* tag never reaches CI.
+# post_bump_hooks = [
+#   "git push --atomic origin HEAD v{{version}}",
+# ]

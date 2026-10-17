@@ -1,0 +1,121 @@
+# source: batlehub@20879e5 (.tasks/security.yaml), trimmed.
+# House contract: `task audit` covers the dependencies AND the image. batlehub's
+# own `audit` is cargo audit alone (here `audit:rust`) and leaves Trivy to CI.
+version: "3"
+
+tasks:
+  audit:
+    desc: "The mandatory audit: Rust advisories + bans, frontend advisories, image CVEs"
+    cmds:
+      - task: audit:rust
+      - task: deny
+      - task: ui:audit
+      - task: audit:image
+
+  audit:rust:
+    desc: Check Rust dependencies for security vulnerabilities (RUSTSEC; no suppressions, see .cargo/audit.toml)
+    cmds:
+      - cargo audit
+
+  deny:
+    desc: "Supply-chain gate: advisories, banned crates, licenses and sources (see deny.toml)"
+    cmds:
+      - cargo deny check
+
+  ui:audit:
+    desc: Check frontend pnpm dependencies for security vulnerabilities
+    dir: ui
+    cmds:
+      # Covers the whole tree (direct + transitive) and resolves from
+      # pnpm-lock.yaml, so it needs no install. Exits non-zero on high/critical.
+      #
+      # No `--prod`, deliberately: this tree's build tooling produces what the
+      # console ships, so a dev-only advisory is still an advisory about our
+      # output. `--prod` is for a tree that ships nothing it builds (a docs site).
+      #
+      # An `overrides:` pin is the wrong fix for a package that ships a
+      # *prebuilt* bundle: it moves the lockfile, turns this green, and changes
+      # nothing about the bytes the browser runs. Bump the parent instead, or
+      # ignore one advisory with a dated comment saying who checked and why:
+      #
+      #   - pnpm audit --audit-level high --ignore GHSA-xxxx-xxxx-xxxx
+      #
+      # One entry per advisory, never a blanket carve-out.
+      - pnpm audit --audit-level high
+
+  audit:image:
+    desc: "Trivy gate on a built image, same flags as CI — IMAGE=my-server:scan (skipped, loudly, when unset)"
+    cmds:
+      # No container engine in the CDE, so the image is usually built elsewhere
+      # (CI, a registry) and scanned by reference. Fixable HIGH/CRITICAL only.
+      - |
+        if [ -z "{{.IMAGE}}" ]; then
+          echo "SKIPPED: audit:image — IMAGE unset; image-scan.yaml gates it in CI" >&2
+          exit 0
+        fi
+        trivy image --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 \
+          --ignorefile .trivyignore.yaml "{{.IMAGE}}"
+
+  postmortem:rust:
+    desc: "Dependency supply-chain gate for the Rust workspace — source-repo reputation + known vulns, from Cargo.lock"
+    cmds:
+      # Rebuilds the dependency forest from the lockfile (no install, no
+      # lifecycle scripts), scores each dep's source repo (stars, age, activity,
+      # archived, typosquat), then cross-checks vuln.mlab.sh. --fail-on-vuln high
+      # is the same bar as pnpm audit and the Trivy gate; the reputation
+      # thresholds stay unset until a baseline exists. Keep in sync with
+      # .github/workflows/postmortem.yaml.
+      #
+      # postmortem only detects lockfiles sitting directly in the scanned
+      # directory, hence one task per dependency root. Export GITHUB_TOKEN to
+      # raise the 60/h anonymous limit on the reputation lookups.
+      - postmortem tree . --online --vulns --fail-on-vuln high
+
+  postmortem:ui:
+    desc: "Dependency supply-chain gate for the frontend — source-repo reputation + known vulns, from ui/pnpm-lock.yaml"
+    dir: ui
+    cmds:
+      - postmortem tree . --online --vulns --fail-on-vuln high
+
+  postmortem:
+    desc: "Run the dependency supply-chain gate over every dependency root"
+    cmds:
+      - task: postmortem:rust
+      - task: postmortem:ui
+
+  vex:
+    desc: "Check the VEX document — structure, policy, and that it and .trivyignore.yaml still agree"
+    cmds:
+      # .trivyignore.yaml is read by Trivy and nobody else; the OpenVEX document
+      # says the same thing in the format every scanner reads. An entry in one
+      # and not the other fails, in both directions.
+      - python3 .github/scripts/vex.py check
+
+  vex:render:
+    desc: "Bind the VEX document to published image digests — VERSION=1.2.3 IMAGES='repo@sha256:… repo@sha256:…'"
+    requires:
+      vars: [VERSION, IMAGES]
+    cmds:
+      - python3 .github/scripts/vex.py render
+        --version {{.VERSION}}
+        {{range $i, $image := splitList " " .IMAGES}}--image {{$image}} {{end}}
+        --out {{.OUT | default "my-project.openvex.json"}}
+
+  sbom:rust:
+    desc: "Generate a CycloneDX SBOM of the shipped server (sbom-rust.cdx.json) — feed to `trivy sbom` / `grype sbom:` to match future CVEs"
+    cmds:
+      # cargo-cyclonedx writes one <crate>.cdx.json per workspace member next to
+      # its manifest; keep only the server's, as the stable repo-root artifact.
+      - cargo cyclonedx --format json --manifest-path my-server/Cargo.toml
+      - cp my-server/my-server.cdx.json sbom-rust.cdx.json
+      - find . -maxdepth 3 -name '*.cdx.json' -not -path './sbom-rust.cdx.json' -delete
+
+  security:
+    desc: "Full local security gate — audit, dependency supply chain and Rust SBOM. gitleaks/semgrep/CodeQL run in CI (see .github/workflows)"
+    cmds:
+      - task: audit
+      # Needs network (reputation + vuln lookups); advisory-only audits can't
+      # see an upstream that went archived or got taken over.
+      - task: postmortem
+      # Add `- task: vex` once .trivyignore.yaml holds its first entry.
+      - task: sbom:rust

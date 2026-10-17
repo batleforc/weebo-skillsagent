@@ -1,0 +1,51 @@
+# source: batlehub@20879e5 (.tasks/perf.yaml), trimmed: no metrics sampler,
+# no mock upstream, no soak/break/profile (see the weebo-testing k6 reference).
+version: "3"
+
+vars:
+  RESULTS: perf/results
+
+tasks:
+  perf:seed:
+    desc: Create the fixtures every scenario reads (run once against a fresh server)
+    cmds:
+      - 'echo "TODO - seed the server under test (create perf-* resources)" && exit 1'
+
+  perf:run:read:
+    desc: "k6 scenario 01 — warm read ramp to 200 VU, thresholds enforced"
+    cmds:
+      - mkdir -p {{.RESULTS}}
+      - k6 run --summary-export {{.RESULTS}}/01_warm_read.json perf/k6/scenarios/01_warm_read.js
+
+  perf:run:all:
+    desc: Run every scenario in sequence; threshold violations are reported but do not stop the suite
+    cmds:
+      - mkdir -p {{.RESULTS}}
+      - for: { var: SCENARIOS }
+        cmd: k6 run --no-thresholds --summary-export {{.RESULTS}}/$(basename {{.ITEM}} .js).json {{.ITEM}}
+    vars:
+      SCENARIOS:
+        sh: ls perf/k6/scenarios/*.js
+
+  perf:report:compare:
+    desc: "Compare each scenario's p95 with a baseline dir — BASE=perf/results/<release> (MARGIN=25 %, FAIL=1 to exit non-zero on a regression)"
+    requires:
+      vars: [BASE]
+    vars:
+      MARGIN: '{{.MARGIN | default "25"}}'
+      FAIL: '{{.FAIL | default "0"}}'
+    cmds:
+      - |
+        regressed=0
+        for cur in {{.RESULTS}}/*.json; do
+          base="{{.BASE}}/$(basename "$cur")"
+          [ -f "$base" ] || { echo "NEW   $(basename "$cur") (no baseline)"; continue; }
+          read -r b c <<<"$(jq -rn --slurpfile b "$base" --slurpfile c "$cur" \
+            '[$b[0], $c[0]] | map(.metrics.http_req_duration["p(95)"]) | @tsv')"
+          if awk -v b="$b" -v c="$c" -v m="{{.MARGIN}}" 'BEGIN{exit !(c > b*(1+m/100))}'; then
+            echo "SLOWER $(basename "$cur") p95 ${b}ms -> ${c}ms"; regressed=1
+          else
+            echo "OK    $(basename "$cur") p95 ${b}ms -> ${c}ms"
+          fi
+        done
+        [ "{{.FAIL}}" != "1" ] || [ "$regressed" = 0 ]

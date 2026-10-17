@@ -1,0 +1,29 @@
+# source: batlehub@20879e5 (.tasks/rust.yaml + .tasks/ui.yaml + .tasks/security.yaml), trimmed.
+# Include with `flatten: true` so the names stay unprefixed (`task dump-spec`, `task ui:generate`).
+version: "3"
+
+tasks:
+  dump-spec:
+    desc: Dump the OpenAPI spec to ui/openapi.json
+    cmds:
+      - cargo run -p my-server -- dump-spec > ui/openapi.json
+
+  ui:generate:
+    desc: Generate TypeScript client from the OpenAPI spec (run dump-spec first)
+    dir: ui
+    cmds:
+      - pnpm run generate
+
+  generate:
+    desc: Regenerate the back client
+    cmds:
+      - task: dump-spec
+      - task: ui:generate
+
+  openapi:lint:
+    desc: "Lint ui/openapi.json with Spectral (OAS + OWASP API Top 10, ruleset in .spectral.yaml); fails on any warning"
+    cmds:
+      # Run in isolation, not from ui/package.json: spectral-cli's tree carries
+      # high advisories that would fail `task ui:audit`. Build-time only, and it
+      # reads nothing but our own spec.
+      - npx --yes --ignore-scripts @stoplight/spectral-cli@6.17.0 lint ui/openapi.json --fail-severity=warn {{.CLI_ARGS}}

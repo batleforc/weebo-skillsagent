@@ -135,7 +135,8 @@ which suite carries the regression signal instead.
 Start with the rating. Draw the trust boundaries (mermaid), then one STRIDE row
 per real threat with its mitigation, the code that enforces it and the residual
 risk with who accepted it. §14 then carries **one negative test per row**: the
-bypass attempted, refused. New parsers get a fuzz target.
+bypass attempted, refused. New parsers get a fuzz target; how each test layer is
+written and run is the `weebo-testing` skill.
 
 ## 5. Diagrams
 

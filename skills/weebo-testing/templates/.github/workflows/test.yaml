@@ -1,0 +1,150 @@
+# source: batlehub@20879e5 (.github/workflows/test.yaml + front-test.yaml), trimmed.
+# Steps mirror .tasks/{test,coverage}.yaml line for line, so a local run and CI cannot drift.
+name: Test
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+  # Nightly: pays for the real fuzzing, and catches clients or upstreams that moved without a commit here.
+  schedule:
+    - cron: "50 23 * * *"
+  workflow_dispatch:
+
+env:
+  # Same regex as COVERAGE_EXCLUDE in .tasks/coverage.yaml.
+  COVERAGE_EXCLUDE: "src/main\\.rs"
+
+jobs:
+  rust:
+    name: Rust tests (+ coverage gate)
+    runs-on: ubuntu-latest
+    # Real-backend tests: declare each backend here and set its env var below,
+    # so nothing prints SKIPPED in CI.
+    # services:
+    #   postgres:
+    #     image: postgres:17-alpine
+    #     env: { POSTGRES_PASSWORD: testpass }
+    #     ports: ["5432:5432"]
+    #     options: >-
+    #       --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 3s --health-retries 10
+    # env:
+    #   DATABASE_URL: postgresql://postgres:testpass@localhost:5432/postgres
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: dtolnay/rust-toolchain@02cb101ec7c40f2c49e1d9714d64511d8e1b74de # master
+        with:
+          toolchain: "stable"
+          components: llvm-tools-preview
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+      - uses: taiki-e/install-action@26e9283f268b880168bdbd2c545dfcd60ec2c6ab # v2.87.13
+        with:
+          tool: cargo-llvm-cov
+      - name: Collect coverage (task cov:collect)
+        run: |
+          cargo llvm-cov clean --workspace
+          cargo llvm-cov --no-report --workspace --ignore-filename-regex "$COVERAGE_EXCLUDE"
+      - name: Gate at 80 % (task coverage-check)
+        run: cargo llvm-cov report --fail-under-lines 80 --ignore-filename-regex "$COVERAGE_EXCLUDE"
+      - name: LCOV for Sonar
+        if: always()
+        run: cargo llvm-cov report --lcov --output-path lcov.info --ignore-filename-regex "$COVERAGE_EXCLUDE"
+      # llvm-cov cannot instrument doctests on stable: run them uninstrumented.
+      - name: Doc tests
+        run: cargo test --workspace --doc
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: always()
+        with:
+          name: coverage-rust
+          path: lcov.info
+          if-no-files-found: ignore
+
+  ui:
+    name: UI tests (+ coverage gate)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ui
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+        with:
+          version: 11
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+      - run: pnpm install --frozen-lockfile
+      # task ui:coverage — thresholds live in vite.config.ts.
+      - run: pnpm run coverage
+
+  fuzz:
+    # Two tiers: every PR pays for the compile (catches drift), nightly pays for the fuzzing (finds bugs).
+    name: Fuzz targets
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: dtolnay/rust-toolchain@02cb101ec7c40f2c49e1d9714d64511d8e1b74de # master
+        with:
+          toolchain: "nightly"
+          components: rust-src
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+        with:
+          workspaces: ". -> target\nfuzz -> target"
+      - name: Every fuzz target still compiles (task fuzz:check)
+        run: cargo check --manifest-path fuzz/Cargo.toml --bins --all-targets
+
+      - uses: taiki-e/install-action@26e9283f268b880168bdbd2c545dfcd60ec2c6ab # v2.87.13
+        if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+        with:
+          tool: cargo-fuzz
+      # One cache entry for every target's corpus; fresh key per run, restored by prefix.
+      - name: Restore fuzz corpora
+        if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: fuzz/corpus
+          key: fuzz-corpus-${{ runner.os }}-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: fuzz-corpus-${{ runner.os }}-
+      - name: Fuzz each target
+        if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+        working-directory: fuzz
+        env:
+          ASAN_OPTIONS: detect_leaks=0
+        run: |
+          set -euo pipefail
+          # Read from the manifest: a new target is fuzzed by existing.
+          targets=$(cargo fuzz list)
+          host=$(rustc +nightly -vV | sed -n 's/^host: //p')
+          # Collect failures so one crash does not hide the targets after it.
+          failed=()
+          for t in $targets; do
+            echo "::group::$t"
+            dict=()
+            if [ -f "dicts/$t.dict" ]; then dict=("-dict=$PWD/dicts/$t.dict"); fi
+            if ! cargo +nightly fuzz run --target "$host" "$t" -- -max_total_time=60 "${dict[@]}"; then
+              failed+=("$t")
+              echo "::error title=fuzz::$t failed — its input is in the fuzz-artifacts upload"
+            else
+              # Minimised before caching, or the corpus grows every night and eats the time budget.
+              cargo +nightly fuzz cmin --target "$host" "$t" \
+                || echo "::warning title=fuzz::cmin failed for $t; keeping its corpus as is"
+            fi
+            echo "::endgroup::"
+          done
+          if [ "${#failed[@]}" -gt 0 ]; then
+            echo "failed targets: ${failed[*]}"
+            exit 1
+          fi
+      - name: Save fuzz corpora
+        if: always() && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch')
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: fuzz/corpus
+          key: fuzz-corpus-${{ runner.os }}-${{ github.run_id }}-${{ github.run_attempt }}
+      - name: Upload crash artefacts
+        if: failure() && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch')
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: fuzz-artifacts
+          path: fuzz/artifacts/
+          if-no-files-found: ignore

@@ -1,0 +1,53 @@
+# source: batlehub@20879e5 (.spectral.yaml), trimmed.
+#
+# Ruleset for ui/openapi.json (`task openapi:lint`, `.github/workflows/openapi-lint.yaml`).
+# The gate fails on any warning, so the spec stays at zero findings and every
+# exception is one written below, with its reason. `spectral:oas` findings are
+# real defects: a duplicate operationId made the generated client emit
+# `listPackages2` before this gate existed.
+#
+# The OWASP API Top 10 ruleset is kept for its authentication rules: a new write
+# endpoint without `security` fails here. Turn off any other rule only with a
+# comment saying why it does not fit this API.
+extends:
+  - spectral:oas
+  - https://unpkg.com/@stoplight/spectral-owasp-ruleset@2.0.1/dist/ruleset.mjs
+
+rules:
+  # The first line of a handler's doc comment becomes its `summary`, which is
+  # what Scalar and the client's JSDoc render. Required, as an error; a longer
+  # `description` is written where there is more to say.
+  operation-description: off
+  operation-summary:
+    description: Every operation has a summary.
+    message: "No summary: put a `///` line above its #[utoipa::path]."
+    severity: error
+    given: "$.paths[*][get,put,post,delete,patch,head,options,trace]"
+    then:
+      field: summary
+      function: truthy
+  # The base URL is the deployment's, unknown when the spec is built.
+  oas3-api-servers: off
+  # utoipa emits unsigned Rust integers without int32/int64; the client is
+  # unaffected.
+  owasp:api4:2023-integer-format: off
+  # The rules below are off in batlehub for the reason given on each. They are
+  # batlehub's reasons: confirm each still holds for this API, or delete the line.
+  #
+  # Bodies are bounded by the server's payload limits, not per-field
+  # maxLength/maxItems/maximum that no client observes.
+  owasp:api4:2023-string-limit: off
+  owasp:api4:2023-string-restricted: off
+  owasp:api4:2023-array-limit: off
+  owasp:api4:2023-integer-limit: off
+  # Rate limits are operator config applied by middleware, so no operation has
+  # a fixed limit to declare.
+  owasp:api4:2023-rate-limit: off
+  owasp:api4:2023-rate-limit-responses-429: off
+  # Error responses are declared where a handler produces them, not blanket.
+  owasp:api8:2023-define-error-responses-401: off
+  owasp:api8:2023-define-error-responses-500: off
+  owasp:api8:2023-define-error-validation: off
+  # Admin and user routes share one bearer scheme; the role check is
+  # application authz, which OpenAPI cannot express.
+  owasp:api5:2023-admin-security-unique: off

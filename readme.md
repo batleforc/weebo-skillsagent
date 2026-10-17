@@ -57,7 +57,8 @@ one profile serves both `--scope project` and `--scope user`.
 
 | Profile    | Includes  | Adds                                       |
 | ---------- | --------- | ------------------------------------------ |
-| `base`     | —         | `wska`, `graphify`, `rtk`, `ponytail`, `ponytail-plugin`, `grill-me`, `grilling` |
+| `base`     | —         | `wska`, `graphify`, `rtk`, `ponytail`, `ponytail-plugin`, `grill-me`, `grilling`, `weebo-testing` |
+| `weebo`    | `base`    | `weebo-taskfile-mise`, `weebo-security`, `weebo-containerfile`, `weebo-api-contract`, `weebo-release`, `weebo-cde` |
 | `planning` | `base`    | `bmad`, `batlehub-rfc`, `judge`            |
 | `design`   | `base`    | `frontend-design`, `theme-factory`, `impeccable`, `batlehub-design` |
 | `frontend` | `design`  | `webapp-testing`                           |
@@ -121,6 +122,14 @@ named `all`.
 | `judge`           | installer   | `uv tool install --editable "$WSKA_REPO/judge"`: headless review gates `rfc-ready`, `doc-review` ([docs/judge.md](docs/judge.md)) | `uv` |
 | `doc-review`      | symlink (agent) | ours: read-only documentation reviewer run by `judge doc-review` | `claude`, `judge` |
 | `weebo-techdoc`   | symlink     | ours: technical docs in `docs/techdoc/` (components, Mermaid, maintenance checks) for the IDP | `python3`, `git` |
+| `weebo-testing`   | symlink     | ours: house test practice from `batlehub/batlehub` (unit/integration, 80% coverage, cargo-fuzz, k6, heavy e2e) with Taskfile + CI templates | `cargo`, `cargo-llvm-cov`, `cargo-fuzz`, `k6` |
+| `weebo-taskfile-mise` | symlink | ours, from `batlehub/batlehub`: project skeleton: flattened `.tasks/` Taskfile, mise as the only package manager, cocogitto hooks, `.gitignore` | `task`, `mise`, `cog`, `gitleaks`, `git` |
+| `weebo-security` | symlink | ours, from `batlehub/batlehub`: `task audit` (cargo audit/deny, pnpm audit, Trivy), daily CI scanners, SBOM, VEX, CVE triage and exceptions | `cargo-audit`, `cargo-deny`, `pnpm`, `trivy` |
+| `weebo-containerfile` | symlink | ours, from `batlehub/batlehub`: multi-stage Containerfile, distroless non-root runtime, hardened twin, updatecli digest pins, CI build/scan/sign | — |
+| `weebo-api-contract` | symlink | ours, from `batlehub/batlehub`: utoipa + self-hosted Scalar, `dump-spec`, HeyApi axios client, contract test + Spectral drift gates | `cargo`, `pnpm`, `npx` |
+| `weebo-release` | symlink | ours, from `batlehub/batlehub`: cocogitto bump/changelog, one version across manifests, tag-triggered GitHub release | `cog`, `git`, `task` |
+| `weebo-cde` | symlink | ours, from `batlehub/batlehub`: Eclipse Che: devfile sidecars, `kubectl exec $HOSTNAME -c`, browser sidecar, sleep-infinity fallback | `kubectl`, `task` |
+| `weebo-helm` | symlink | ours, from `batlehub/batlehub`: Helm chart skeleton, values conventions, helm-docs gate, PR lint, cosign-signed OCI chart | `helm`, `helm-docs` |
 | `wska`            | symlink     | ours: makes agents install, update and add skills through `wska` rather than by hand | `wska` or `cargo` |
 
 Requirements are hand-maintained in `vendor.toml`'s `[requires]` table — `wska`

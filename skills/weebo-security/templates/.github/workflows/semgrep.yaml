@@ -1,0 +1,55 @@
+# source: batlehub@20879e5 (.github/workflows/semgrep.yaml).
+name: Semgrep
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - "**/*.rs"
+      - "**/*.ts"
+      - "**/*.vue"
+      - ".github/workflows/semgrep.yaml"
+  pull_request:
+    branches: ["main"]
+    paths:
+      - "**/*.rs"
+      - "**/*.ts"
+      - "**/*.vue"
+      - ".github/workflows/semgrep.yaml"
+  schedule:
+    - cron: "50 23 * * 1"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  semgrep:
+    name: Semgrep SAST
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write # upload SARIF to the Security tab
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      # pipx is preinstalled on GitHub-hosted runners.
+      - name: Install Semgrep
+        run: pipx install semgrep
+      # Produce SARIF for the Security tab (writes the file even when it fails).
+      - name: Semgrep scan (SARIF)
+        run: |
+          semgrep scan \
+            --config p/rust --config p/typescript --config p/secrets \
+            --severity ERROR \
+            --sarif --output semgrep.sarif
+      - name: Upload SARIF
+        if: always()
+        uses: github/codeql-action/upload-sarif@b96794f015dfd88f77b49b1c93e0fa7110f94c63 # v4.38.0
+        with:
+          sarif_file: semgrep.sarif
+          category: semgrep
+      # The gate — non-zero exit on any ERROR-severity finding.
+      # (.semgrepignore must list semgrep.sarif, or this rescans the report.)
+      - name: Semgrep scan (gate)
+        run: |
+          semgrep scan \
+            --config p/rust --config p/typescript --config p/secrets \
+            --severity ERROR \
+            --error

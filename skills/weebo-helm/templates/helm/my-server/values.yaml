@@ -1,0 +1,134 @@
+# source: batlehub@20879e5 (helm/batlehub/values.yaml), trimmed.
+# Every value carries a `# --` comment: helm-docs turns those into the README's
+# values table, and `task helm:docs:check` fails when they drift.
+# Override with: helm install my-server ./helm/my-server -f my-values.yaml
+
+# -- Replicas. Rendered PDB only when above 1.
+replicaCount: 1
+
+# -- Container image.
+image:
+  repository: ghcr.io/my-org/my-server
+  pullPolicy: IfNotPresent
+  # -- Overrides the image tag.
+  # @default -- `Chart.appVersion`
+  tag: ""
+
+# -- Pull secrets, for images held in a private registry.
+imagePullSecrets: []
+# -- Replaces the chart name in generated resource names.
+nameOverride: ""
+# -- Replaces the full generated name of every resource.
+fullnameOverride: ""
+
+# -- ServiceAccount for the pod.
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+  # No RBAC roles are bound to this ServiceAccount, so the projected token
+  # would be unused — disable automounting it into the pod.
+  automountServiceAccountToken: false
+
+# -- Annotations added to the pod.
+podAnnotations: {}
+
+# ── Security context ──────────────────────────────────────────────────────────
+# The image declares `USER 65532:65532` (see weebo-containerfile), so these
+# values match what the image already does — they exist so the *cluster*
+# enforces it too, and so a Pod Security Admission "restricted" namespace admits
+# the pod unmodified. fsGroup makes a mounted PVC writable by that UID.
+# -- Pod-level security context. Matches the `USER 65532` the image declares.
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 65532
+  runAsGroup: 65532
+  fsGroup: 65532
+  seccompProfile:
+    type: RuntimeDefault
+
+# readOnlyRootFilesystem: if the server needs scratch space, mount an emptyDir
+# rather than relaxing this.
+# -- Container-level security context. The root filesystem stays read-only.
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop:
+      - ALL
+
+# -- Service fronting the server.
+service:
+  type: ClusterIP
+  port: 8080
+
+# -- Ingress for the server.
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+  host: my-server.example.com
+  # -- Additional hostnames routed to the same Service.
+  extraHosts: []
+  # -- TLS blocks for the Ingress. The certificate needs a SAN for every host.
+  tls: []
+
+# -- Resource requests and limits. Memory limit, no CPU limit.
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+    ephemeral-storage: 256Mi
+  limits:
+    memory: 512Mi
+    ephemeral-storage: 1Gi
+
+# -- Environment variables. Reference them as `${VAR_NAME}` inside `config`;
+# put secrets here as `valueFrom.secretKeyRef`, never as a literal `value`.
+env: []
+# -- Bulk-import every key of a Secret or ConfigMap as environment variables.
+envFrom: []
+
+# -- Node selector for the pod.
+nodeSelector: {}
+# -- Tolerations for the pod.
+tolerations: []
+# -- Affinity rules for the pod.
+affinity: {}
+
+# ── Application config ────────────────────────────────────────────────────────
+# This object is serialised verbatim to config.toml via toToml, into a Secret.
+# Keys are snake_case to match the server's TOML field names. An optional
+# section must be absent — not null or {} — to be left out of the rendered file.
+# -- The application config, serialised verbatim to `config.toml`.
+# @default -- the server's minimal working config
+config:
+  # -- The `[server]` block.
+  server:
+    host: "0.0.0.0"
+    port: 8080
+
+# ── Disruption budget ─────────────────────────────────────────────────────────
+# Only rendered when replicaCount > 1 — a PDB over a single replica blocks node
+# drains without buying any availability.
+# -- Disruption budget. Rendered only when `replicaCount` is above 1.
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 1
+  # A PDB carries only one of the two fields. `maxUnavailable` wins when set,
+  # including an explicit `0` (a zero-disruption budget), which is why the
+  # template tests whether it was configured rather than whether it is truthy.
+  # maxUnavailable: 0
+
+# ── Network policy ────────────────────────────────────────────────────────────
+# Off by default: the correct egress set depends on the deployment, and a
+# default-deny policy written without it silently breaks every outbound call.
+# -- NetworkPolicy. Off by default; DNS egress is always allowed when on.
+networkPolicy:
+  enabled: false
+  # -- Peers allowed to reach the service port. An empty list renders an ingress
+  # rule with no `from`, which the NetworkPolicy spec reads as **any source** —
+  # name the ingress controller to actually narrow it.
+  ingressFrom: []
+  # -- Extra egress rules, appended to the always-present DNS rule.
+  egressTo: []

@@ -1,0 +1,9 @@
+# source: batlehub@20879e5 (helm/batlehub/.helmignore).
+.DS_Store
+.git/
+.gitignore
+.vscode/
+*.swp
+*.bak
+# The source of README.md, not part of the chart a user installs.
+README.md.gotmpl

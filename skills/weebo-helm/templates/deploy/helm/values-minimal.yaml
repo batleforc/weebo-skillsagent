@@ -1,0 +1,12 @@
+# source: batlehub@20879e5 (deploy/helm/values-minimal.yaml), trimmed.
+# The smallest thing that works. Every values-*.yaml here is a complete `-f`
+# file the install docs point at, and `task helm:examples` renders each one.
+#
+#   helm install my-server ./helm/my-server -n my-server --create-namespace \
+#     -f deploy/helm/values-minimal.yaml
+replicaCount: 1
+
+config:
+  server:
+    host: "0.0.0.0"
+    port: 8080

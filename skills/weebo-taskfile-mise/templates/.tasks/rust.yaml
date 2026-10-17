@@ -1,0 +1,36 @@
+# source: batlehub@20879e5 (.tasks/rust.yaml), trimmed.
+# Flattened into the root Taskfile, so each name here is the name users type:
+# prefix it yourself (`rust:lint`) when it would clash with another domain.
+version: "3"
+
+tasks:
+  build:
+    desc: Build the entire workspace
+    cmds:
+      - cargo build --workspace
+
+  check:
+    desc: Type-check the entire workspace without building
+    cmds:
+      - cargo check --workspace
+
+  clean:stale:
+    desc: "Drop build artefacts not touched since yesterday (cargo-sweep --time 1)"
+    # Cargo never removes anything from `target/`: when a metadata hash changes
+    # (a dependency bump, a feature flip, a new toolchain) the new artefact is
+    # written beside the old one and the old one stays forever. `--time 1` keeps
+    # whatever today's work touched. Run it after a dependency bump.
+    cmds:
+      - cargo sweep --time 1
+      - 'du -sh target || true'
+
+  rust:lint:
+    desc: Run clippy and the format check across the workspace
+    cmds:
+      - cargo clippy --workspace --all-targets -- -D warnings
+      - cargo fmt --all --check
+
+  fmt:
+    desc: Format all Rust source files
+    cmds:
+      - cargo fmt --all

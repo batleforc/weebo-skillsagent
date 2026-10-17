@@ -1,0 +1,25 @@
+# source: batlehub@20879e5 (fuzz/Cargo.toml), trimmed.
+# Its own workspace: the fuzz build carries the parsers and nothing that needs a network.
+[workspace]
+
+[package]
+name = "my-crate-fuzz"
+version = "0.0.0"
+publish = false
+edition = "2021"
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "0.4"
+arbitrary = { version = "1", features = ["derive"] }
+# Parser features only: no registry client, no database driver.
+my-crate = { path = "../crates/core", default-features = false }
+
+# One [[bin]] per target; `cargo fuzz list` and the CI loop read them from here.
+[[bin]]
+name = "fuzz_example"
+path = "fuzz_targets/fuzz_example.rs"
+test = false
+doc = false

@@ -1,0 +1,36 @@
+# source: weebo-skillsagent (.github/workflows/release.yml), trimmed.
+# For a repo whose only artifact is one CLI binary. Tags come from `cog bump`
+# (tag_prefix "v"); each one publishes binaries as release assets named
+# my-cli-<target>.tar.gz, the shape mise's github: backend picks up
+# (`mise use github:<owner>/<repo>`).
+name: release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - { os: ubuntu-24.04, target: x86_64-unknown-linux-musl }
+          - { os: ubuntu-24.04-arm, target: aarch64-unknown-linux-musl }
+          - { os: macos-14, target: aarch64-apple-darwin }
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Install musl tools
+        if: contains(matrix.target, 'musl')
+        run: sudo apt-get update && sudo apt-get install -y musl-tools
+      - run: rustup target add ${{ matrix.target }}
+      - run: cargo test -p my-cli
+      - run: cargo build --release --locked -p my-cli --target ${{ matrix.target }}
+      - name: Package
+        run: tar -czf my-cli-${{ matrix.target }}.tar.gz -C target/${{ matrix.target }}/release my-cli
+      - uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3.0.3
+        with:
+          files: my-cli-${{ matrix.target }}.tar.gz

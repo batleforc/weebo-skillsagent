@@ -1,0 +1,61 @@
+# source: batlehub@20879e5 (.github/workflows/perf-report.yaml + soak.yaml's label trigger), trimmed.
+# Runs on a published release, or when a PR gets the `perf` label (removed after the run).
+name: Perf
+on:
+  release:
+    types: [published]
+  pull_request:
+    types: [labeled]
+  workflow_dispatch:
+
+jobs:
+  k6:
+    if: github.event_name != 'pull_request' || github.event.label.name == 'perf'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write        # attach the report to the release
+      pull-requests: write   # remove the label
+    env:
+      # Pinned: results are partly a property of the load generator.
+      K6_VERSION: "2.2.0"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: dtolnay/rust-toolchain@02cb101ec7c40f2c49e1d9714d64511d8e1b74de # master
+        with:
+          toolchain: "stable"
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+      - name: Install k6
+        run: |
+          curl -fsSL --proto '=https' --proto-redir '=https' \
+            "https://github.com/grafana/k6/releases/download/v${K6_VERSION}/k6-v${K6_VERSION}-linux-amd64.tar.gz" \
+            | tar -xz -C /tmp
+          sudo install "/tmp/k6-v${K6_VERSION}-linux-amd64/k6" /usr/local/bin/k6
+          k6 version
+      - name: Start the server under test
+        run: |
+          cargo build --release --locked
+          # TODO: replace with the project's binary and its perf config.
+          ./target/release/my-server --config perf/config.perf.toml &
+          for _ in $(seq 60); do curl -sf http://localhost:8080/api/health && break; sleep 1; done
+      # TODO: the seed step (task perf:seed) goes here.
+      - name: Run every scenario (task perf:run:all)
+        run: |
+          mkdir -p perf/results
+          for s in perf/k6/scenarios/*.js; do
+            k6 run --no-thresholds --summary-export "perf/results/$(basename "$s" .js).json" "$s"
+          done
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: perf-results
+          path: perf/results/*.json
+      - name: Attach to the release
+        if: github.event_name == 'release'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release upload "${{ github.event.release.tag_name }}" perf/results/*.json --clobber
+      - name: Clear the label
+        if: always() && github.event_name == 'pull_request'
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh api -X DELETE "repos/$GITHUB_REPOSITORY/issues/${{ github.event.pull_request.number }}/labels/perf"

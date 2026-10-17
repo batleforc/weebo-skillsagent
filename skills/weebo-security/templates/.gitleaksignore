@@ -1,0 +1,15 @@
+# source: batlehub@20879e5 (.gitleaksignore), trimmed.
+# Findings that have been looked at and are not secrets.
+#
+# One line per finding, as `commit:file:rule:line` — gitleaks' own fingerprint,
+# the `Fingerprint` field of `--report-format json`. Scoped to a single
+# occurrence on purpose: unlike an allowlist entry in `gitleaks.toml`, an entry
+# here cannot hide a *future* secret in the same file.
+#
+# Use this only for a finding already in history, which editing the working
+# tree cannot remove. Anything still in the tree gets fixed in the tree (rename
+# the fixture so it stops looking like a token). The scan walks full history,
+# so a fixture that has ever been committed stays visible to it forever.
+#
+# <what it is, why it is not a secret, what the working-tree fixture is now>
+# 0123456789abcdef0123456789abcdef01234567:my_crate/tests/oidc.rs:generic-api-key:42

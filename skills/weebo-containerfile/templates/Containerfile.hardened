@@ -1,0 +1,88 @@
+# source: batlehub@20879e5 (Containerfile.hardened), trimmed.
+# Same stages as Containerfile; only the bases (Red Hat Hardened Images) and the
+# package manager differ. Keep the two files in step.
+# ── Build stage ───────────────────────────────────────────────────────────────
+# Pin every base by tag AND digest; updatecli moves both (see .updatecli/).
+FROM registry.access.redhat.com/hi/rust:latest-builder@sha256:8055c3dede8892b3685e99f690c7ec3772ce815add533a9c9e05f000f8b9e3ba AS builder
+
+RUN dnf install -y awk gcc make openssl-devel pkgconfig && dnf clean all
+
+WORKDIR /build
+
+# Cache dependency compilation separately from source changes.
+# One COPY per workspace member manifest.
+COPY Cargo.toml Cargo.lock ./
+COPY crates/my-crate/Cargo.toml crates/my-crate/Cargo.toml
+COPY server/Cargo.toml          server/Cargo.toml
+
+# Stub out every lib/main so cargo can resolve and compile deps.
+RUN mkdir -p crates/my-crate/src && echo "pub fn _stub() {}" > crates/my-crate/src/lib.rs && \
+    mkdir -p server/src && echo "fn main() {}" > server/src/main.rs
+
+# --locked: build exactly what Cargo.lock resolves and fail if it would need
+# updating — the image must not resolve a dependency the repository never saw.
+# Known debt (batlehub TD-0003): `; exit 0` hides a failed stub build, and a
+# version bump in Cargo.toml invalidates this layer on every release.
+RUN cargo build --locked --release -p my-server 2>/dev/null; exit 0
+
+# Now copy real source and rebuild (only changed crates recompile).
+COPY crates/ crates/
+COPY server/ server/
+
+# Touch lib/main files so cargo detects the change.
+RUN touch crates/*/src/lib.rs server/src/main.rs
+
+RUN cargo build --locked --release -p my-server
+
+# Pre-create runtime directories here so they can be copied, already owned by the
+# runtime UID, into a runtime image that may have no usable shell.
+RUN mkdir -p /var/cache/my-server
+
+# ── Frontend build stage ───────────────────────────────────────────────────────
+FROM registry.access.redhat.com/hi/nodejs:latest-builder@sha256:614e489f0e686023b082bb11acbf53072a86fbab41475dfea0138951ec90bb1f AS ui-builder
+
+# The hardened builder runs as a non-root user; the global pnpm install needs root.
+USER root
+WORKDIR /ui
+# Corepack is no longer distributed with Node (removed in Node 25), so pnpm is
+# installed explicitly. Keep this version in sync with the `packageManager`
+# field in ui/package.json. --ignore-scripts states the policy so a future
+# pnpm release that adds an install-time script cannot run it here.
+RUN npm install -g --ignore-scripts pnpm@11.26.0
+# Manifests first, so `pnpm install` stays cached until the lockfile changes.
+COPY ui/package.json ui/pnpm-lock.yaml ui/pnpm-workspace.yaml ./
+# --frozen-lockfile is the `npm ci` equivalent: it fails rather than silently
+# resolving something the committed lockfile does not describe.
+RUN pnpm install --frozen-lockfile
+
+COPY ui/ ./
+
+# Generate the OpenAPI spec from the just-built binary and then the TS client
+# (weebo-api-contract). Known debt (TD-0003 §4): this makes the UI stage wait
+# for the whole Rust build; building from the committed spec would not.
+COPY --from=builder /build/target/release/my-server /usr/local/bin/my-server
+COPY config.example.toml /etc/my-server/config.toml
+RUN my-server --config /etc/my-server/config.toml dump-spec > openapi.json && \
+    pnpm run generate && \
+    pnpm run build
+
+# ── Runtime image ─────────────────────────────────────────────────────────────
+FROM registry.access.redhat.com/hi/core-runtime:latest@sha256:fa72c318cd10f62b5616f396df0493ad8531adf0841aaf7b5d89c323712cfa11 AS runtime
+
+COPY --from=builder /build/target/release/my-server /usr/local/bin/my-server
+# The cache directory is the one path the process writes to, so it must be
+# owned by the runtime user. Everything else (the binary, the SPA bundle)
+# stays root-owned and read-only to that user, which is what we want.
+COPY --from=builder --chown=65532:65532 /var/cache/my-server /var/cache/my-server
+COPY --from=ui-builder /ui/dist /app/ui/dist
+
+EXPOSE 8080
+
+# Same numeric UID as the distroless Containerfile, deliberately: the Helm chart
+# pins one `runAsUser`, and it has to be correct whichever image is deployed.
+# 65532 has no /etc/passwd entry on this base — fine, nothing resolves its own
+# user — but $HOME is unset, so add nothing here that expects a home directory.
+USER 65532:65532
+
+ENTRYPOINT ["my-server"]
+CMD ["--config", "/etc/my-server/config.toml"]

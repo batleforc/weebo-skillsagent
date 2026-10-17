@@ -1,0 +1,27 @@
+# source: batlehub@20879e5 (.trivyignore.yaml), trimmed.
+# Image-scan suppressions. The stance is the same as `deny.toml`'s: nothing is
+# ignored because it is inconvenient, only because there is no version to move
+# to. Every entry carries an expiry, so the gate reopens on its own and the
+# entry has to be re-justified rather than quietly outliving its reason.
+#
+# Each entry: the CVE, the path it is pinned to (never the whole image), why the
+# vulnerable code is unreachable here, what will retire it and how to check
+# that before renewing. Every entry has a matching statement in
+# vex/my-project.openvex.json; `task vex` fails when they disagree.
+#
+# A MODERATE advisory below the gate's fixable HIGH/CRITICAL bar is not listed:
+# nothing is suppressed until the gate actually reports it.
+vulnerabilities: []
+# Example (batlehub): a grpc-go CVE vendored inside the upstream Trivy binary
+# the worker image copies in. Not our dependency; the only lever is the Trivy
+# version, and no release carries the fix yet.
+#
+#  - id: CVE-2026-84304
+#    # Heap exhaustion via HTTP/2 DATA frame fragmentation. Fixed in grpc-go
+#    # 1.83.1, no Trivy release ships it. The binary only runs as a client; it
+#    # terminates no connection of its own. Check before renewing:
+#    #   curl -s https://raw.githubusercontent.com/aquasecurity/trivy/v<version>/go.mod \
+#    #     | grep '^\s*google.golang.org/grpc '
+#    paths:
+#      - "usr/local/bin/trivy"
+#    expired_at: 2026-12-01

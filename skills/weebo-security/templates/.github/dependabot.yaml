@@ -1,0 +1,23 @@
+# source: batlehub@20879e5 (.github/dependabot.yaml), trimmed.
+# Daily bumps keep every dependency on its latest release. `cooldown` waits
+# seven days before proposing a version. Security updates don't wait.
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directory: "/ui"
+    schedule:
+      interval: "daily"
+    cooldown:
+      default-days: 7
+  - package-ecosystem: "cargo"
+    directory: "/"
+    schedule:
+      interval: "daily"
+    cooldown:
+      default-days: 7
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "daily"
+    cooldown:
+      default-days: 7

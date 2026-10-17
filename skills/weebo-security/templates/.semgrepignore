@@ -1,0 +1,12 @@
+# source: batlehub@20879e5 (.semgrepignore), trimmed.
+# One pattern per fixture family, never a directory a real secret could land in.
+
+# The gate step runs after the SARIF step in the same checkout, so without
+# this it scans its own report and rediscovers every finding it just wrote.
+semgrep.sarif
+
+# Throwaway test keys (`openssl genrsa`, used nowhere but `cargo test`).
+# `detected-private-key` is right about what they are and wrong about whether
+# it matters. A `// nosemgrep` is silently ignored for the generic secrets
+# rules, and a `.pem` has nowhere to put one, so this file is the only lever.
+# my_crate/src/testdata/test_signing_*.pem

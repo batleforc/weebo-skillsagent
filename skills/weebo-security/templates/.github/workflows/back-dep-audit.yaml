@@ -1,0 +1,48 @@
+# source: batlehub@20879e5 (.github/workflows/back-dep-audit.yaml), trimmed.
+# The `deny` job is an addition: batlehub's security docs say cargo-deny gates
+# here, but at 20879e5 this workflow only ran cargo audit.
+name: Rust dependency audit
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - "**/Cargo.toml"
+      - "**/Cargo.lock"
+      - "deny.toml"
+      - ".github/workflows/back-dep-audit.yaml"
+  pull_request:
+    branches: ["main"]
+    paths:
+      - "**/Cargo.toml"
+      - "**/Cargo.lock"
+      - "deny.toml"
+      - ".github/workflows/back-dep-audit.yaml"
+  # Daily so a CVE disclosed against an already-pinned dependency trips CI even
+  # when nothing in the repo changed.
+  schedule:
+    - cron: "50 23 * * *"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      checks: write
+      contents: read
+      security-events: write
+      actions: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: rustsec/audit-check@69366f33c96575abad1ee0dba8212993eecbe998 # v2.0.0
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+  deny:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      # Same command as `task deny`.
+      - uses: EmbarkStudios/cargo-deny-action@3c6349835b2b7b196a839186cb8b78e02f7b5f25 # v2.1.1
+        with:
+          command: check

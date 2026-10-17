@@ -1,0 +1,33 @@
+# source: batlehub@20879e5 (.tasks/coverage.yaml), trimmed.
+version: "3"
+
+vars:
+  # Paths deliberately outside the gate: process wiring and clients that only
+  # talk to a live upstream. One comment per entry saying why; keep in sync with
+  # the Sonar exclusions.
+  COVERAGE_EXCLUDE: "src/main\\.rs"
+
+tasks:
+  # Collection lives here once, so `coverage` and `coverage-check` cannot drift.
+  cov:collect:
+    internal: true
+    # Real-backend tests: start each container here (see .tasks/test.yaml's
+    # commented test:pg-* task), export its env var under `env:`, and add one
+    # `cargo llvm-cov --no-report -p <crate> [--features …] --test <binary>` per
+    # binary that needs it. Otherwise the gate silently skips them.
+    cmds:
+      - cargo llvm-cov clean --workspace
+      - cargo llvm-cov --no-report --workspace --ignore-filename-regex "{{.COVERAGE_EXCLUDE}}"
+
+  coverage:
+    desc: Generate an HTML coverage report and an lcov report for SonarQube
+    cmds:
+      - task: cov:collect
+      - cargo llvm-cov report --html --output-dir coverage/html --ignore-filename-regex "{{.COVERAGE_EXCLUDE}}"
+      - cargo llvm-cov report --lcov --output-path lcov.info --ignore-filename-regex "{{.COVERAGE_EXCLUDE}}"
+
+  coverage-check:
+    desc: Fail if line coverage is below 80%
+    cmds:
+      - task: cov:collect
+      - cargo llvm-cov report --fail-under-lines 80 --ignore-filename-regex "{{.COVERAGE_EXCLUDE}}"

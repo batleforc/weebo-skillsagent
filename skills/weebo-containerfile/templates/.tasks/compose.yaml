@@ -1,0 +1,30 @@
+# source: batlehub@20879e5 (.tasks/compose.yaml), trimmed.
+# Podman, not docker: Weebo machines run podman. In a CDE there is no engine at
+# all, so dependencies there are devfile sidecars instead (weebo-cde).
+version: "3"
+
+tasks:
+  compose:up:
+    desc: Start the compose stack (dependencies + server, if its service is enabled)
+    cmds:
+      - podman compose up -d
+
+  compose:db:
+    desc: Start only postgres (for local cargo run)
+    cmds:
+      - podman compose up -d postgres
+
+  compose:build:
+    desc: (Re)build the server image from the Containerfile
+    cmds:
+      - podman compose build
+
+  compose:logs:
+    desc: Tail server logs
+    cmds:
+      - podman compose logs -f server
+
+  compose:down:
+    desc: Stop and remove compose containers
+    cmds:
+      - podman compose down

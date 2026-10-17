@@ -1,0 +1,27 @@
+# source: weebo-skillsagent (.gitignore) + batlehub@20879e5 (.gitignore), trimmed.
+
+# Task's internal cache (checksums/fingerprints). Not `.tasks/`, which holds
+# the included Taskfiles and IS tracked.
+.task/
+
+# Build artifacts
+target/
+node_modules/
+dist/
+coverage/
+lcov.info
+
+# Local env files (secrets). `Taskfile.yml` loads `.env` through `dotenv`.
+.env
+.env.local
+
+# Claude Code per-user local settings
+.claude/settings.local.json
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# Logs
+*.log

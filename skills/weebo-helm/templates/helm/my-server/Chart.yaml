@@ -1,0 +1,16 @@
+# source: batlehub@20879e5 (helm/batlehub/Chart.yaml), trimmed.
+# `version` and `appVersion` are both the release version: `task version:set`
+# rewrites them (see weebo-release), and the release job passes the tag to
+# `helm package --version --app-version` anyway.
+apiVersion: v2
+name: my-server
+description: One line saying what my-server does
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+home: https://github.com/my-org/my-server
+sources:
+  - https://github.com/my-org/my-server
+maintainers:
+  - name: My Name
+    email: me@example.com
