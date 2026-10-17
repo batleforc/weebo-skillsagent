@@ -14,7 +14,24 @@ fn print_applied(a: &wska::apply::Applied) {
     );
 }
 
+// Rust ignores SIGPIPE, so `wska list | head` made every print panic on the
+// closed pipe. Restore the default: the process just exits, like any CLI.
+#[cfg(unix)]
+fn default_sigpipe() {
+    const SIGPIPE: i32 = 13; // same on Linux and macOS
+    const SIG_DFL: usize = 0;
+    unsafe extern "C" {
+        fn signal(signum: i32, handler: usize) -> usize;
+    }
+    // SAFETY: called first thing in main, before any thread exists.
+    unsafe {
+        signal(SIGPIPE, SIG_DFL);
+    }
+}
+
 fn main() {
+    #[cfg(unix)]
+    default_sigpipe();
     let cli = Cli::parse();
     // Before items_root: completions must work anywhere, without cloning the repo.
     if let Command::Completions { shell } = cli.command {
@@ -112,7 +129,7 @@ fn main() {
         } => if recorded {
             wska::app::list_recorded(&root, scope, &cwd, &env)
         } else {
-            wska::app::list(&root, profiles)
+            wska::app::list(&root, profiles, scope, &cwd, &env)
         }
         .map(|table| print!("{table}")),
         Command::Doctor => wska::app::doctor(&root, &env).map(|rows| {

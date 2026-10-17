@@ -85,7 +85,7 @@ pub enum Command {
         profiles: bool,
         #[arg(long)]
         recorded: bool,
-        /// Target for --recorded
+        /// Target whose installed state (and --recorded selection) is shown
         #[arg(long, value_enum, default_value_t = Scope::Project)]
         scope: Scope,
     },

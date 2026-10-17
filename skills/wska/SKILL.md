@@ -46,7 +46,7 @@ wska install --run-installers   # bare: re-applies wska.toml (fresh clone, after
 
 wska status                  # what is linked now (Linked / MissingFromTarget / ...)
 wska list --profiles         # profiles: what each includes and lists
-wska list                    # every item, its kind, and the profiles listing it ("-" = --item only)
+wska list                    # every item: kind, INSTALLED here, profiles listing it ("-" = --item only)
 wska add --profile planning --item weebo-techdoc --dry-run         # check the plan
 wska add --profile planning --item weebo-techdoc --run-installers  # apply, appends to wska.toml
 wska remove --item weebo-techdoc                                   # drop a recorded name, unlink what only it brought

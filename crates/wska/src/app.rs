@@ -268,24 +268,23 @@ pub fn status(
 /// Rows under a header, printed with every column but the last padded.
 #[derive(Debug, PartialEq, Eq)]
 pub struct Table {
-    pub headers: [&'static str; 3],
-    pub rows: Vec<[String; 3]>,
+    pub headers: Vec<&'static str>,
+    pub rows: Vec<Vec<String>>,
 }
 
 impl std::fmt::Display for Table {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let width = |col: usize| {
-            self.rows
-                .iter()
-                .map(|r| r[col].len())
-                .chain([self.headers[col].len()])
-                .max()
-                .unwrap_or(0)
-        };
-        let (w0, w1) = (width(0), width(1));
-        let headers = self.headers.map(String::from);
-        for [a, b, c] in std::iter::once(&headers).chain(&self.rows) {
-            writeln!(f, "{a:<w0$}  {b:<w1$}  {c}")?;
+        let headers: Vec<String> = self.headers.iter().map(|h| h.to_string()).collect();
+        let lines: Vec<&Vec<String>> = std::iter::once(&headers).chain(&self.rows).collect();
+        let last = headers.len().saturating_sub(1);
+        let widths: Vec<usize> = (0..last)
+            .map(|c| lines.iter().map(|l| l[c].len()).max().unwrap_or(0))
+            .collect();
+        for line in lines {
+            for (c, width) in widths.iter().enumerate() {
+                write!(f, "{:<width$}  ", line[c])?;
+            }
+            writeln!(f, "{}", line[last])?;
         }
         Ok(())
     }
@@ -304,16 +303,25 @@ fn names_or_dash(names: impl IntoIterator<Item = impl AsRef<str>>) -> String {
     }
 }
 
-/// Every item with its kind and the profiles that list it directly, or every
-/// profile with what it includes and lists.
-pub fn list(repo_root: &Path, profiles: bool) -> Result<Table, AppError> {
+/// Every item with its kind, whether it is installed in the `scope` target,
+/// and the profiles that list it directly; or every profile with what it
+/// includes and lists.
+pub fn list(
+    repo_root: &Path,
+    profiles: bool,
+    scope: Scope,
+    cwd: &Path,
+    env: &dyn Fn(&str) -> Option<String>,
+) -> Result<Table, AppError> {
+    // Canonical, like status: links only classify against a canonical root.
+    let repo_root = target::repo_root(repo_root)?;
     let cfg = config::load_profiles(&repo_root.join("profiles.toml"))?;
     if profiles {
         let rows = cfg
             .profiles
             .iter()
             .map(|(name, p)| {
-                [
+                vec![
                     name.clone(),
                     names_or_dash(&p.include),
                     names_or_dash(&p.items),
@@ -321,14 +329,24 @@ pub fn list(repo_root: &Path, profiles: bool) -> Result<Table, AppError> {
             })
             .collect();
         return Ok(Table {
-            headers: ["PROFILE", "INCLUDES", "ITEMS"],
+            headers: vec!["PROFILE", "INCLUDES", "ITEMS"],
             rows,
         });
     }
     let vendor = config::load_vendor(&repo_root.join("vendor.toml"))?;
-    let rows = item::scan(repo_root, &vendor)?
+    let items = item::scan(&repo_root, &vendor)?;
+    let target_dir = target::resolve(scope, cwd, env)?;
+    let states = crate::status::collect(&items, &target_dir, &repo_root)?;
+    // wska cannot see what an installer wrote; the recorded selection is the
+    // honest stand-in for "asked to be installed here".
+    let recorded = match Selection::load(&target_dir)? {
+        Some(s) => profile::resolve(&cfg, &s.profiles, &s.items, &items)?,
+        None => Default::default(),
+    };
+    let rows = items
         .values()
-        .map(|it| {
+        .zip(&states)
+        .map(|(it, row)| {
             let kind = match it {
                 item::Item::Linked { kind, .. } => match kind {
                     item::Kind::Skill => "skill",
@@ -337,20 +355,32 @@ pub fn list(repo_root: &Path, profiles: bool) -> Result<Table, AppError> {
                 },
                 item::Item::Installer { .. } => "installer",
             };
+            use crate::status::State;
+            let installed = match &row.state {
+                State::Linked => "yes",
+                State::MissingFromTarget => "-",
+                State::InstallerUnmanaged if recorded.contains(it.name()) => "recorded",
+                State::InstallerUnmanaged => "-",
+                State::WrongTarget { .. } => "wrong-target",
+                State::Dangling { .. } => "dangling",
+                State::Foreign { .. } => "foreign",
+                State::RealPath => "real-path",
+            };
             let in_profiles = cfg
                 .profiles
                 .iter()
                 .filter(|(_, p)| p.items.iter().any(|i| i == it.name()))
                 .map(|(name, _)| name);
-            [
+            vec![
                 it.name().to_string(),
                 kind.to_string(),
+                installed.to_string(),
                 names_or_dash(in_profiles),
             ]
         })
         .collect();
     Ok(Table {
-        headers: ["ITEM", "KIND", "PROFILES"],
+        headers: vec!["ITEM", "KIND", "INSTALLED", "PROFILES"],
         rows,
     })
 }
@@ -373,13 +403,13 @@ pub fn list_recorded(
     let mut rows = Vec::new();
     for name in &recorded.profiles {
         let brings = profile::resolve(&cfg, std::slice::from_ref(name), &[], &items)?;
-        rows.push([name.clone(), "profile".into(), names_or_dash(&brings)]);
+        rows.push(vec![name.clone(), "profile".into(), names_or_dash(&brings)]);
     }
     for name in &recorded.items {
-        rows.push([name.clone(), "item".into(), name.clone()]);
+        rows.push(vec![name.clone(), "item".into(), name.clone()]);
     }
     Ok(Table {
-        headers: ["NAME", "RECORDED AS", "ITEMS"],
+        headers: vec!["NAME", "RECORDED AS", "ITEMS"],
         rows,
     })
 }

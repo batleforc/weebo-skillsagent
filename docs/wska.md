@@ -179,21 +179,29 @@ whose installation `wska` does not own.
 ### `list`
 
 ```bash
-wska list [--profiles | --recorded [--scope project|user]]
+wska list [--profiles | --recorded] [--scope project|user]
 task skills:list [PROFILES=1 | RECORDED=1] [SCOPE=project|user]
 ```
 
 A table. With no flag, every item, its kind (`skill`, `agent`, `mcp`,
-`installer`) and the profiles that list it directly — `-` for an item no
-profile lists, which only `--item` installs:
+`installer`), whether it is installed in the `--scope` target, and the
+profiles that list it directly — `-` for an item no profile lists, which only
+`--item` installs:
 
 ```
-ITEM                 KIND       PROFILES
-batlehub-design      skill      design
-doc-review           agent      review
-judge                installer  planning, review
-weebo-techdoc        skill      docs
+ITEM                 KIND       INSTALLED  PROFILES
+batlehub-design      skill      -          design
+graphify             installer  recorded   base
+judge                installer  -          planning, review
+ponytail             skill      yes        base
+weebo-techdoc        skill      -          docs
 ```
+
+`INSTALLED` is `yes` for a correct link and `-` for nothing there. An
+installer is never `yes`: wska cannot see what its command wrote, so it reads
+`recorded` when the target's `wska.toml` selects it. Anything else is the
+[`status`](#status) state of a path that needs a look: `wrong-target`,
+`dangling`, `foreign`, `real-path`.
 
 `--profiles`: every profile, what it includes and what it lists itself.
 

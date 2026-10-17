@@ -436,34 +436,39 @@ fn list_tables_show_profiles_per_item_and_the_recorded_selection() {
         &["ponytail", "techdoc", "loose"],
         "[profiles.base]\nitems = [\"ponytail\"]\n\n[profiles.docs]\ninclude = [\"base\"]\nitems = [\"techdoc\", \"ponytail\"]\n",
     );
-    let items = wska::app::list(&root, false).unwrap();
-    assert_eq!(items.headers, ["ITEM", "KIND", "PROFILES"]);
-    let row = |name: &str| items.rows.iter().find(|r| r[0] == name).unwrap().clone();
-    assert_eq!(row("ponytail")[2], "base, docs");
-    assert_eq!(row("loose")[2], "-");
-    assert_eq!(row("techdoc")[1], "skill");
+    let scope = wska::cli::Scope::Project;
+    let items = wska::app::list(&root, false, scope, &root, &env_none).unwrap();
+    assert_eq!(items.headers, ["ITEM", "KIND", "INSTALLED", "PROFILES"]);
+    let row =
+        |t: &wska::app::Table, name: &str| t.rows.iter().find(|r| r[0] == name).unwrap().clone();
+    assert_eq!(row(&items, "ponytail")[3], "base, docs");
+    assert_eq!(row(&items, "loose")[3], "-");
+    assert_eq!(row(&items, "techdoc")[1], "skill");
+    assert_eq!(row(&items, "techdoc")[2], "-");
     assert!(
-        items.to_string().starts_with("ITEM      KIND   PROFILES\n"),
+        items
+            .to_string()
+            .starts_with("ITEM      KIND   INSTALLED  PROFILES\n"),
         "{items}"
     );
 
-    let scope = wska::cli::Scope::Project;
     assert!(wska::app::list_recorded(&root, scope, &root, &env_none).is_err());
     let sel = wska::selection::Selection {
-        profiles: vec!["docs".into()],
+        profiles: vec!["base".into()],
         items: vec!["loose".into()],
     };
     wska::app::install(&root, &sel, scope, false, false, &root, &env_none).unwrap();
+    let after = wska::app::list(&root, false, scope, &root, &env_none).unwrap();
+    assert_eq!(row(&after, "ponytail")[2], "yes");
+    assert_eq!(row(&after, "loose")[2], "yes");
+    assert_eq!(row(&after, "techdoc")[2], "-");
+
     let recorded = wska::app::list_recorded(&root, scope, &root, &env_none).unwrap();
     assert_eq!(
         recorded.rows,
         vec![
-            [
-                "docs".to_string(),
-                "profile".into(),
-                "ponytail, techdoc".into()
-            ],
-            ["loose".to_string(), "item".into(), "loose".into()],
+            vec!["base".to_string(), "profile".into(), "ponytail".into()],
+            vec!["loose".to_string(), "item".into(), "loose".into()],
         ]
     );
 }
