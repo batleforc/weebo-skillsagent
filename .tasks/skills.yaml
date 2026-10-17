@@ -11,24 +11,21 @@ tasks:
       - cargo build --release -p wska
 
   install:
-    desc: "Link the items of one or more profiles into a target (usage: task skills:install PROFILE=base [SCOPE=project|user] [RUN_INSTALLERS=0])"
+    desc: "Link profiles and single items into a target, recorded in its .claude/wska.toml; with neither, re-apply that file (usage: task skills:install [PROFILE=base,planning] [ITEM=weebo-techdoc] [SCOPE=project|user] [RUN_INSTALLERS=0])"
     vars:
       # Installers (bmad, graphify) write project-coupled state that cannot be
       # symlinked, so skipping them leaves those items installed nowhere.
       # RUN_INSTALLERS=0 opts out when you only want the links.
       RUN_INSTALLERS: '{{.RUN_INSTALLERS | default "1"}}'
-    preconditions:
-      - sh: 'test -n "{{.PROFILE}}"'
-        msg: "pass PROFILE=<name>, or PROFILE=all for everything"
     cmds:
-      - '{{.WSKA}} install --profile {{.PROFILE}} --scope {{.SCOPE}} {{if ne .RUN_INSTALLERS "0"}}--run-installers{{end}}'
+      - '{{.WSKA}} install{{if .PROFILE}}{{range splitList "," .PROFILE}} --profile {{.}}{{end}}{{end}}{{if .ITEM}}{{range splitList "," .ITEM}} --item {{.}}{{end}}{{end}} --scope {{.SCOPE}} {{if ne .RUN_INSTALLERS "0"}}--run-installers{{end}}'
 
   update:
-    desc: "Pull the items repo, then re-install profiles if given (usage: task skills:update [PROFILE=base] [SCOPE=project|user] [RUN_INSTALLERS=0])"
+    desc: "Pull the items repo, then re-install the given profiles/items, else the target's .claude/wska.toml if any (usage: task skills:update [PROFILE=base,planning] [ITEM=weebo-techdoc] [SCOPE=project|user] [RUN_INSTALLERS=0])"
     vars:
       RUN_INSTALLERS: '{{.RUN_INSTALLERS | default "1"}}'
     cmds:
-      - '{{.WSKA}} update {{if .PROFILE}}--profile {{.PROFILE}}{{end}} --scope {{.SCOPE}} {{if ne .RUN_INSTALLERS "0"}}--run-installers{{end}}'
+      - '{{.WSKA}} update{{if .PROFILE}}{{range splitList "," .PROFILE}} --profile {{.}}{{end}}{{end}}{{if .ITEM}}{{range splitList "," .ITEM}} --item {{.}}{{end}}{{end}} --scope {{.SCOPE}} {{if ne .RUN_INSTALLERS "0"}}--run-installers{{end}}'
 
   status:
     desc: "Show what is linked in a target (usage: task skills:status [SCOPE=project|user])"

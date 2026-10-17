@@ -25,11 +25,25 @@ fn main() {
     let result = match cli.command {
         Command::Install {
             profile,
+            item,
             scope,
             dry_run,
             run_installers,
-        } => wska::app::install(&root, &profile, scope, dry_run, run_installers, &cwd, &env).map(
-            |a| {
+        } => {
+            let selection = wska::selection::Selection {
+                profiles: profile,
+                items: item,
+            };
+            wska::app::install(
+                &root,
+                &selection,
+                scope,
+                dry_run,
+                run_installers,
+                &cwd,
+                &env,
+            )
+            .map(|a| {
                 println!(
                     "linked {} unlinked {} installers {} skipped {}",
                     a.linked,
@@ -37,24 +51,31 @@ fn main() {
                     a.installers_run.len(),
                     a.skipped.len()
                 );
-            },
-        ),
+            })
+        }
         Command::Update {
             profile,
+            item,
             scope,
             run_installers,
-        } => wska::app::update(&root, &profile, scope, run_installers, &cwd, &env).map(|applied| {
-            println!("updated {}", root.display());
-            if let Some(a) = applied {
-                println!(
-                    "linked {} unlinked {} installers {} skipped {}",
-                    a.linked,
-                    a.unlinked,
-                    a.installers_run.len(),
-                    a.skipped.len()
-                );
-            }
-        }),
+        } => {
+            let selection = wska::selection::Selection {
+                profiles: profile,
+                items: item,
+            };
+            wska::app::update(&root, &selection, scope, run_installers, &cwd, &env).map(|applied| {
+                println!("updated {}", root.display());
+                if let Some(a) = applied {
+                    println!(
+                        "linked {} unlinked {} installers {} skipped {}",
+                        a.linked,
+                        a.unlinked,
+                        a.installers_run.len(),
+                        a.skipped.len()
+                    );
+                }
+            })
+        }
         Command::Status { scope } => wska::app::status(&root, scope, &cwd, &env).map(|rows| {
             for row in rows {
                 println!("{:<28} {:?}", row.name, row.state);

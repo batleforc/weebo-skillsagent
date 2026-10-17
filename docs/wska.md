@@ -39,16 +39,23 @@ symlinked `~/.claude` still matches the links written through it.
 ### `install`
 
 ```bash
-wska install --profile <name> [--profile <name>…] [--scope project|user] [--dry-run] [--run-installers]
-task skills:install PROFILE=base [SCOPE=project|user] [RUN_INSTALLERS=0]
+wska install [--profile <name>…] [--item <name>…] [--scope project|user] [--dry-run] [--run-installers]
+task skills:install [PROFILE=base,planning] [ITEM=weebo-techdoc] [SCOPE=project|user] [RUN_INSTALLERS=0]
 ```
 
-Links every item named by the given profiles, and removes links it owns that
-are *not* in that set — so an install is a declaration of the whole desired
-state for that target, not an addition to it.
+Links every item named by the given profiles plus every `--item`, and removes
+links it owns that are *not* in that set — so an install is a declaration of
+the whole desired state for that target, not an addition to it.
 
-`--profile` is required and repeatable. `--dry-run` prints the plan and writes
-nothing.
+`--profile` and `--item` are both repeatable. `--item` is how a skill that no
+profile lists gets installed; an unknown name is an error. The task wrapper
+takes comma-separated lists.
+
+Every applied install records what it was given in the target's
+[`wska.toml`](#the-target-file-wskatoml). With neither `--profile` nor
+`--item`, install re-applies that file instead, and errors if there is none —
+a bare install never means "unlink everything". `--dry-run` prints the plan
+and writes nothing, the file included.
 
 Installers are skipped unless `--run-installers` is passed. The task wrapper
 passes it by default; `RUN_INSTALLERS=0` opts out and leaves those items
@@ -71,8 +78,8 @@ Running install twice changes nothing the second time.
 ### `update`
 
 ```bash
-wska update [--profile <name>…] [--scope project|user] [--run-installers]
-task skills:update [PROFILE=base] [SCOPE=project|user] [RUN_INSTALLERS=0]
+wska update [--profile <name>…] [--item <name>…] [--scope project|user] [--run-installers]
+task skills:update [PROFILE=base,planning] [ITEM=weebo-techdoc] [SCOPE=project|user] [RUN_INSTALLERS=0]
 ```
 
 Fast-forwards the items repo (`git pull --ff-only`) — whichever one `wska`
@@ -80,13 +87,32 @@ resolved: `$WSKA_REPO`, the repo you are in, or its own clone (see [Using wska
 in another project](#using-wska-in-another-project)). A local commit or a
 diverged branch makes the pull fail and nothing is installed.
 
-With no `--profile`, that is all it does: links are live, so pulled edits to
-existing skills already apply. With profiles, it then runs `install` with them,
-which picks up items added or removed upstream. The same declarative rule
-applies — name every profile the target should keep, or the others are
-unlinked.
+It then runs `install` with the given profiles and items, or, given none,
+with the target's `wska.toml`. That re-install picks up items added to or
+removed from a profile upstream. With nothing given and no `wska.toml`, the
+pull is all it does — links are live, so pulled edits to existing skills
+already apply.
 
-Unlike `install`, `--profile` is optional here and there is no `--dry-run`.
+Passing profiles or items replaces the recorded selection, with the same
+declarative rule as `install`: whatever is not named is unlinked. There is no
+`--dry-run`.
+
+### The target file: `wska.toml`
+
+Written next to the links, at `<target>/wska.toml` (`.claude/wska.toml` for
+the project scope), by every applied install:
+
+```toml
+# Written by `wska install`. Run `wska install` or `wska update` with no
+# --profile/--item to re-apply it; commit it so other machines can.
+profiles = ["base", "docs"]
+items = ["batlehub-design"]
+```
+
+It holds what was asked for, not the expanded item list, so a profile that
+gains an item upstream brings it on the next bare `install`/`update`. Edit it
+by hand if you like; the next bare install applies it. `--run-installers` is
+not recorded — pass it each time.
 
 ### `status`
 
@@ -237,26 +263,28 @@ then, from anywhere inside the other project:
 
 ```bash
 wska install --profile base --profile planning --run-installers   # clones on first run
+wska install --profile base --profile planning --item weebo-techdoc   # plus one skill no profile there lists
 wska status
 ```
 
 Set `WSKA_REPO` only to use a clone you edit yourself (for example in the
 project's `mise.toml`: `[env] WSKA_REPO = "{{env.HOME}}/git/weebo-skillsagent"`).
 
-Gitignore what it wrote, because the links are absolute paths into the clone
-and mean nothing on another machine:
+Gitignore the links, because they are absolute paths into the clone and mean
+nothing on another machine, but commit `.claude/wska.toml`:
 
 ```gitignore
 .claude/skills/
 ```
 
-Each machine re-runs `wska install` after cloning. Installer items (`bmad`,
+Each machine then re-runs a bare `wska install --run-installers` after
+cloning, which applies the committed selection. Installer items (`bmad`,
 `graphify`, …) run with that project as working directory, so their output
 belongs to the project and is committed or ignored as that tool expects.
 
-Updating skills is `wska update` (a `git pull --ff-only` of the clone), plus
-`--profile …` to pick up items added upstream — links are live, so edits to
-existing skills need nothing more; wska never pulls except through `update`. Updating the binary is re-running the install line above.
+Updating skills is a bare `wska update`: a `git pull --ff-only` of the clone,
+then a re-install of `wska.toml` to pick up items added upstream. wska never
+pulls except through `update`. Updating the binary is re-running the install line above.
 
 A `WSKA_REPO` pointing at an existing directory with no `profiles.toml` stops
 every command with `error: no profiles.toml in <dir>`; wska never clones into a
@@ -271,8 +299,9 @@ instead of around it. It tells them to:
 - never copy files into `.claude/skills/` or `.claude/agents/`, nor run
   `claude plugin install` / `claude mcp add` themselves — a command-driven
   item becomes an `[installers.<item>]` entry instead;
-- read `wska status` before `install`, and pass every profile the target
-  should keep, since install unlinks the rest;
+- prefer a bare `wska install`/`update`, which re-applies the target's
+  `wska.toml`; when changing the selection, read that file and pass every
+  profile and `--item` the target should keep, since install unlinks the rest;
 - dry-run, then ask the user before running installers;
 - run `wska doctor` afterwards and offer missing tools through mise;
 - add a missing skill to this repo (`SKILL.md`, profile, `[requires]`, readme

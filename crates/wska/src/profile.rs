@@ -12,6 +12,8 @@ pub enum ProfileError {
     UnknownProfile(String),
     #[error("profile `{profile}` names unknown item `{item}`")]
     UnknownItem { profile: String, item: String },
+    #[error("unknown item `{0}`")]
+    UnknownSingleItem(String),
     #[error("include cycle: {0}")]
     Cycle(String),
 }
@@ -19,6 +21,7 @@ pub enum ProfileError {
 pub fn resolve(
     profiles: &Profiles,
     wanted: &[String],
+    singles: &[String],
     items: &BTreeMap<String, Item>,
 ) -> Result<BTreeSet<String>, ProfileError> {
     if profiles.profiles.contains_key(RESERVED_ALL) {
@@ -33,6 +36,12 @@ pub fn resolve(
         }
         let mut stack = Vec::new();
         visit(profiles, name, items, &mut stack, &mut out)?;
+    }
+    for name in singles {
+        if !items.contains_key(name) {
+            return Err(ProfileError::UnknownSingleItem(name.clone()));
+        }
+        out.insert(name.clone());
     }
     Ok(out)
 }
@@ -116,7 +125,7 @@ mod tests {
     #[test]
     fn resolves_a_single_profile() {
         let p = profiles(&[("base", &[], &["a"])]);
-        let got = resolve(&p, &["base".into()], &items(&["a", "b"])).unwrap();
+        let got = resolve(&p, &["base".into()], &[], &items(&["a", "b"])).unwrap();
         assert_eq!(got, set(&["a"]));
     }
 
@@ -127,28 +136,28 @@ mod tests {
             ("mid", &["base"], &["b"]),
             ("top", &["mid", "base"], &["c"]),
         ]);
-        let got = resolve(&p, &["top".into()], &items(&["a", "b", "c"])).unwrap();
+        let got = resolve(&p, &["top".into()], &[], &items(&["a", "b", "c"])).unwrap();
         assert_eq!(got, set(&["a", "b", "c"]));
     }
 
     #[test]
     fn multiple_profiles_union() {
         let p = profiles(&[("x", &[], &["a"]), ("y", &[], &["b"])]);
-        let got = resolve(&p, &["x".into(), "y".into()], &items(&["a", "b"])).unwrap();
+        let got = resolve(&p, &["x".into(), "y".into()], &[], &items(&["a", "b"])).unwrap();
         assert_eq!(got, set(&["a", "b"]));
     }
 
     #[test]
     fn all_expands_to_every_item() {
         let p = profiles(&[("base", &[], &["a"])]);
-        let got = resolve(&p, &["all".into()], &items(&["a", "b", "c"])).unwrap();
+        let got = resolve(&p, &["all".into()], &[], &items(&["a", "b", "c"])).unwrap();
         assert_eq!(got, set(&["a", "b", "c"]));
     }
 
     #[test]
     fn rejects_include_cycles() {
         let p = profiles(&[("x", &["y"], &[]), ("y", &["x"], &[])]);
-        let err = resolve(&p, &["x".into()], &items(&["a"])).unwrap_err();
+        let err = resolve(&p, &["x".into()], &[], &items(&["a"])).unwrap_err();
         match err {
             ProfileError::Cycle(path) => {
                 assert!(path.contains("x"), "cycle path missing 'x': {path}")
@@ -160,7 +169,7 @@ mod tests {
     #[test]
     fn rejects_unknown_profile() {
         let p = profiles(&[("x", &[], &["a"])]);
-        let err = resolve(&p, &["nope".into()], &items(&["a"])).unwrap_err();
+        let err = resolve(&p, &["nope".into()], &[], &items(&["a"])).unwrap_err();
         match err {
             ProfileError::UnknownProfile(name) => assert_eq!(name, "nope"),
             other => panic!("expected UnknownProfile, got {other:?}"),
@@ -170,7 +179,7 @@ mod tests {
     #[test]
     fn rejects_unknown_item() {
         let p = profiles(&[("x", &[], &["ghost"])]);
-        let err = resolve(&p, &["x".into()], &items(&["a"])).unwrap_err();
+        let err = resolve(&p, &["x".into()], &[], &items(&["a"])).unwrap_err();
         match err {
             ProfileError::UnknownItem { profile, item } => {
                 assert_eq!(profile, "x");
@@ -180,11 +189,22 @@ mod tests {
         }
     }
 
+    #[test]
+    fn single_items_join_the_profiles_and_must_exist() {
+        let p = profiles(&[("x", &[], &["a"])]);
+        let got = resolve(&p, &["x".into()], &["b".into()], &items(&["a", "b"])).unwrap();
+        assert_eq!(got, set(&["a", "b"]));
+        let only = resolve(&p, &[], &["b".into()], &items(&["a", "b"])).unwrap();
+        assert_eq!(only, set(&["b"]));
+        let err = resolve(&p, &[], &["ghost".into()], &items(&["a"])).unwrap_err();
+        assert!(matches!(err, ProfileError::UnknownSingleItem(n) if n == "ghost"));
+    }
+
     // Review Focus 4
     #[test]
     fn rejects_a_user_defined_profile_named_all() {
         let p = profiles(&[("all", &[], &["a"])]);
-        let err = resolve(&p, &["all".into()], &items(&["a", "b"])).unwrap_err();
+        let err = resolve(&p, &["all".into()], &[], &items(&["a", "b"])).unwrap_err();
         match err {
             ProfileError::ReservedName => {} // expected
             other => panic!("expected ReservedName, got {other:?}"),

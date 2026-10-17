@@ -14,9 +14,13 @@ pub struct Cli {
 #[derive(Debug, Subcommand)]
 pub enum Command {
     /// Link the items named by the given profiles, removing owned links not in that set
+    /// With neither --profile nor --item, re-applies the selection recorded in the target's wska.toml
     Install {
-        #[arg(long, required = true)]
+        #[arg(long)]
         profile: Vec<String>,
+        /// A single item to link besides the profiles' (repeatable)
+        #[arg(long)]
+        item: Vec<String>,
         #[arg(long, value_enum, default_value_t = Scope::Project)]
         scope: Scope,
         #[arg(long)]
@@ -26,9 +30,13 @@ pub enum Command {
         run_installers: bool,
     },
     /// Pull the items repo (`git pull --ff-only`), then re-install the given profiles, if any
+    /// With neither --profile nor --item, re-installs the target's wska.toml if there is one
     Update {
         #[arg(long)]
         profile: Vec<String>,
+        /// A single item to link besides the profiles' (repeatable)
+        #[arg(long)]
+        item: Vec<String>,
         #[arg(long, value_enum, default_value_t = Scope::Project)]
         scope: Scope,
         /// Actually execute installer items when re-installing
@@ -79,17 +87,21 @@ mod tests {
             "base",
             "--profile",
             "frontend",
+            "--item",
+            "weebo-techdoc",
             "--scope",
             "user",
         ]);
         match cli.command {
             Command::Install {
                 profile,
+                item,
                 scope,
                 dry_run,
                 run_installers,
             } => {
                 assert_eq!(profile, vec!["base".to_string(), "frontend".to_string()]);
+                assert_eq!(item, vec!["weebo-techdoc".to_string()]);
                 assert_eq!(scope, Scope::User);
                 assert!(!dry_run);
                 assert!(!run_installers);

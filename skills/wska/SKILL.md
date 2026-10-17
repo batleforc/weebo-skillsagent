@@ -21,9 +21,10 @@ to put Weebo skills into a project. Full reference: `docs/wska.md` in that repo.
   `claude mcp add` yourself. A one-off copy goes stale and `wska` cannot see
   or update it. If something must be installed by a command, it becomes an
   `[installers.<item>]` entry in the repo's `vendor.toml`.
-- **`install` is declarative.** It links the profiles you pass and *removes*
-  every wska link not in them. Pass every profile the target should have, not
-  only the new one. Read `wska status` first to see what is already there.
+- **`install` is declarative.** It links the profiles and `--item`s you pass
+  and *removes* every wska link not in them. The target's current selection is
+  in `.claude/wska.toml` (`profiles = [...]`, `items = [...]`): read it first
+  and pass everything it lists plus your addition, not only the new one.
 - Running installers executes commands (`npx`, `uv tool install`, …). Tell the
   user which profiles and installers you are about to run and get a yes first.
 - Never edit a skill through a path the harness gave you without knowing it is
@@ -41,22 +42,28 @@ to put Weebo skills into a project. Full reference: `docs/wska.md` in that repo.
 ## Install skills into the current project
 
 ```bash
+cat .claude/wska.toml        # the recorded selection, if any
+wska install --run-installers   # bare: re-applies wska.toml (fresh clone, after a pull)
+
 wska status                  # what is linked now (Linked / MissingFromTarget / ...)
 wska list --profiles         # base, planning, design, frontend, mcp, game-design, review, docs
-wska install --profile base --profile planning --dry-run          # check the plan
-wska install --profile base --profile planning --run-installers   # apply
+wska list                    # single items, for --item
+wska install --profile base --profile planning --item weebo-techdoc --dry-run         # check the plan
+wska install --profile base --profile planning --item weebo-techdoc --run-installers  # apply, rewrites wska.toml
 wska doctor                  # every item: tools present, SKILL.md usable
 ```
 
 Pick profiles from the task: `base` always; `design`/`frontend` for UI work
 (`batlehub-design` is the house design system); `planning` for RFCs and bmad;
 `docs` for `docs/techdoc/`; `review` for judge gates; `mcp` for MCP servers.
-`wska list` names single items; `PROFILE=all` installs everything.
+A skill no profile lists goes in with `--item <name>`; do not create a
+profile for one project's need. `--profile all` installs everything.
 
 Then:
 
 - Make sure `.claude/skills/` is gitignored in that project — the links are
-  absolute paths into a local clone.
+  absolute paths into a local clone — and that `.claude/wska.toml` is not:
+  committed, it lets every machine re-apply the selection with a bare install.
 - Newly linked skills are read at session start: tell the user to start a new
   session (or `/clear`) if the skill does not show up.
 - A `warn` or a `doctor` `missing:` line is not a blocker for linking, but the
@@ -70,10 +77,11 @@ the user asks for a machine-wide install.
 ## Update
 
 ```bash
-wska update --profile base --profile planning --run-installers   # git pull --ff-only, then re-install
+wska update --run-installers   # git pull --ff-only, then re-apply .claude/wska.toml
 ```
 
-Same declarative rule: name every profile the target should keep.
+Pass `--profile`/`--item` only to change the selection, with the same
+declarative rule: name everything the target should keep.
 
 ## A skill you need does not exist
 
@@ -86,7 +94,8 @@ Add it to weebo-skillsagent rather than inlining it in the project:
 2. Add the item to a profile in `profiles.toml`.
 3. List the tools it needs under `[requires]` in `vendor.toml`.
 4. Add its row to the items table in `readme.md`.
-5. `wska doctor`, then `wska install` the profiles again.
+5. `wska doctor`, then a bare `wska install` (or `--item <name>` added to the
+   recorded selection).
 
 Commits in that repo are signed by the user: write the Conventional Commits
 message to a file and hand over the command, never commit yourself.

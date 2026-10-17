@@ -12,6 +12,13 @@ fn repo(root: &Path, skills: &[&str], profiles_toml: &str) {
     fs::write(root.join("vendor.toml"), "").unwrap();
 }
 
+fn profiles(names: &[&str]) -> wska::selection::Selection {
+    wska::selection::Selection {
+        profiles: names.iter().map(|s| s.to_string()).collect(),
+        items: vec![],
+    }
+}
+
 fn env_none(_: &str) -> Option<String> {
     None
 }
@@ -41,7 +48,7 @@ items = ["impeccable"]
 
     let first = wska::app::install(
         &root,
-        &["frontend".to_string()],
+        &profiles(&["frontend"]),
         wska::cli::Scope::Project,
         false,
         false,
@@ -62,7 +69,7 @@ items = ["impeccable"]
     // Idempotent
     let again = wska::app::install(
         &root,
-        &["frontend".to_string()],
+        &profiles(&["frontend"]),
         wska::cli::Scope::Project,
         false,
         false,
@@ -76,7 +83,7 @@ items = ["impeccable"]
     // Declarative: narrowing the profile set removes what is no longer wanted
     let narrowed = wska::app::install(
         &root,
-        &["base".to_string()],
+        &profiles(&["base"]),
         wska::cli::Scope::Project,
         false,
         false,
@@ -104,7 +111,7 @@ fn refuses_to_replace_a_hand_written_directory_and_changes_nothing() {
 
     let err = wska::app::install(
         &root,
-        &["base".to_string()],
+        &profiles(&["base"]),
         wska::cli::Scope::Project,
         false,
         false,
@@ -139,7 +146,7 @@ fn install_links_a_skill_whose_required_tool_is_missing_and_warns_about_it() {
 
     let got = wska::app::install(
         &root,
-        &["base".to_string()],
+        &profiles(&["base"]),
         wska::cli::Scope::Project,
         false,
         false,
@@ -173,7 +180,7 @@ fn install_warns_about_nothing_when_every_requirement_is_satisfied() {
 
     let got = wska::app::install(
         &root,
-        &["base".to_string()],
+        &profiles(&["base"]),
         wska::cli::Scope::Project,
         false,
         false,
@@ -227,4 +234,67 @@ fn doctor_reports_missing_tools_and_unusable_skills() {
         health("broken")
     );
     assert_eq!(rows.len(), 3);
+}
+
+#[test]
+fn records_profiles_and_single_items_and_a_bare_install_reapplies_them() {
+    let d = tempfile::tempdir().unwrap();
+    let root = d.path().join("repo");
+    repo(
+        &root,
+        &["ponytail", "techdoc", "other"],
+        "[profiles.base]\nitems = [\"ponytail\"]\n",
+    );
+    let bare = wska::selection::Selection::default();
+
+    // Nothing recorded yet: a bare install refuses rather than unlinking all.
+    let err = wska::app::install(
+        &root,
+        &bare,
+        wska::cli::Scope::Project,
+        false,
+        false,
+        &root,
+        &env_none,
+    )
+    .unwrap_err();
+    assert!(err.to_string().contains("wska.toml"), "{err}");
+
+    let chosen = wska::selection::Selection {
+        profiles: vec!["base".into()],
+        items: vec!["techdoc".into()],
+    };
+    let first = wska::app::install(
+        &root,
+        &chosen,
+        wska::cli::Scope::Project,
+        false,
+        false,
+        &root,
+        &env_none,
+    )
+    .unwrap();
+    assert_eq!(first.linked, 2);
+    assert!(!root.join(".claude/skills/other").exists());
+
+    let target = root.join(".claude");
+    assert_eq!(
+        wska::selection::Selection::load(&target).unwrap(),
+        Some(chosen)
+    );
+
+    // Remove one link: the bare install restores it from wska.toml alone.
+    fs::remove_file(root.join(".claude/skills/techdoc")).unwrap();
+    let again = wska::app::install(
+        &root,
+        &bare,
+        wska::cli::Scope::Project,
+        false,
+        false,
+        &root,
+        &env_none,
+    )
+    .unwrap();
+    assert_eq!(again.linked, 1);
+    assert_eq!(again.unlinked, 0);
 }

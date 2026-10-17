@@ -1,5 +1,6 @@
 use crate::apply::{apply, Applied, ApplyError};
 use crate::cli::Scope;
+use crate::selection::{Selection, SelectionError};
 use crate::{config, item, plan, profile, target};
 use std::path::Path;
 
@@ -21,11 +22,15 @@ pub enum AppError {
     Refused(String),
     #[error(transparent)]
     Sync(#[from] crate::sync::SyncError),
+    #[error(transparent)]
+    Selection(#[from] SelectionError),
 }
 
+/// Link `selection`, or the one recorded in the target when it is empty, and
+/// record what was applied so a bare `install`/`update` can re-apply it.
 pub fn install(
     repo_root: &Path,
-    profiles: &[String],
+    selection: &Selection,
     scope: Scope,
     dry_run: bool,
     run_installers: bool,
@@ -39,9 +44,15 @@ pub fn install(
     let profiles_cfg = config::load_profiles(&repo_root.join("profiles.toml"))?;
     let vendor = config::load_vendor(&repo_root.join("vendor.toml"))?;
     let items = item::scan(&repo_root, &vendor)?;
-    let wanted = profile::resolve(&profiles_cfg, profiles, &items)?;
-
     let target_dir = target::resolve(scope, cwd, env)?;
+    let selection = if selection.is_empty() {
+        Selection::load(&target_dir)?
+            .filter(|s| !s.is_empty())
+            .ok_or_else(|| SelectionError::Missing(target_dir.join(crate::selection::FILE)))?
+    } else {
+        selection.clone()
+    };
+    let wanted = profile::resolve(&profiles_cfg, &selection.profiles, &selection.items, &items)?;
 
     // Externals must be on disk before planning, or their links classify as
     // pointing at nothing. Clone-if-missing keeps a second install a no-op.
@@ -89,25 +100,30 @@ pub fn install(
 
     let mut applied = apply(&built, dry_run)?;
     applied.warnings = warnings;
+    if !dry_run {
+        selection.save(&target_dir)?;
+    }
     Ok(applied)
 }
 
-/// Pull the items repo, then re-link `profiles` if any are given. Links are
-/// symlinks into the repo, so the pull alone refreshes linked items; the
-/// re-install picks up items newly added to a profile, and installers.
+/// Pull the items repo, then re-link `selection`, or the target's recorded one
+/// if `selection` is empty. Links are symlinks into the repo, so the pull
+/// alone refreshes linked items; the re-install picks up items newly added to
+/// a profile, and installers. With nothing given and nothing recorded, it
+/// only pulls.
 pub fn update(
     repo_root: &Path,
-    profiles: &[String],
+    selection: &Selection,
     scope: Scope,
     run_installers: bool,
     cwd: &Path,
     env: &dyn Fn(&str) -> Option<String>,
 ) -> Result<Option<Applied>, AppError> {
     target::pull(repo_root)?;
-    if profiles.is_empty() {
+    if selection.is_empty() && Selection::load(&target::resolve(scope, cwd, env)?)?.is_none() {
         return Ok(None);
     }
-    install(repo_root, profiles, scope, false, run_installers, cwd, env).map(Some)
+    install(repo_root, selection, scope, false, run_installers, cwd, env).map(Some)
 }
 
 /// Whether each item in the repo can actually work here: its declared tools
