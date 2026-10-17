@@ -141,6 +141,8 @@ blender-image-to-3d = ["blender", "python3", "py:PIL"]
 impeccable      = ["node", "npx", "google-chrome|chromium|chrome"]
 ponytail-plugin = ["claude", "node"]
 mlab            = ["claude"]
+# gh only for the pull-request views; uncommitted/commits work with git alone.
+diff-review     = ["claude", "git", "gh"]
 judge           = ["uv"]
 weebo-techdoc   = ["python3", "git"]
 # cargo-fuzz and k6 serve conditional layers, but are listed so a red row
@@ -187,6 +189,14 @@ scope   = "project"
 # Its skills come namespaced (ponytail:*), so it can sit beside the vendored ones.
 [installers.ponytail-plugin]
 command = "claude plugin marketplace add DietrichGebert/ponytail --scope project; claude plugin install ponytail@ponytail --scope project"
+scope   = "project"
+
+# A Claude Code mod (nicolas-codemate/claude-code-mods, MIT): mods ship as
+# plugins, so a mod is an installer like ponytail-plugin. diff-review is the
+# /diff-review pane: uncommitted, PR and per-commit diffs, ask Claude per line.
+# Upstream doesn't auto-update: `claude plugin marketplace update codemate-mods`.
+[installers.diff-review]
+command = "claude plugin marketplace add nicolas-codemate/claude-code-mods --scope project; claude plugin install diff-review@codemate-mods --scope project"
 scope   = "project"
 
 # mlab.sh's remote MCP server (https://github.com/mlab-sh/mcp, MIT listing,

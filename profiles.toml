@@ -51,8 +51,9 @@ items = ["bmad-gds", "blender-image-to-3d", "3dviz-pro-max"]
 [profiles.review]
 include = ["base"]
 # judge is the CLI; doc-review the agent `judge doc-review` runs. rfc-ready
-# needs no agent, so planning carries judge alone.
-items = ["judge", "doc-review"]
+# needs no agent, so planning carries judge alone. diff-review is the review
+# pane mod (/diff-review).
+items = ["judge", "doc-review", "diff-review"]
 
 [profiles.docs]
 include = ["base"]

@@ -28,7 +28,8 @@
     "batlehub@weebo": true,
     "ponytail@ponytail": true,
     "impeccable@impeccable": true,
-    "superpowers@claude-plugins-official": true
+    "superpowers@claude-plugins-official": true,
+    "diff-review@codemate-mods": true
   },
   "extraKnownMarketplaces": {
     "weebo": {
@@ -47,6 +48,12 @@
       "source": {
         "source": "github",
         "repo": "pbakaus/impeccable"
+      }
+    },
+    "codemate-mods": {
+      "source": {
+        "source": "github",
+        "repo": "nicolas-codemate/claude-code-mods"
       }
     }
   }

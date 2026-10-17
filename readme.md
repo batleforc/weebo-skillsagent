@@ -64,7 +64,7 @@ one profile serves both `--scope project` and `--scope user`.
 | `frontend` | `design`  | `webapp-testing`                           |
 | `mcp`      | `base`    | `mcp-builder`, `mlab`                      |
 | `game-design` | `frontend` | `bmad-gds`, `blender-image-to-3d`, `3dviz-pro-max` |
-| `review`   | `base`    | `judge`, `doc-review`                      |
+| `review`   | `base`    | `judge`, `doc-review`, `diff-review`       |
 | `docs`     | `base`    | `weebo-techdoc`                            |
 
 `game-design` carries BMGD (bmad's game dev studio module) as its own item,
@@ -118,6 +118,7 @@ named `all`.
 | `grill-me`, `grilling` | symlink | vendored from `mattpocock/skills`             | —                                   |
 | `batlehub-design` | symlink     | snapshot of `batlehub/batlehub`'s design system | —                                 |
 | `batlehub-rfc`    | symlink     | derived from `batlehub/batlehub`'s rfc skill + template, with security blocks | —   |
+| `diff-review`     | installer   | Claude mod (plugin) `diff-review@codemate-mods`: the `/diff-review` pane, ask Claude about any diff line, GitHub review threads | `claude`, `git`, `gh` |
 | `mlab`            | installer   | `claude mcp add` of the remote `mlab.sh/mcp` server (OAuth via `/mcp`) | `claude` |
 | `judge`           | installer   | `uv tool install --editable "$WSKA_REPO/judge"`: headless review gates `rfc-ready`, `doc-review` ([docs/judge.md](docs/judge.md)) | `uv` |
 | `doc-review`      | symlink (agent) | ours: read-only documentation reviewer run by `judge doc-review` | `claude`, `judge` |
