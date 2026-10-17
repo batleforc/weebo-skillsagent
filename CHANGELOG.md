@@ -2,6 +2,15 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## [v0.6.0](https://github.com/batleforc/weebo-skillsagent/compare/9fb0e3d631faf542066b7710a00e37b98cb89488..v0.6.0) - 2026-10-17
+#### Features
+- (**skills**) add wska skill so agents install skills through wska - ([9fb0e3d](https://github.com/batleforc/weebo-skillsagent/commit/9fb0e3d631faf542066b7710a00e37b98cb89488)) - Max Batleforc, Claude Opus 5.5
+- (**wska**) add --item and record the selection in .claude/wska.toml - ([fefa334](https://github.com/batleforc/weebo-skillsagent/commit/fefa3346bbee7450e097bb6d8fc17eee23b02fc8)) - Max Batleforc, Claude Opus 5.5
+#### Miscellaneous Chores
+- refresh graphify and rtk project instructions - ([91336aa](https://github.com/batleforc/weebo-skillsagent/commit/91336aa846655ee47333ab106605245fe6dce60e)) - Max Batleforc, Claude Opus 5.5
+
+- - -
+
 ## [v0.5.0](https://github.com/batleforc/weebo-skillsagent/compare/5299107449db82035f70ffe7a22726146f62267f..v0.5.0) - 2026-10-16
 #### Features
 - mise en place mécanisme update - ([75d5a34](https://github.com/batleforc/weebo-skillsagent/commit/75d5a34701a011148160333254ab1ba02e4ef788)) - Max Batleforc
