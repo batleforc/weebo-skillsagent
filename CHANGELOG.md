@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## [v0.7.0](https://github.com/batleforc/weebo-skillsagent/compare/06642f3176dabff19f1fc4df0ed94aa5944e502c..v0.7.0) - 2026-10-17
+#### Features
+- (**wska**) add `wska add` to extend the recorded selection - ([06642f3](https://github.com/batleforc/weebo-skillsagent/commit/06642f3176dabff19f1fc4df0ed94aa5944e502c)) - Max Batleforc, Claude Opus 5.5
+
+- - -
+
 ## [v0.6.0](https://github.com/batleforc/weebo-skillsagent/compare/9fb0e3d631faf542066b7710a00e37b98cb89488..v0.6.0) - 2026-10-17
 #### Features
 - (**skills**) add wska skill so agents install skills through wska - ([9fb0e3d](https://github.com/batleforc/weebo-skillsagent/commit/9fb0e3d631faf542066b7710a00e37b98cb89488)) - Max Batleforc, Claude Opus 5.5
