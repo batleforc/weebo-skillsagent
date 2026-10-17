@@ -34,6 +34,19 @@ impl Selection {
         self.profiles.is_empty() && self.items.is_empty()
     }
 
+    /// `self` plus whatever of `other` it does not already name, order kept.
+    pub fn merged(&self, other: &Self) -> Self {
+        let union = |a: &[String], b: &[String]| {
+            let mut out = a.to_vec();
+            out.extend(b.iter().filter(|n| !a.contains(n)).cloned());
+            out
+        };
+        Self {
+            profiles: union(&self.profiles, &other.profiles),
+            items: union(&self.items, &other.items),
+        }
+    }
+
     /// The selection recorded in `target_dir`, or `None` when there is none.
     pub fn load(target_dir: &Path) -> Result<Option<Self>, SelectionError> {
         let path = target_dir.join(FILE);

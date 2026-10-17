@@ -33,7 +33,7 @@ tasks:
       - uvx ruff format --check skills/weebo-techdoc
 
   release:
-    desc: "Bump the version from conventional commits and tag it (usage: task release, then git push --follow-tags to publish binaries)"
+    desc: "Bump the version from conventional commits and tag it (usage: task release; pushes the bump commit and its v* tag, which publishes the binaries)"
     cmds:
       - cog bump --auto
 

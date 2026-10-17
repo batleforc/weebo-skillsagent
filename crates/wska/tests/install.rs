@@ -298,3 +298,44 @@ fn records_profiles_and_single_items_and_a_bare_install_reapplies_them() {
     assert_eq!(again.linked, 1);
     assert_eq!(again.unlinked, 0);
 }
+
+#[test]
+fn add_extends_the_recorded_selection_instead_of_replacing_it() {
+    let d = tempfile::tempdir().unwrap();
+    let root = d.path().join("repo");
+    repo(
+        &root,
+        &["ponytail", "techdoc", "other"],
+        "[profiles.base]\nitems = [\"ponytail\"]\n",
+    );
+    let scope = wska::cli::Scope::Project;
+    wska::app::install(
+        &root,
+        &profiles(&["base"]),
+        scope,
+        false,
+        false,
+        &root,
+        &env_none,
+    )
+    .unwrap();
+
+    let extra = wska::selection::Selection {
+        profiles: vec!["base".into()], // already recorded: not duplicated
+        items: vec!["techdoc".into()],
+    };
+    let added = wska::app::add(&root, &extra, scope, false, false, &root, &env_none).unwrap();
+    assert_eq!(added.linked, 1);
+    assert_eq!(added.unlinked, 0);
+    assert!(fs::symlink_metadata(root.join(".claude/skills/ponytail")).is_ok());
+    assert_eq!(
+        wska::selection::Selection::load(&root.join(".claude")).unwrap(),
+        Some(wska::selection::Selection {
+            profiles: vec!["base".into()],
+            items: vec!["techdoc".into()],
+        })
+    );
+
+    let bare = wska::selection::Selection::default();
+    assert!(wska::app::add(&root, &bare, scope, false, false, &root, &env_none).is_err());
+}

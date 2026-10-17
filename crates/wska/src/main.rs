@@ -4,6 +4,16 @@ use wska::cli::{Cli, Command};
 /// Cloned on first run when wska is used outside this repo without WSKA_REPO.
 const REPO_URL: &str = "https://github.com/batleforc/weebo-skillsagent";
 
+fn print_applied(a: &wska::apply::Applied) {
+    println!(
+        "linked {} unlinked {} installers {} skipped {}",
+        a.linked,
+        a.unlinked,
+        a.installers_run.len(),
+        a.skipped.len()
+    );
+}
+
 fn main() {
     let cli = Cli::parse();
     // Before items_root: completions must work anywhere, without cloning the repo.
@@ -43,15 +53,21 @@ fn main() {
                 &cwd,
                 &env,
             )
-            .map(|a| {
-                println!(
-                    "linked {} unlinked {} installers {} skipped {}",
-                    a.linked,
-                    a.unlinked,
-                    a.installers_run.len(),
-                    a.skipped.len()
-                );
-            })
+            .map(|a| print_applied(&a))
+        }
+        Command::Add {
+            profile,
+            item,
+            scope,
+            dry_run,
+            run_installers,
+        } => {
+            let extra = wska::selection::Selection {
+                profiles: profile,
+                items: item,
+            };
+            wska::app::add(&root, &extra, scope, dry_run, run_installers, &cwd, &env)
+                .map(|a| print_applied(&a))
         }
         Command::Update {
             profile,
@@ -66,13 +82,7 @@ fn main() {
             wska::app::update(&root, &selection, scope, run_installers, &cwd, &env).map(|applied| {
                 println!("updated {}", root.display());
                 if let Some(a) = applied {
-                    println!(
-                        "linked {} unlinked {} installers {} skipped {}",
-                        a.linked,
-                        a.unlinked,
-                        a.installers_run.len(),
-                        a.skipped.len()
-                    );
+                    print_applied(&a);
                 }
             })
         }

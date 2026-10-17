@@ -15,6 +15,12 @@ pre_bump_hooks = [
     "cargo update -p wska --offline",
 ]
 
+# cog's tag is lightweight, which `git push --follow-tags` skips: push the bump
+# commit and its tag together so the v* tag triggers the release workflow.
+post_bump_hooks = [
+    "git push --atomic origin HEAD v{{version}}",
+]
+
 
 [git_hooks]
 

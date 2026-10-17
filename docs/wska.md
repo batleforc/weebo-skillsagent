@@ -75,6 +75,26 @@ readable.
 
 Running install twice changes nothing the second time.
 
+### `add`
+
+```bash
+wska add [--profile <name>…] [--item <name>…] [--scope project|user] [--dry-run] [--run-installers]
+task skills:add [PROFILE=design] [ITEM=weebo-techdoc] [SCOPE=project|user] [RUN_INSTALLERS=0]
+```
+
+`install` with the target's recorded [`wska.toml`](#the-target-file-wskatoml)
+plus the given profiles and items, so adding one skill does not mean
+re-typing everything already there. Names already recorded are not
+duplicated; with no `wska.toml` yet it behaves like `install`. At least one
+`--profile` or `--item` is required. The result is written back, so the next
+bare `install`/`update` keeps it.
+
+```bash
+wska add --item weebo-techdoc    # same as: wska install --profile base --item weebo-techdoc
+```
+
+There is no `remove`: edit `wska.toml` and run a bare `wska install`.
+
 ### `update`
 
 ```bash
@@ -93,7 +113,8 @@ removed from a profile upstream. With nothing given and no `wska.toml`, the
 pull is all it does — links are live, so pulled edits to existing skills
 already apply.
 
-Passing profiles or items replaces the recorded selection, with the same
+Passing profiles or items replaces the recorded selection (use `add` to
+extend it), with the same
 declarative rule as `install`: whatever is not named is unlinked. There is no
 `--dry-run`.
 
@@ -316,8 +337,8 @@ Versions come from the Conventional Commits history via cocogitto
 (`tag_prefix = "v"`).
 
 ```bash
-task release              # cog bump --auto: sets crates/wska version, updates Cargo.lock, changelog, commit, tag
-git push --follow-tags    # the v* tag triggers .github/workflows/release.yml
+task release              # cog bump --auto: sets crates/wska version, updates Cargo.lock, changelog, commit, tag,
+                          # then pushes the commit and the v* tag, which triggers .github/workflows/release.yml
 ```
 
 The workflow runs the tests, then builds `wska` for `x86_64-unknown-linux-musl`,

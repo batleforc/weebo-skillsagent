@@ -21,10 +21,9 @@ to put Weebo skills into a project. Full reference: `docs/wska.md` in that repo.
   `claude mcp add` yourself. A one-off copy goes stale and `wska` cannot see
   or update it. If something must be installed by a command, it becomes an
   `[installers.<item>]` entry in the repo's `vendor.toml`.
-- **`install` is declarative.** It links the profiles and `--item`s you pass
-  and *removes* every wska link not in them. The target's current selection is
-  in `.claude/wska.toml` (`profiles = [...]`, `items = [...]`): read it first
-  and pass everything it lists plus your addition, not only the new one.
+- **To add something, use `wska add`**, which keeps what `.claude/wska.toml`
+  already records. `install --profile/--item` is declarative: it *removes*
+  every wska link not named, so use it only to replace the whole selection.
 - Running installers executes commands (`npx`, `uv tool install`, …). Tell the
   user which profiles and installers you are about to run and get a yes first.
 - Never edit a skill through a path the harness gave you without knowing it is
@@ -48,8 +47,8 @@ wska install --run-installers   # bare: re-applies wska.toml (fresh clone, after
 wska status                  # what is linked now (Linked / MissingFromTarget / ...)
 wska list --profiles         # base, planning, design, frontend, mcp, game-design, review, docs
 wska list                    # single items, for --item
-wska install --profile base --profile planning --item weebo-techdoc --dry-run         # check the plan
-wska install --profile base --profile planning --item weebo-techdoc --run-installers  # apply, rewrites wska.toml
+wska add --profile planning --item weebo-techdoc --dry-run         # check the plan
+wska add --profile planning --item weebo-techdoc --run-installers  # apply, appends to wska.toml
 wska doctor                  # every item: tools present, SKILL.md usable
 ```
 
@@ -94,8 +93,8 @@ Add it to weebo-skillsagent rather than inlining it in the project:
 2. Add the item to a profile in `profiles.toml`.
 3. List the tools it needs under `[requires]` in `vendor.toml`.
 4. Add its row to the items table in `readme.md`.
-5. `wska doctor`, then a bare `wska install` (or `--item <name>` added to the
-   recorded selection).
+5. `wska doctor`, then `wska add --item <name>` (or a bare `wska install` if a
+   recorded profile now lists it).
 
 Commits in that repo are signed by the user: write the Conventional Commits
 message to a file and hand over the command, never commit yourself.

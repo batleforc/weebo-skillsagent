@@ -29,6 +29,21 @@ pub enum Command {
         #[arg(long)]
         run_installers: bool,
     },
+    /// Add profiles or items to the target's wska.toml selection, then install the whole of it
+    Add {
+        #[arg(long)]
+        profile: Vec<String>,
+        /// A single item to link besides the profiles' (repeatable)
+        #[arg(long)]
+        item: Vec<String>,
+        #[arg(long, value_enum, default_value_t = Scope::Project)]
+        scope: Scope,
+        #[arg(long)]
+        dry_run: bool,
+        /// Actually execute installer items (bmad, graphify, ...); otherwise they are skipped
+        #[arg(long)]
+        run_installers: bool,
+    },
     /// Pull the items repo (`git pull --ff-only`), then re-install the given profiles, if any
     /// With neither --profile nor --item, re-installs the target's wska.toml if there is one
     Update {

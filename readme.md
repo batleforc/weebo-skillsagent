@@ -29,7 +29,7 @@ Rust, Task, cocogitto and most of what the items themselves need: `node`, `uv`,
 ```bash
 task init                                         # full bootstrap: mise, plugins, hooks, all items into this repo
 task skills:install PROFILE=design                # one profile into this repo's .claude/, recorded in .claude/wska.toml
-task skills:install PROFILE=base ITEM=weebo-techdoc  # a profile plus a single skill no profile lists
+task skills:add ITEM=weebo-techdoc               # add one skill to what .claude/wska.toml already records
 task skills:install PROFILE=frontend SCOPE=user   # the same into ~/.claude/
 task skills:update                                # git pull --ff-only the items repo, then re-apply .claude/wska.toml
 task skills:status                                # what is linked where

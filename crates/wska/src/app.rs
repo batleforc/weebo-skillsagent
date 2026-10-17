@@ -106,6 +106,34 @@ pub fn install(
     Ok(applied)
 }
 
+/// Install the target's recorded selection plus `extra`, so adding one item
+/// does not mean re-typing everything already there.
+pub fn add(
+    repo_root: &Path,
+    extra: &Selection,
+    scope: Scope,
+    dry_run: bool,
+    run_installers: bool,
+    cwd: &Path,
+    env: &dyn Fn(&str) -> Option<String>,
+) -> Result<Applied, AppError> {
+    if extra.is_empty() {
+        return Err(AppError::Refused(
+            "nothing to add: pass --profile or --item".into(),
+        ));
+    }
+    let recorded = Selection::load(&target::resolve(scope, cwd, env)?)?.unwrap_or_default();
+    install(
+        repo_root,
+        &recorded.merged(extra),
+        scope,
+        dry_run,
+        run_installers,
+        cwd,
+        env,
+    )
+}
+
 /// Pull the items repo, then re-link `selection`, or the target's recorded one
 /// if `selection` is empty. Links are symlinks into the repo, so the pull
 /// alone refreshes linked items; the re-install picks up items newly added to
