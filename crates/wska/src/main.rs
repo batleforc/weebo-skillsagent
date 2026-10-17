@@ -105,11 +105,16 @@ fn main() {
                 println!("{:<28} {:?}", row.name, row.state);
             }
         }),
-        Command::List { profiles } => wska::app::list(&root, profiles).map(|names| {
-            for name in names {
-                println!("{name}");
-            }
-        }),
+        Command::List {
+            profiles,
+            recorded,
+            scope,
+        } => if recorded {
+            wska::app::list_recorded(&root, scope, &cwd, &env)
+        } else {
+            wska::app::list(&root, profiles)
+        }
+        .map(|table| print!("{table}")),
         Command::Doctor => wska::app::doctor(&root, &env).map(|rows| {
             let mut unhealthy = 0;
             for row in &rows {

@@ -265,13 +265,123 @@ pub fn status(
     Ok(crate::status::collect(&items, &target_dir, &root)?)
 }
 
-pub fn list(repo_root: &Path, profiles: bool) -> Result<Vec<String>, AppError> {
+/// Rows under a header, printed with every column but the last padded.
+#[derive(Debug, PartialEq, Eq)]
+pub struct Table {
+    pub headers: [&'static str; 3],
+    pub rows: Vec<[String; 3]>,
+}
+
+impl std::fmt::Display for Table {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let width = |col: usize| {
+            self.rows
+                .iter()
+                .map(|r| r[col].len())
+                .chain([self.headers[col].len()])
+                .max()
+                .unwrap_or(0)
+        };
+        let (w0, w1) = (width(0), width(1));
+        let headers = self.headers.map(String::from);
+        for [a, b, c] in std::iter::once(&headers).chain(&self.rows) {
+            writeln!(f, "{a:<w0$}  {b:<w1$}  {c}")?;
+        }
+        Ok(())
+    }
+}
+
+fn names_or_dash(names: impl IntoIterator<Item = impl AsRef<str>>) -> String {
+    let joined = names
+        .into_iter()
+        .map(|n| n.as_ref().to_string())
+        .collect::<Vec<_>>()
+        .join(", ");
+    if joined.is_empty() {
+        "-".into()
+    } else {
+        joined
+    }
+}
+
+/// Every item with its kind and the profiles that list it directly, or every
+/// profile with what it includes and lists.
+pub fn list(repo_root: &Path, profiles: bool) -> Result<Table, AppError> {
+    let cfg = config::load_profiles(&repo_root.join("profiles.toml"))?;
     if profiles {
-        let cfg = config::load_profiles(&repo_root.join("profiles.toml"))?;
-        return Ok(cfg.profiles.keys().cloned().collect());
+        let rows = cfg
+            .profiles
+            .iter()
+            .map(|(name, p)| {
+                [
+                    name.clone(),
+                    names_or_dash(&p.include),
+                    names_or_dash(&p.items),
+                ]
+            })
+            .collect();
+        return Ok(Table {
+            headers: ["PROFILE", "INCLUDES", "ITEMS"],
+            rows,
+        });
     }
     let vendor = config::load_vendor(&repo_root.join("vendor.toml"))?;
-    Ok(item::scan(repo_root, &vendor)?.keys().cloned().collect())
+    let rows = item::scan(repo_root, &vendor)?
+        .values()
+        .map(|it| {
+            let kind = match it {
+                item::Item::Linked { kind, .. } => match kind {
+                    item::Kind::Skill => "skill",
+                    item::Kind::Agent => "agent",
+                    item::Kind::Mcp => "mcp",
+                },
+                item::Item::Installer { .. } => "installer",
+            };
+            let in_profiles = cfg
+                .profiles
+                .iter()
+                .filter(|(_, p)| p.items.iter().any(|i| i == it.name()))
+                .map(|(name, _)| name);
+            [
+                it.name().to_string(),
+                kind.to_string(),
+                names_or_dash(in_profiles),
+            ]
+        })
+        .collect();
+    Ok(Table {
+        headers: ["ITEM", "KIND", "PROFILES"],
+        rows,
+    })
+}
+
+/// The target's recorded selection, each profile expanded to the items it
+/// brings (includes followed).
+pub fn list_recorded(
+    repo_root: &Path,
+    scope: Scope,
+    cwd: &Path,
+    env: &dyn Fn(&str) -> Option<String>,
+) -> Result<Table, AppError> {
+    let target_dir = target::resolve(scope, cwd, env)?;
+    let path = target_dir.join(crate::selection::FILE);
+    let recorded = Selection::load(&target_dir)?
+        .ok_or_else(|| AppError::Refused(format!("no selection recorded in {}", path.display())))?;
+    let cfg = config::load_profiles(&repo_root.join("profiles.toml"))?;
+    let vendor = config::load_vendor(&repo_root.join("vendor.toml"))?;
+    let items = item::scan(repo_root, &vendor)?;
+    let mut rows = Vec::new();
+    for name in &recorded.profiles {
+        let brings = profile::resolve(&cfg, std::slice::from_ref(name), &[], &items)?;
+        rows.push([name.clone(), "profile".into(), names_or_dash(&brings)]);
+    }
+    for name in &recorded.items {
+        rows.push([name.clone(), "item".into(), name.clone()]);
+    }
+    Ok(Table {
+        headers: ["NAME", "RECORDED AS", "ITEMS"],
+        rows,
+    })
 }
 
 pub fn sync(

@@ -179,11 +179,39 @@ whose installation `wska` does not own.
 ### `list`
 
 ```bash
-wska list [--profiles]
-task skills:list [PROFILES=1]
+wska list [--profiles | --recorded [--scope project|user]]
+task skills:list [PROFILES=1 | RECORDED=1] [SCOPE=project|user]
 ```
 
-Item names, or profile names with `--profiles`. One per line.
+A table. With no flag, every item, its kind (`skill`, `agent`, `mcp`,
+`installer`) and the profiles that list it directly — `-` for an item no
+profile lists, which only `--item` installs:
+
+```
+ITEM                 KIND       PROFILES
+batlehub-design      skill      design
+doc-review           agent      review
+judge                installer  planning, review
+weebo-techdoc        skill      docs
+```
+
+`--profiles`: every profile, what it includes and what it lists itself.
+
+```
+PROFILE      INCLUDES  ITEMS
+base         -         wska, graphify, rtk, ponytail, ponytail-plugin, grill-me, grilling
+docs         base      weebo-techdoc
+```
+
+`--recorded`: the target's [`wska.toml`](#the-target-file-wskatoml), each
+profile expanded to every item it brings through its includes. Errors when
+nothing is recorded.
+
+```
+NAME             RECORDED AS  ITEMS
+docs             profile      graphify, grill-me, grilling, ponytail, ponytail-plugin, rtk, weebo-techdoc, wska
+batlehub-design  item         batlehub-design
+```
 
 ### `doctor`
 

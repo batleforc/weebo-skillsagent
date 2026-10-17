@@ -41,12 +41,12 @@ to put Weebo skills into a project. Full reference: `docs/wska.md` in that repo.
 ## Install skills into the current project
 
 ```bash
-cat .claude/wska.toml        # the recorded selection, if any
+wska list --recorded         # the recorded selection (.claude/wska.toml), profiles expanded
 wska install --run-installers   # bare: re-applies wska.toml (fresh clone, after a pull)
 
 wska status                  # what is linked now (Linked / MissingFromTarget / ...)
-wska list --profiles         # base, planning, design, frontend, mcp, game-design, review, docs
-wska list                    # single items, for --item
+wska list --profiles         # profiles: what each includes and lists
+wska list                    # every item, its kind, and the profiles listing it ("-" = --item only)
 wska add --profile planning --item weebo-techdoc --dry-run         # check the plan
 wska add --profile planning --item weebo-techdoc --run-installers  # apply, appends to wska.toml
 wska remove --item weebo-techdoc                                   # drop a recorded name, unlink what only it brought

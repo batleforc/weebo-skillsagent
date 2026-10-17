@@ -47,9 +47,9 @@ tasks:
       - '{{.WSKA}} status --scope {{.SCOPE}}'
 
   list:
-    desc: "List the items in this repo (usage: task skills:list [PROFILES=1])"
+    desc: "Table of items and their profiles; PROFILES=1 for profiles, RECORDED=1 for the target's .claude/wska.toml (usage: task skills:list [PROFILES=1|RECORDED=1] [SCOPE=project|user])"
     cmds:
-      - '{{.WSKA}} list {{if .PROFILES}}--profiles{{end}}'
+      - '{{.WSKA}} list {{if .PROFILES}}--profiles{{end}}{{if .RECORDED}}--recorded --scope {{.SCOPE}}{{end}}'
 
   doctor:
     desc: "Check every item can work here: required tools on PATH and a usable SKILL.md"

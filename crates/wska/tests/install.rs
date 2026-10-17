@@ -426,3 +426,44 @@ fn remove_drops_recorded_names_and_refuses_unrecorded_ones() {
         Some(sel(&[], &[]))
     );
 }
+
+#[test]
+fn list_tables_show_profiles_per_item_and_the_recorded_selection() {
+    let d = tempfile::tempdir().unwrap();
+    let root = d.path().join("repo");
+    repo(
+        &root,
+        &["ponytail", "techdoc", "loose"],
+        "[profiles.base]\nitems = [\"ponytail\"]\n\n[profiles.docs]\ninclude = [\"base\"]\nitems = [\"techdoc\", \"ponytail\"]\n",
+    );
+    let items = wska::app::list(&root, false).unwrap();
+    assert_eq!(items.headers, ["ITEM", "KIND", "PROFILES"]);
+    let row = |name: &str| items.rows.iter().find(|r| r[0] == name).unwrap().clone();
+    assert_eq!(row("ponytail")[2], "base, docs");
+    assert_eq!(row("loose")[2], "-");
+    assert_eq!(row("techdoc")[1], "skill");
+    assert!(
+        items.to_string().starts_with("ITEM      KIND   PROFILES\n"),
+        "{items}"
+    );
+
+    let scope = wska::cli::Scope::Project;
+    assert!(wska::app::list_recorded(&root, scope, &root, &env_none).is_err());
+    let sel = wska::selection::Selection {
+        profiles: vec!["docs".into()],
+        items: vec!["loose".into()],
+    };
+    wska::app::install(&root, &sel, scope, false, false, &root, &env_none).unwrap();
+    let recorded = wska::app::list_recorded(&root, scope, &root, &env_none).unwrap();
+    assert_eq!(
+        recorded.rows,
+        vec![
+            [
+                "docs".to_string(),
+                "profile".into(),
+                "ponytail, techdoc".into()
+            ],
+            ["loose".to_string(), "item".into(), "loose".into()],
+        ]
+    );
+}

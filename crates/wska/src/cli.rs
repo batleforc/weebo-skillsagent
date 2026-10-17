@@ -78,10 +78,16 @@ pub enum Command {
         #[arg(long, value_enum, default_value_t = Scope::Project)]
         scope: Scope,
     },
-    /// List items in this repo, or profiles with --profiles
+    /// Table of items and the profiles that list them, profiles with --profiles,
+    /// or the target's wska.toml selection with --recorded
     List {
-        #[arg(long)]
+        #[arg(long, conflicts_with = "recorded")]
         profiles: bool,
+        #[arg(long)]
+        recorded: bool,
+        /// Target for --recorded
+        #[arg(long, value_enum, default_value_t = Scope::Project)]
+        scope: Scope,
     },
     /// Check whether each item can actually work here: declared tools on PATH,
     /// and a usable SKILL.md. Exits non-zero if anything is unhealthy.
