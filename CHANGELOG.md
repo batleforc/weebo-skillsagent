@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## [v0.10.0](https://github.com/batleforc/weebo-skillsagent/compare/be58fb8464fe4fe672583a90a051c89bf7ade4c8..v0.10.0) - 2026-10-17
+#### Features
+- (**wska**) show what is installed in the list table - ([be58fb8](https://github.com/batleforc/weebo-skillsagent/commit/be58fb8464fe4fe672583a90a051c89bf7ade4c8)) - Max Batleforc, Claude Opus 5.5
+
+- - -
+
 ## [v0.9.0](https://github.com/batleforc/weebo-skillsagent/compare/9d055fecae1c5e967a0bff16df59dd84e76cd14a..v0.9.0) - 2026-10-17
 #### Features
 - (**wska**) show list as tables and add `list --recorded` - ([9d055fe](https://github.com/batleforc/weebo-skillsagent/commit/9d055fecae1c5e967a0bff16df59dd84e76cd14a)) - Max Batleforc, Claude Opus 5.5
