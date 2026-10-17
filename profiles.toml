@@ -2,10 +2,11 @@
 # here, so one profile serves both `--scope project` and `--scope user`.
 
 [profiles.base]
+# wska teaches agents to install skills through wska instead of by hand.
 # grilling travels with grill-me: the latter is a three-line shim whose body is
 # "call the Skill tool with grilling". ponytail-plugin keeps upstream's
 # session-start hook that arms ponytail mode; the vendored skill alone does not.
-items = ["graphify", "rtk", "ponytail", "ponytail-plugin", "grill-me", "grilling"]
+items = ["wska", "graphify", "rtk", "ponytail", "ponytail-plugin", "grill-me", "grilling"]
 
 [profiles.planning]
 include = ["base"]
@@ -18,9 +19,8 @@ include = ["base"]
 # These three overlap deliberately — frontend-design and theme-factory are
 # references, impeccable is opinionated. Loading all three gives you three
 # voices that can disagree; trim to the one you trust per project.
-# batlehub-design is the house baseline; monofolio-design (a weebo plugin) is
-# the portfolio's own system on the same OKLCH palette.
-items = ["frontend-design", "theme-factory", "impeccable", "batlehub-design", "monofolio-design"]
+# batlehub-design is the house baseline.
+items = ["frontend-design", "theme-factory", "impeccable", "batlehub-design"]
 
 [profiles.frontend]
 include = ["design"]

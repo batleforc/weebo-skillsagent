@@ -135,12 +135,11 @@ blender-image-to-3d = ["blender", "python3", "py:PIL"]
 # Playwright, or a visible browser.
 3dviz-pro-max = ["python3", "node", "py:playwright|google-chrome|chromium|chrome"]
 impeccable      = ["node", "npx", "google-chrome|chromium|chrome"]
-monofolio-design = ["claude"]
 ponytail-plugin = ["claude", "node"]
-batlehub        = ["claude"]
 mlab            = ["claude"]
 judge           = ["uv"]
 weebo-techdoc   = ["python3", "git"]
+wska            = ["wska|cargo"]
 doc-review      = ["claude", "judge"]
 
 [installers.bmad]
@@ -165,18 +164,6 @@ scope   = "project"
 # settings.json step prompts, and an install run from a task would hang.
 [installers.rtk]
 command = "rtk init --auto-patch"
-scope   = "project"
-
-# Claude plugins from the weebo marketplace (batleforc/weebo-skills), installed
-# rather than vendored. `;` not `&&`: adding a marketplace that is already
-# there may fail, and the install's exit code is the one that matters.
-# Removing one from a profile does not uninstall it, like every installer.
-[installers.monofolio-design]
-command = "claude plugin marketplace add batleforc/weebo-skills --scope project; claude plugin install monofolio-design@weebo --scope project"
-scope   = "project"
-
-[installers.batlehub]
-command = "claude plugin marketplace add batleforc/weebo-skills --scope project; claude plugin install batlehub@weebo --scope project"
 scope   = "project"
 
 # Ponytail as upstream ships it: the plugin, whose SessionStart hook arms

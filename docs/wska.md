@@ -68,6 +68,26 @@ readable.
 
 Running install twice changes nothing the second time.
 
+### `update`
+
+```bash
+wska update [--profile <name>…] [--scope project|user] [--run-installers]
+task skills:update [PROFILE=base] [SCOPE=project|user] [RUN_INSTALLERS=0]
+```
+
+Fast-forwards the items repo (`git pull --ff-only`) — whichever one `wska`
+resolved: `$WSKA_REPO`, the repo you are in, or its own clone (see [Using wska
+in another project](#using-wska-in-another-project)). A local commit or a
+diverged branch makes the pull fail and nothing is installed.
+
+With no `--profile`, that is all it does: links are live, so pulled edits to
+existing skills already apply. With profiles, it then runs `install` with them,
+which picks up items added or removed upstream. The same declarative rule
+applies — name every profile the target should keep, or the others are
+unlinked.
+
+Unlike `install`, `--profile` is optional here and there is no `--dry-run`.
+
 ### `status`
 
 ```bash
@@ -234,13 +254,32 @@ Each machine re-runs `wska install` after cloning. Installer items (`bmad`,
 `graphify`, …) run with that project as working directory, so their output
 belongs to the project and is committed or ignored as that tool expects.
 
-Updating skills is a `git pull` in the clone (`git -C
-~/.local/share/wska/weebo-skillsagent pull` for the owned one) — links are
-live, nothing to reinstall; wska never pulls on its own. Updating the binary is re-running the install line above.
+Updating skills is `wska update` (a `git pull --ff-only` of the clone), plus
+`--profile …` to pick up items added upstream — links are live, so edits to
+existing skills need nothing more; wska never pulls except through `update`. Updating the binary is re-running the install line above.
 
 A `WSKA_REPO` pointing at an existing directory with no `profiles.toml` stops
 every command with `error: no profiles.toml in <dir>`; wska never clones into a
 directory that already exists.
+
+## The `wska` skill
+
+The repo ships a skill named `wska` (`skills/wska/SKILL.md`, in the `base`
+profile) so that agents working in a target project go through this tool
+instead of around it. It tells them to:
+
+- never copy files into `.claude/skills/` or `.claude/agents/`, nor run
+  `claude plugin install` / `claude mcp add` themselves — a command-driven
+  item becomes an `[installers.<item>]` entry instead;
+- read `wska status` before `install`, and pass every profile the target
+  should keep, since install unlinks the rest;
+- dry-run, then ask the user before running installers;
+- run `wska doctor` afterwards and offer missing tools through mise;
+- add a missing skill to this repo (`SKILL.md`, profile, `[requires]`, readme
+  row) rather than inlining it in the project.
+
+It is a skill, so it only reaches a project once `base` has been installed
+there by hand the first time.
 
 ## Releasing
 
@@ -353,8 +392,8 @@ idempotent, and `marketplace add` is joined with `;` because it may fail when
 the marketplace is already declared:
 
 ```toml
-[installers.monofolio-design]
-command = "claude plugin marketplace add batleforc/weebo-skills --scope project; claude plugin install monofolio-design@weebo --scope project"
+[installers.ponytail-plugin]
+command = "claude plugin marketplace add DietrichGebert/ponytail --scope project; claude plugin install ponytail@ponytail --scope project"
 scope   = "project"
 ```
 
