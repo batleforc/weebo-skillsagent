@@ -44,7 +44,7 @@ pub fn apply(plan: &Plan, dry_run: bool) -> Result<Applied, ApplyError> {
                     // Remove first so that replacing an existing link is
                     // idempotent; symlink() refuses an occupied path.
                     remove_if_link(to)?;
-                    std::os::unix::fs::symlink(from, to).map_err(|source| ApplyError::Io {
+                    crate::ownership::symlink(from, to).map_err(|source| ApplyError::Io {
                         op: "linking",
                         path: to.clone(),
                         source,
@@ -121,7 +121,7 @@ pub fn apply(plan: &Plan, dry_run: bool) -> Result<Applied, ApplyError> {
 fn remove_if_link(path: &Path) -> Result<(), ApplyError> {
     match std::fs::symlink_metadata(path) {
         Ok(md) if md.file_type().is_symlink() => {
-            std::fs::remove_file(path).map_err(|source| ApplyError::Io {
+            crate::ownership::remove_link(path).map_err(|source| ApplyError::Io {
                 op: "removing",
                 path: path.to_path_buf(),
                 source,

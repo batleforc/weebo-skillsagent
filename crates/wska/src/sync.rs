@@ -327,7 +327,7 @@ fn copy_into(from: &Path, to: &Path, root: &Path) -> Result<(), SyncError> {
                     target: target.display().to_string(),
                 });
             }
-            std::os::unix::fs::symlink(target, &dest).map_err(|source| SyncError::Io {
+            crate::ownership::symlink(&target, &dest).map_err(|source| SyncError::Io {
                 op: "linking",
                 path: dest,
                 source,

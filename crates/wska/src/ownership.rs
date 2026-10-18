@@ -56,6 +56,39 @@ pub fn classify(entry: &Path, repo_root: &Path, expected: Option<&Path>) -> io::
     }
 }
 
+/// Creates `link` pointing at `target`, which may be relative to the link's
+/// directory. Windows needs to know whether the target is a directory and
+/// needs Developer Mode (or admin) to create links at all.
+pub fn symlink(target: &Path, link: &Path) -> io::Result<()> {
+    #[cfg(unix)]
+    return std::os::unix::fs::symlink(target, link);
+    #[cfg(windows)]
+    {
+        let base = link.parent().unwrap_or(Path::new("."));
+        if base.join(target).is_dir() {
+            std::os::windows::fs::symlink_dir(target, link)
+        } else {
+            std::os::windows::fs::symlink_file(target, link)
+        }
+    }
+}
+
+/// Removes a link without following it. On Windows a link to a directory is
+/// a directory entry and must go through remove_dir.
+pub fn remove_link(link: &Path) -> io::Result<()> {
+    #[cfg(windows)]
+    {
+        use std::os::windows::fs::FileTypeExt;
+        if std::fs::symlink_metadata(link)?
+            .file_type()
+            .is_symlink_dir()
+        {
+            return std::fs::remove_dir(link);
+        }
+    }
+    std::fs::remove_file(link)
+}
+
 /// Lexical normalization: resolves `.` and `..` without touching the
 /// filesystem, so a relative link into a repo is comparable to an absolute
 /// repo path.

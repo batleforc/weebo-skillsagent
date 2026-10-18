@@ -42,12 +42,15 @@ fn collect(dir: &Path, rel_dir: &Path, out: &mut Vec<(Vec<u8>, u8, Vec<u8>)>) ->
         } else if md.is_dir() {
             collect(&entry.path(), &rel, out)?;
         } else {
-            use std::os::unix::fs::PermissionsExt;
-            let kind = if md.permissions().mode() & 0o111 != 0 {
-                b'x'
-            } else {
-                b'f'
+            #[cfg(unix)]
+            let exec = {
+                use std::os::unix::fs::PermissionsExt;
+                md.permissions().mode() & 0o111 != 0
             };
+            // Windows has no exec bit; both sides of a comparison hash on the same OS.
+            #[cfg(windows)]
+            let exec = false;
+            let kind = if exec { b'x' } else { b'f' };
             out.push((
                 rel.as_os_str().as_encoded_bytes().to_vec(),
                 kind,

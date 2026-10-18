@@ -106,9 +106,24 @@ pub fn unsatisfied(requirements: &[String], has: &dyn Fn(&str) -> bool) -> Vec<S
 /// PATH is a parameter rather than read from the environment so that tests do
 /// not have to mutate process state.
 pub fn resolves_in(path_var: &str, tool: &str) -> bool {
-    std::env::split_paths(path_var).any(|dir| is_executable(&dir.join(tool)))
+    // Windows finds `npx` as `npx.cmd`; shortcut: fixed list instead of PATHEXT, fine for dev tools.
+    let exts: &[&str] = if cfg!(windows) {
+        &["", ".exe", ".cmd", ".bat"]
+    } else {
+        &[""]
+    };
+    std::env::split_paths(path_var).any(|dir| {
+        exts.iter()
+            .any(|ext| is_executable(&dir.join(format!("{tool}{ext}"))))
+    })
 }
 
+#[cfg(windows)]
+fn is_executable(path: &Path) -> bool {
+    path.is_file()
+}
+
+#[cfg(unix)]
 fn is_executable(path: &Path) -> bool {
     use std::os::unix::fs::PermissionsExt;
     std::fs::metadata(path)

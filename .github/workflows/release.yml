@@ -18,6 +18,7 @@ jobs:
           - { os: ubuntu-24.04, target: x86_64-unknown-linux-musl }
           - { os: ubuntu-24.04-arm, target: aarch64-unknown-linux-musl }
           - { os: macos-14, target: aarch64-apple-darwin }
+          - { os: windows-2025, target: x86_64-pc-windows-msvc, exe: .exe }
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -25,10 +26,13 @@ jobs:
         if: contains(matrix.target, 'musl')
         run: sudo apt-get update && sudo apt-get install -y musl-tools
       - run: rustup target add ${{ matrix.target }}
-      - run: cargo test -p wska
+      # The tests build fixtures with Unix symlinks and exec bits.
+      - if: runner.os != 'Windows'
+        run: cargo test -p wska
       - run: cargo build --release --locked -p wska --target ${{ matrix.target }}
       - name: Package
-        run: tar -czf wska-${{ matrix.target }}.tar.gz -C target/${{ matrix.target }}/release wska
+        shell: bash
+        run: tar -czf wska-${{ matrix.target }}.tar.gz -C target/${{ matrix.target }}/release wska${{ matrix.exe }}
       - uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3.0.3
         with:
           files: wska-${{ matrix.target }}.tar.gz
