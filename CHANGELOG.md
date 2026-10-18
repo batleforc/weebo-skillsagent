@@ -2,6 +2,16 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## [v0.12.0](https://github.com/batleforc/weebo-skillsagent/compare/7676e0e35d96f7848d3a677566a19ce7d0c98beb..v0.12.0) - 2026-10-18
+#### Features
+- (**skills**) add weebo-good-practice, vendor skill-nr via `copies` - ([f109f89](https://github.com/batleforc/weebo-skillsagent/commit/f109f89c955c224f004d533f39485127b25496a3)) - Max Batleforc, Claude Opus 5.5 (1M context)
+- (**wska**) build a Windows release binary - ([d5e7625](https://github.com/batleforc/weebo-skillsagent/commit/d5e7625d20e3089f6fe43e84d6741e618fa587ec)) - Max Batleforc, Claude Opus 5.5
+- add first mod - ([f91b811](https://github.com/batleforc/weebo-skillsagent/commit/f91b811bddaee8bcc16e6d9ac4ec520147ca0a2d)) - Max Batleforc
+#### Miscellaneous Chores
+- (**mise**) pin weebo-skillsagent to 0.11.0 - ([7676e0e](https://github.com/batleforc/weebo-skillsagent/commit/7676e0e35d96f7848d3a677566a19ce7d0c98beb)) - Max Batleforc
+
+- - -
+
 ## [v0.11.0](https://github.com/batleforc/weebo-skillsagent/compare/12c5f0e39730887175c74f6155bd3244a66e6b2d..v0.11.0) - 2026-10-17
 #### Features
 - mise en place new skills - ([12c5f0e](https://github.com/batleforc/weebo-skillsagent/commit/12c5f0e39730887175c74f6155bd3244a66e6b2d)) - Max Batleforc
