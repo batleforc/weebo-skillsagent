@@ -50,7 +50,7 @@ pub fn apply(plan: &Plan, dry_run: bool) -> Result<Applied, ApplyError> {
                         source,
                     })?;
                 }
-                done.linked += 1;
+                done.linked = done.linked.saturating_add(1);
             }
             Action::Unlink { at, repo_root } => {
                 println!("unlink {}", at.display());
@@ -70,14 +70,14 @@ pub fn apply(plan: &Plan, dry_run: bool) -> Result<Applied, ApplyError> {
                     );
                     if owned {
                         remove_if_link(at)?;
-                        done.unlinked += 1;
+                        done.unlinked = done.unlinked.saturating_add(1);
                     } else {
                         let msg = format!("{} changed since planning, left alone", at.display());
                         println!("skip   {msg}");
                         done.skipped.push(msg);
                     }
                 } else {
-                    done.unlinked += 1;
+                    done.unlinked = done.unlinked.saturating_add(1);
                 }
             }
             Action::RunInstaller {

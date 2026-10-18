@@ -60,6 +60,10 @@ impl Selection {
             .map_err(|source| SelectionError::Parse { path, source })
     }
 
+    #[expect(
+        clippy::expect_used,
+        reason = "two Vec<String> fields always serialize; test `round_trips_and_reads_absent_as_none` covers it"
+    )]
     pub fn save(&self, target_dir: &Path) -> Result<(), SelectionError> {
         let path = target_dir.join(FILE);
         let body = toml::to_string(self).expect("a list of strings always serializes");

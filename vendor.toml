@@ -32,7 +32,7 @@ provides = ["impeccable"]
 # and adding it there by hand would make the local hash diverge from the
 # recorded upstream hash, marking the skill as patched forever.
 licence  = "Apache-2.0"
-commit = "6af45ac"
+commit = "9304afa"
 hashes = { impeccable = "sha256:fe36514a563a8e1d42e0edb948e1a5fb7fa705914b0ca7349523dc99bdb7bafc" }
 
 [sources.blender-game-skills]
@@ -76,8 +76,8 @@ provides = ["ponytail", "ponytail-audit", "ponytail-debt", "ponytail-gain", "pon
 # invoked as a skill, not armed by a hook, and ponytail-gain's benchmark
 # numbers (read from the plugin's benchmarks/) are not there to show.
 licence  = "MIT"
-commit = "6f1c2bf"
-hashes = { ponytail = "sha256:c0bd4968ae5f789f6e208df40a57ea3d0abbb66c642677d4d02fb9a62f0ea9ad", ponytail-audit = "sha256:990428458f4dce2bfc6f2fba0124522795b71d0410958154db22a8b6884495ae", ponytail-debt = "sha256:69fd443d41a89d105f4796bba4bad7e04200d4000cc024b8f952dd38c32f885e", ponytail-gain = "sha256:b128a0b9329504626839bcf082f367ebc26518ac9c5afba1dc79df146ca0ba9b", ponytail-help = "sha256:8459fa0177b389ec8d69439b64d84f6ded49e3ad011d138b3d478b87cae9115f", ponytail-review = "sha256:0fcee427e152792c559f7c45a9f55b68e8c2bba731adaac1ac303d9bc08da98c" }
+commit = "09c434a"
+hashes = { ponytail = "sha256:c0bd4968ae5f789f6e208df40a57ea3d0abbb66c642677d4d02fb9a62f0ea9ad", ponytail-audit = "sha256:990428458f4dce2bfc6f2fba0124522795b71d0410958154db22a8b6884495ae", ponytail-debt = "sha256:69fd443d41a89d105f4796bba4bad7e04200d4000cc024b8f952dd38c32f885e", ponytail-gain = "sha256:b128a0b9329504626839bcf082f367ebc26518ac9c5afba1dc79df146ca0ba9b", ponytail-help = "sha256:84592d842f52e9fe17a200472293a044ecb5d2a8447bc01f246507891b710683", ponytail-review = "sha256:0fcee427e152792c559f7c45a9f55b68e8c2bba731adaac1ac303d9bc08da98c" }
 
 [sources.mattpocock-skills]
 upstream = "https://github.com/mattpocock/skills"
@@ -93,6 +93,19 @@ licence  = "MIT"
 commit = "49dd158"
 hashes = { grill-me = "sha256:a2253d86abb930490613ecd40db7166d53451c0ae03271f4acce36fdf47c5ef3", grilling = "sha256:9fd4deb13b57d10876a782f9a6aa4adb47587be511231a0763835d35c7de6034" }
 
+[sources.skill-nr]
+upstream = "https://github.com/Institut-du-Numerique-Responsable/skill-nr"
+ref      = "main"
+# Not laid out as skills: rules and agents generated per assistant. `copies`
+# lifts the eco-design rules and their criteria into weebo-good-practice, and
+# the Claude Code agents (eco-check, accessibilite-check) into one agent item.
+# Never edit the copies (share-alike, and sync would see them as patched).
+copies = { "skills/weebo-good-practice/references/nr/rules" = ".continue/rules", "skills/weebo-good-practice/references/nr/referentiels" = "referentiels", "agents/nr-check" = "versions/claude-code/.claude/agents" }
+# Full text in LICENSES/skill-nr.txt: LICENSE sits at the repo root.
+licence  = "CC-BY-SA-4.0"
+commit = "2466e75"
+hashes = { "agents/nr-check" = "sha256:0d91ac89ce7ca19dc5768fb3b62f516e16808bcd4ce65cd6b9e5b02c444fec82", "skills/weebo-good-practice/references/nr/referentiels" = "sha256:bddcd052ee8bb6a24426cafab3c696bba01b58adb594baf140f0ef88d6884114", "skills/weebo-good-practice/references/nr/rules" = "sha256:771b967b89fa539d0a79553780a902e72696b76aa9850d88ebc21d6791b573fa" }
+
 # skills/batlehub-design is a hand-made snapshot, not a [sources] entry:
 # upstream (https://github.com/batlehub/batlehub, Apache-2.0, commit 2336695)
 # keeps its design system as loose files rather than a skill directory, so sync
@@ -104,6 +117,9 @@ hashes = { grill-me = "sha256:a2253d86abb930490613ecd40db7166d53451c0ae03271f4ac
 # skills/weebo-* are ours; their templates/ are trimmed copies of batlehub
 # files at commit 20879e5, each naming its source in a header. Refresh by
 # re-reading those files upstream and bumping the commit in the headers.
+#
+# references/rust.md in skills/weebo-good-practice is ours, derived from
+# ANSSI-FR/rust-guide at commit 3f9e2e2.
 #
 # skills/batlehub-rfc is ours, derived (not copied) from the same commit's
 # .claude/skills/rfc and docs/internal/0000-rfc-template.md: made portable to

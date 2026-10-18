@@ -12,6 +12,9 @@ path = "src/lib.rs"
 name = "wska"
 path = "src/main.rs"
 
+[lints]
+workspace = true
+
 [dependencies]
 clap.workspace = true
 clap_complete.workspace = true

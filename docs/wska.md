@@ -444,6 +444,20 @@ commit   = "dbd4588"                # written back by sync
 hashes   = { mcp-builder = "sha256:…" }   # written back by sync
 ```
 
+An upstream that is not laid out as skills (rules, agents, references) uses
+`copies` instead of, or beside, `subpath`/`provides`: each entry maps a local
+directory (from this repo's root) to an upstream one (from the clone's root),
+and is hashed, fast-forwarded and reported as patched exactly like a skill,
+keyed by its local path. Both paths must be relative with no `..`.
+
+```toml
+[sources.skill-nr]
+upstream = "https://github.com/Institut-du-Numerique-Responsable/skill-nr"
+ref      = "main"
+copies   = { "agents/nr-check" = "versions/claude-code/.claude/agents" }
+licence  = "CC-BY-SA-4.0"
+```
+
 `commit` and `hashes` are maintained by `sync` — treat them as output. `provides`
 must be `"*"` or a list; anything else is rejected with the offending value.
 

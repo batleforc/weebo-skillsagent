@@ -17,6 +17,8 @@ pub enum ConfigError {
     },
     #[error("source `{source_name}`: provides must be \"*\" or a list of names, got \"{got}\"")]
     Provides { source_name: String, got: String },
+    #[error("source `{source_name}`: copies path `{path}` must be relative with no `..`")]
+    CopyPath { source_name: String, path: String },
 }
 
 #[derive(Debug, Default, Deserialize)]
@@ -54,8 +56,16 @@ pub struct Source {
     pub upstream: String,
     #[serde(rename = "ref")]
     pub git_ref: String,
+    #[serde(default)]
     pub subpath: String,
+    #[serde(default)]
     pub provides: Provides,
+    /// Directories copied verbatim from an upstream that is not laid out as
+    /// skills: local path (from the repo root) -> upstream path (from the
+    /// clone root). Each is hashed and fast-forwarded like a provided skill,
+    /// keyed by its local path.
+    #[serde(default)]
+    pub copies: BTreeMap<String, String>,
     pub licence: Option<String>,
     pub commit: Option<String>,
     #[serde(default)]
@@ -67,6 +77,12 @@ pub struct Source {
 pub enum Provides {
     Star(String),
     Named(Vec<String>),
+}
+
+impl Default for Provides {
+    fn default() -> Self {
+        Provides::Named(Vec::new())
+    }
 }
 
 #[derive(Debug, Deserialize)]
@@ -119,6 +135,19 @@ pub fn load_vendor(path: &Path) -> Result<Vendor, ConfigError> {
                 return Err(ConfigError::Provides {
                     source_name: name.clone(),
                     got: s.clone(),
+                });
+            }
+        }
+        // vendor.toml is ours, but a copy outside the repo would be written by sync.
+        for path in source.copies.iter().flat_map(|(local, up)| [local, up]) {
+            let p = Path::new(path);
+            if p.is_absolute()
+                || p.components()
+                    .any(|c| matches!(c, std::path::Component::ParentDir))
+            {
+                return Err(ConfigError::CopyPath {
+                    source_name: name.clone(),
+                    path: path.clone(),
                 });
             }
         }
@@ -226,6 +255,35 @@ licence = "MIT"
 "#);
         let err = load_vendor(&p).unwrap_err().to_string();
         assert!(err.contains("provides"), "unexpected error: {err}");
+    }
+
+    #[test]
+    fn parses_a_copies_only_source() {
+        let (_d, p) = tmp(r#"
+[sources.nr]
+upstream = "https://example.invalid/x"
+ref = "main"
+copies = { "skills/me/references/rules" = ".continue/rules" }
+licence = "CC-BY-SA-4.0"
+"#);
+        let got = load_vendor(&p).unwrap();
+        let s = &got.sources["nr"];
+        assert!(matches!(&s.provides, Provides::Named(v) if v.is_empty()));
+        assert_eq!(s.copies["skills/me/references/rules"], ".continue/rules");
+    }
+
+    #[test]
+    fn rejects_a_copy_path_leaving_the_repo() {
+        for copies in [
+            r#"{ "../outside" = "rules" }"#,
+            r#"{ "skills/x" = "/etc" }"#,
+        ] {
+            let (_d, p) = tmp(&format!(
+                "[sources.nr]\nupstream = \"x\"\nref = \"main\"\nlicence = \"MIT\"\ncopies = {copies}\n"
+            ));
+            let err = load_vendor(&p).unwrap_err().to_string();
+            assert!(err.contains("copies path"), "{copies}: {err}");
+        }
     }
 
     #[test]

@@ -57,7 +57,7 @@ one profile serves both `--scope project` and `--scope user`.
 
 | Profile    | Includes  | Adds                                       |
 | ---------- | --------- | ------------------------------------------ |
-| `base`     | —         | `wska`, `graphify`, `rtk`, `ponytail`, `ponytail-plugin`, `grill-me`, `grilling`, `weebo-testing` |
+| `base`     | —         | `wska`, `graphify`, `rtk`, `ponytail`, `ponytail-plugin`, `grill-me`, `grilling`, `weebo-testing`, `weebo-good-practice`, `nr-check` |
 | `weebo`    | `base`    | `weebo-taskfile-mise`, `weebo-security`, `weebo-containerfile`, `weebo-api-contract`, `weebo-release`, `weebo-cde` |
 | `planning` | `base`    | `bmad`, `batlehub-rfc`, `judge`            |
 | `design`   | `base`    | `frontend-design`, `theme-factory`, `impeccable`, `batlehub-design` |
@@ -124,6 +124,8 @@ named `all`.
 | `doc-review`      | symlink (agent) | ours: read-only documentation reviewer run by `judge doc-review` | `claude`, `judge` |
 | `weebo-techdoc`   | symlink     | ours: technical docs in `docs/techdoc/` (components, Mermaid, maintenance checks) for the IDP | `python3`, `git` |
 | `weebo-testing`   | symlink     | ours: house test practice from `batlehub/batlehub` (unit/integration, 80% coverage, cargo-fuzz, k6, heavy e2e) with Taskfile + CI templates | `cargo`, `cargo-llvm-cov`, `cargo-fuzz`, `k6` |
+| `weebo-good-practice` | symlink | ours: resilient, sober, secure code: no unjustified `unwrap`/panic (clippy lints + `#[expect(reason)]`), typed errors, strict TS, rules from ANSSI's Rust guide, eco-design rules from `skill-nr`; calls `ponytail` and `nr-check` | — |
+| `nr-check` | symlink (agent) | vendored (`copies`) from `Institut-du-Numerique-Responsable/skill-nr`: agents `eco-check` (RGESN/GR491/Opquast) and `accessibilite-check` (RGAA) diff reviewers | — |
 | `weebo-taskfile-mise` | symlink | ours, from `batlehub/batlehub`: project skeleton: flattened `.tasks/` Taskfile, mise as the only package manager, cocogitto hooks, `.gitignore` | `task`, `mise`, `cog`, `gitleaks`, `git` |
 | `weebo-security` | symlink | ours, from `batlehub/batlehub`: `task audit` (cargo audit/deny, pnpm audit, Trivy), daily CI scanners, SBOM, VEX, CVE triage and exceptions | `cargo-audit`, `cargo-deny`, `pnpm`, `trivy` |
 | `weebo-containerfile` | symlink | ours, from `batlehub/batlehub`: multi-stage Containerfile, distroless non-root runtime, hardened twin, updatecli digest pins, CI build/scan/sign | — |

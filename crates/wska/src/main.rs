@@ -17,6 +17,10 @@ fn print_applied(a: &wska::apply::Applied) {
 // Rust ignores SIGPIPE, so `wska list | head` made every print panic on the
 // closed pipe. Restore the default: the process just exits, like any CLI.
 #[cfg(unix)]
+#[expect(
+    unsafe_code,
+    reason = "libc signal() has no std equivalent; no thread exists yet"
+)]
 fn default_sigpipe() {
     const SIGPIPE: i32 = 13; // same on Linux and macOS
     const SIG_DFL: usize = 0;
@@ -39,7 +43,13 @@ fn main() {
         clap_complete::generate(shell, &mut Cli::command(), "wska", &mut std::io::stdout());
         return;
     }
-    let cwd = std::env::current_dir().expect("current directory");
+    let cwd = match std::env::current_dir() {
+        Ok(cwd) => cwd,
+        Err(e) => {
+            eprintln!("error: reading the current directory: {e}");
+            std::process::exit(1);
+        }
+    };
     let env = |k: &str| std::env::var(k).ok();
     let root = match wska::target::items_root(&cwd, &env, REPO_URL) {
         Ok(root) => root,
@@ -133,16 +143,16 @@ fn main() {
         }
         .map(|table| print!("{table}")),
         Command::Doctor => wska::app::doctor(&root, &env).map(|rows| {
-            let mut unhealthy = 0;
+            let mut unhealthy: usize = 0;
             for row in &rows {
                 match &row.health {
                     wska::doctor::Health::Ok => println!("{:<28} ok", row.name),
                     wska::doctor::Health::Missing(tools) => {
-                        unhealthy += 1;
+                        unhealthy = unhealthy.saturating_add(1);
                         println!("{:<28} missing: {}", row.name, tools.join(", "));
                     }
                     wska::doctor::Health::Invalid(reason) => {
-                        unhealthy += 1;
+                        unhealthy = unhealthy.saturating_add(1);
                         println!("{:<28} invalid: {reason}", row.name);
                     }
                 }
@@ -178,6 +188,10 @@ fn main() {
                 std::process::exit(code);
             }
         }),
+        #[expect(
+            clippy::unreachable,
+            reason = "Completions returns before items_root, above"
+        )]
         Command::Completions { .. } => unreachable!("handled above"),
     };
 

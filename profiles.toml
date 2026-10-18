@@ -7,7 +7,9 @@
 # "call the Skill tool with grilling". ponytail-plugin keeps upstream's
 # session-start hook that arms ponytail mode; the vendored skill alone does not.
 # weebo-testing is the house test practice; every Weebo project has tests.
-items = ["wska", "graphify", "rtk", "ponytail", "ponytail-plugin", "grill-me", "grilling", "weebo-testing"]
+# weebo-good-practice is the house coding rules; it calls ponytail and the
+# nr-check agents (skill-nr's eco-check, accessibilite-check), so they travel together.
+items = ["wska", "graphify", "rtk", "ponytail", "ponytail-plugin", "grill-me", "grilling", "weebo-testing", "weebo-good-practice", "nr-check"]
 
 [profiles.weebo]
 include = ["base"]

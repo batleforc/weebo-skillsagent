@@ -278,13 +278,19 @@ impl std::fmt::Display for Table {
         let lines: Vec<&Vec<String>> = std::iter::once(&headers).chain(&self.rows).collect();
         let last = headers.len().saturating_sub(1);
         let widths: Vec<usize> = (0..last)
-            .map(|c| lines.iter().map(|l| l[c].len()).max().unwrap_or(0))
+            .map(|c| {
+                lines
+                    .iter()
+                    .map(|l| l.get(c).map_or(0, String::len))
+                    .max()
+                    .unwrap_or(0)
+            })
             .collect();
         for line in lines {
             for (c, width) in widths.iter().enumerate() {
-                write!(f, "{:<width$}  ", line[c])?;
+                write!(f, "{:<width$}  ", line.get(c).map_or("", String::as_str))?;
             }
-            writeln!(f, "{}", line[last])?;
+            writeln!(f, "{}", line.get(last).map_or("", String::as_str))?;
         }
         Ok(())
     }
@@ -456,4 +462,18 @@ pub fn sync(
         }
     }
     Ok(out)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::Table;
+
+    #[test]
+    fn a_short_row_prints_blank_cells_instead_of_panicking() {
+        let table = Table {
+            headers: vec!["NAME", "KIND", "PROFILES"],
+            rows: vec![vec!["wska".into()]],
+        };
+        assert_eq!(table.to_string(), "NAME  KIND  PROFILES\nwska        \n");
+    }
 }

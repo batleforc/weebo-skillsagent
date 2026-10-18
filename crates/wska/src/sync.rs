@@ -113,11 +113,23 @@ pub fn sync_source(
         }
     };
 
+    // (hash key, local dir, upstream dir): provided skills, then verbatim copies.
+    let units = skills
+        .into_iter()
+        .map(|skill| {
+            let local = repo_root.join(Kind::Skill.subdir()).join(&skill);
+            let remote = upstream_dir.join(&skill);
+            (skill, local, remote)
+        })
+        .chain(
+            src.copies
+                .iter()
+                .map(|(local, up)| (local.clone(), repo_root.join(local), clone.join(up))),
+        );
+
     let mut fresh: BTreeMap<String, String> = BTreeMap::new();
     let mut any_patched = false;
-    for skill in skills {
-        let local = repo_root.join(Kind::Skill.subdir()).join(&skill);
-        let remote = upstream_dir.join(&skill);
+    for (skill, local, remote) in units {
         let remote_hash = hash_dir(&remote).map_err(|source| SyncError::Io {
             op: "hashing",
             path: remote.clone(),
@@ -159,7 +171,10 @@ pub fn sync_source(
                         })?;
                     }
                     if let Err(e) = copy_dir(&remote, &tmp) {
-                        let _ = std::fs::remove_dir_all(&tmp);
+                        // The copy error is the one to report; a leftover tmp is cleared next run.
+                        if let Err(cleanup) = std::fs::remove_dir_all(&tmp) {
+                            eprintln!("warning: could not remove {}: {cleanup}", tmp.display());
+                        }
                         return Err(e);
                     }
                     // shortcut: remove+rename is not atomic, so a crash between them still loses
@@ -265,7 +280,7 @@ fn link_stays_inside(link: &Path, target: &Path, root: &Path) -> bool {
     for component in rel.components().chain(target.components()) {
         match component {
             Component::CurDir => {}
-            Component::Normal(_) => depth += 1,
+            Component::Normal(_) => depth = depth.saturating_add(1),
             Component::ParentDir => match depth.checked_sub(1) {
                 Some(d) => depth = d,
                 None => return false,
@@ -507,6 +522,7 @@ mod tests {
             git_ref: "main".into(),
             subpath: "skills".into(),
             provides: Provides::Star("*".into()),
+            copies: BTreeMap::new(),
             licence: Some("MIT".into()),
             commit: None,
             hashes: BTreeMap::new(),
@@ -693,6 +709,42 @@ commit = "oldsha"
         assert!(body.contains("commit = \"oldsha\""), "{body}");
         assert!(!body.contains(&new_commit), "{body}");
         assert!(body.contains(&old_hash), "{body}");
+    }
+
+    #[test]
+    fn copies_a_non_skill_directory_and_records_its_hash() {
+        let d = tempfile::tempdir().unwrap();
+        let up = d.path().join("up");
+        fs::create_dir_all(up.join(".continue/rules")).unwrap();
+        fs::write(up.join(".continue/rules/rust.md"), "v1").unwrap();
+        git(&up, &["init", "-q", "-b", "main"]);
+        git(&up, &["add", "-A"]);
+        git(&up, &["commit", "-qm", "x"]);
+        let repo = d.path().join("repo");
+        fs::create_dir_all(&repo).unwrap();
+        fs::write(
+            repo.join("vendor.toml"),
+            "[sources.nr]\nupstream = \"unused\"\nref = \"main\"\nlicence = \"MIT\"\n",
+        )
+        .unwrap();
+
+        let mut src = source(&up);
+        src.subpath = String::new();
+        src.provides = Provides::Named(Vec::new());
+        src.copies
+            .insert("skills/me/nr".into(), ".continue/rules".into());
+        let out = sync_source("nr", &src, &repo, &d.path().join("cache"), false).unwrap();
+
+        assert!(
+            matches!(out.as_slice(), [Outcome::FastForward { skill, .. }] if skill == "skills/me/nr"),
+            "{out:?}"
+        );
+        assert_eq!(
+            fs::read_to_string(repo.join("skills/me/nr/rust.md")).unwrap(),
+            "v1"
+        );
+        let body = fs::read_to_string(repo.join("vendor.toml")).unwrap();
+        assert!(body.contains("\"skills/me/nr\" = \"sha256:"), "{body}");
     }
 
     #[test]

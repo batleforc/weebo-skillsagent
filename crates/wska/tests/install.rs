@@ -1,3 +1,5 @@
+#![expect(clippy::unwrap_used, reason = "test helpers fail the test on purpose")]
+
 use std::fs;
 use std::path::{Path, PathBuf};
 
