@@ -188,10 +188,12 @@ gemini      = { scope = "project", command = '''ides=$(sed -n '/^ides:/,/^[^ ]/s
 antigravity = { scope = "project", command = '''ides=$(sed -n '/^ides:/,/^[^ ]/s/^  - //p' _bmad/_config/manifest.yaml 2>/dev/null | grep -vx antigravity | paste -sd, -); npx bmad-method install --yes --action update --tools "${ides:+$ides,}antigravity"''' }
 
 [installers.graphify]
-command = "graphify install --project --platform claude"
+# Also ignores graphify-out/cache/, which `graphify update` rebuilds locally;
+# the grep keeps a re-install from adding the line twice.
+command = 'graphify install --project --platform claude && (grep -qxF "graphify-out/cache/" .gitignore 2>/dev/null || printf "\n%s\n" "graphify-out/cache/" >> .gitignore)'
 scope   = "project"
-gemini      = { scope = "project", command = "graphify install --project --platform gemini" }
-antigravity = { scope = "project", command = "graphify install --project --platform antigravity" }
+gemini      = { scope = "project", command = 'graphify install --project --platform gemini && (grep -qxF "graphify-out/cache/" .gitignore 2>/dev/null || printf "\n%s\n" "graphify-out/cache/" >> .gitignore)' }
+antigravity = { scope = "project", command = 'graphify install --project --platform antigravity && (grep -qxF "graphify-out/cache/" .gitignore 2>/dev/null || printf "\n%s\n" "graphify-out/cache/" >> .gitignore)' }
 
 # BMGD, the game dev studio module (installer code `gds`). Its own item because
 # the bmad installer treats `--modules` as the whole install rather than an

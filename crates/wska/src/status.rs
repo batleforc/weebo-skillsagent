@@ -24,7 +24,7 @@ pub struct Row {
 pub fn collect(
     items: &BTreeMap<String, Item>,
     target: &Path,
-    repo_root: &Path,
+    owned: &[PathBuf],
 ) -> io::Result<Vec<Row>> {
     let mut rows = Vec::new();
     for (name, item) in items {
@@ -32,7 +32,7 @@ pub fn collect(
             Item::Installer { .. } => State::InstallerUnmanaged,
             Item::Linked { kind, path, .. } => {
                 let at = target.join(kind.subdir()).join(name);
-                match classify(&at, repo_root, Some(path))? {
+                match classify(&at, owned, Some(path))? {
                     Entry::OwnedCorrect => State::Linked,
                     Entry::OwnedWrongTarget { points_to } => State::WrongTarget { points_to },
                     Entry::OwnedDangling { points_to } => State::Dangling { points_to },
@@ -114,10 +114,11 @@ mod tests {
                 scope: InstallerScope::Project,
                 gemini: None,
                 antigravity: None,
+                root: repo.clone(),
             },
         );
 
-        let rows = collect(&items, &target, &repo).unwrap();
+        let rows = collect(&items, &target, std::slice::from_ref(&repo)).unwrap();
         assert_eq!(state_of(&rows, "ok"), "Linked");
         assert!(state_of(&rows, "dangly").starts_with("Dangling"));
         assert!(state_of(&rows, "alien").starts_with("Foreign"));

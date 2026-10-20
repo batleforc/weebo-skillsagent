@@ -7,17 +7,19 @@ pub enum Entry {
     Absent,
     /// A link we own, already pointing at the expected item.
     OwnedCorrect,
-    /// A link we own, pointing at a different item in this repo.
+    /// A link we own, pointing at a different item in wska's repos.
     OwnedWrongTarget { points_to: PathBuf },
-    /// A link whose stored target is under this repo but no longer exists.
+    /// A link whose stored target is under wska's repos but no longer exists.
     OwnedDangling { points_to: PathBuf },
-    /// A link pointing outside this repo. Never touched.
+    /// A link pointing outside wska's repos. Never touched.
     Foreign { points_to: PathBuf },
     /// A real file or directory, not a link. Never touched.
     RealPath,
 }
 
-pub fn classify(entry: &Path, repo_root: &Path, expected: Option<&Path>) -> io::Result<Entry> {
+/// `owned` lists the directories a link must point into to count as wska's:
+/// the items repos it links from.
+pub fn classify(entry: &Path, owned: &[PathBuf], expected: Option<&Path>) -> io::Result<Entry> {
     let md = match std::fs::symlink_metadata(entry) {
         Ok(md) => md,
         Err(e) if e.kind() == io::ErrorKind::NotFound => return Ok(Entry::Absent),
@@ -36,9 +38,10 @@ pub fn classify(entry: &Path, repo_root: &Path, expected: Option<&Path>) -> io::
     } else {
         normalize(&entry.parent().unwrap_or(Path::new("/")).join(&stored))
     };
-    let repo_root = normalize(repo_root);
-
-    if !resolved.starts_with(&repo_root) {
+    if !owned
+        .iter()
+        .any(|root| resolved.starts_with(normalize(root)))
+    {
         return Ok(Entry::Foreign {
             points_to: resolved,
         });
@@ -137,7 +140,7 @@ mod tests {
         let f = fixture();
         let got = classify(
             &f.target.join("ponytail"),
-            &f.repo,
+            std::slice::from_ref(&f.repo),
             Some(&f.repo.join("skills/ponytail")),
         )
         .unwrap();
@@ -150,7 +153,7 @@ mod tests {
         symlink(f.repo.join("skills/ponytail"), f.target.join("ponytail")).unwrap();
         let got = classify(
             &f.target.join("ponytail"),
-            &f.repo,
+            std::slice::from_ref(&f.repo),
             Some(&f.repo.join("skills/ponytail")),
         )
         .unwrap();
@@ -165,7 +168,7 @@ mod tests {
         symlink(&rel, f.target.join("ponytail")).unwrap();
         let got = classify(
             &f.target.join("ponytail"),
-            &f.repo,
+            std::slice::from_ref(&f.repo),
             Some(&f.repo.join("skills/ponytail")),
         )
         .unwrap();
@@ -181,7 +184,7 @@ mod tests {
         symlink(f.repo.join("skills/other"), f.target.join("ponytail")).unwrap();
         let got = classify(
             &f.target.join("ponytail"),
-            &f.repo,
+            std::slice::from_ref(&f.repo),
             Some(&f.repo.join("skills/ponytail")),
         )
         .unwrap();
@@ -192,7 +195,7 @@ mod tests {
     fn owned_dangling_when_the_target_under_the_repo_is_gone() {
         let f = fixture();
         symlink(f.repo.join("skills/gone"), f.target.join("gone")).unwrap();
-        let got = classify(&f.target.join("gone"), &f.repo, None).unwrap();
+        let got = classify(&f.target.join("gone"), std::slice::from_ref(&f.repo), None).unwrap();
         assert!(matches!(got, Entry::OwnedDangling { .. }));
     }
 
@@ -204,7 +207,7 @@ mod tests {
         symlink(&outside, f.target.join("ponytail")).unwrap();
         let got = classify(
             &f.target.join("ponytail"),
-            &f.repo,
+            std::slice::from_ref(&f.repo),
             Some(&f.repo.join("skills/ponytail")),
         )
         .unwrap();
@@ -219,7 +222,7 @@ mod tests {
         symlink(f.repo.join("../outside"), f.target.join("ponytail")).unwrap();
         let got = classify(
             &f.target.join("ponytail"),
-            &f.repo,
+            std::slice::from_ref(&f.repo),
             Some(&f.repo.join("skills/ponytail")),
         )
         .unwrap();
@@ -236,7 +239,7 @@ mod tests {
         let messy_root = f.repo.join("skills/other/../..");
         let got = classify(
             &f.target.join("ponytail"),
-            &messy_root,
+            &[messy_root],
             Some(&f.repo.join("skills/ponytail")),
         )
         .unwrap();
@@ -247,7 +250,12 @@ mod tests {
     fn real_path_for_a_hand_written_directory() {
         let f = fixture();
         fs::create_dir(f.target.join("handmade")).unwrap();
-        let got = classify(&f.target.join("handmade"), &f.repo, None).unwrap();
+        let got = classify(
+            &f.target.join("handmade"),
+            std::slice::from_ref(&f.repo),
+            None,
+        )
+        .unwrap();
         assert!(matches!(got, Entry::RealPath));
     }
 

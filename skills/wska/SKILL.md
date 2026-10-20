@@ -48,6 +48,7 @@ wska status                  # what is linked now (Linked / MissingFromTarget / 
 wska list --profiles         # profiles: what each includes and lists
 wska list                    # every item: kind, INSTALLED here, profiles listing it ("-" = --item only)
 wska add --profile planning --item weebo-techdoc --dry-run         # check the plan
+wska add --repo <git url> --profile <its profile>   # draw from another wska-layout repo too (ask the user first)
 wska add --profile planning --item weebo-techdoc --run-installers  # apply, appends to wska.toml
 wska remove --item weebo-techdoc                                   # drop a recorded name, unlink what only it brought
 wska doctor                  # every item: tools present, SKILL.md usable

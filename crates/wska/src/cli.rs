@@ -25,6 +25,10 @@ pub enum Command {
         /// A single item to link besides the profiles' (repeatable)
         #[arg(long)]
         item: Vec<String>,
+        /// An extra items repo (git URL) whose items and profiles join this one's,
+        /// recorded in wska.toml (repeatable)
+        #[arg(long)]
+        repo: Vec<String>,
         #[arg(long, value_enum, default_value_t = Scope::Project)]
         scope: Scope,
         #[arg(long)]
@@ -40,6 +44,10 @@ pub enum Command {
         /// A single item to link besides the profiles' (repeatable)
         #[arg(long)]
         item: Vec<String>,
+        /// An extra items repo (git URL) whose items and profiles join this one's,
+        /// recorded in wska.toml (repeatable)
+        #[arg(long)]
+        repo: Vec<String>,
         #[arg(long, value_enum, default_value_t = Scope::Project)]
         scope: Scope,
         #[arg(long)]
@@ -55,6 +63,9 @@ pub enum Command {
         /// A single item recorded with --item (repeatable)
         #[arg(long)]
         item: Vec<String>,
+        /// An extra items repo recorded with --repo; its items are unlinked (repeatable)
+        #[arg(long)]
+        repo: Vec<String>,
         #[arg(long, value_enum, default_value_t = Scope::Project)]
         scope: Scope,
         #[arg(long)]
@@ -95,7 +106,11 @@ pub enum Command {
     },
     /// Check whether each item can actually work here: declared tools on PATH,
     /// and a usable SKILL.md. Exits non-zero if anything is unhealthy.
-    Doctor,
+    Doctor {
+        /// Target whose wska.toml names the extra items repos to check too
+        #[arg(long, value_enum, default_value_t = Scope::Project)]
+        scope: Scope,
+    },
     /// Refresh vendored sources from upstream
     Sync {
         source: Vec<String>,
@@ -146,6 +161,7 @@ mod tests {
                 scope,
                 dry_run,
                 run_installers,
+                ..
             } => {
                 assert_eq!(profile, vec!["base".to_string(), "frontend".to_string()]);
                 assert_eq!(item, vec!["weebo-techdoc".to_string()]);

@@ -64,6 +64,7 @@ fn main() {
         Command::Install {
             profile,
             item,
+            repo,
             scope,
             dry_run,
             run_installers,
@@ -71,6 +72,7 @@ fn main() {
             let selection = wska::selection::Selection {
                 profiles: profile,
                 items: item,
+                repos: repo,
             };
             wska::app::install(
                 &root,
@@ -87,6 +89,7 @@ fn main() {
         Command::Add {
             profile,
             item,
+            repo,
             scope,
             dry_run,
             run_installers,
@@ -94,6 +97,7 @@ fn main() {
             let extra = wska::selection::Selection {
                 profiles: profile,
                 items: item,
+                repos: repo,
             };
             wska::app::add(
                 &root,
@@ -110,6 +114,7 @@ fn main() {
         Command::Remove {
             profile,
             item,
+            repo,
             scope,
             dry_run,
             run_installers,
@@ -117,6 +122,7 @@ fn main() {
             let gone = wska::selection::Selection {
                 profiles: profile,
                 items: item,
+                repos: repo,
             };
             wska::app::remove(
                 &root,
@@ -139,6 +145,7 @@ fn main() {
             let selection = wska::selection::Selection {
                 profiles: profile,
                 items: item,
+                ..Default::default()
             };
             wska::app::update(&root, &selection, scope, agent, run_installers, &cwd, &env).map(
                 |applied| {
@@ -166,26 +173,28 @@ fn main() {
             wska::app::list(&root, profiles, scope, agent, &cwd, &env)
         }
         .map(|table| print!("{table}")),
-        Command::Doctor => wska::app::doctor(&root, &env).map(|rows| {
-            let mut unhealthy: usize = 0;
-            for row in &rows {
-                match &row.health {
-                    wska::doctor::Health::Ok => println!("{:<28} ok", row.name),
-                    wska::doctor::Health::Missing(tools) => {
-                        unhealthy = unhealthy.saturating_add(1);
-                        println!("{:<28} missing: {}", row.name, tools.join(", "));
-                    }
-                    wska::doctor::Health::Invalid(reason) => {
-                        unhealthy = unhealthy.saturating_add(1);
-                        println!("{:<28} invalid: {reason}", row.name);
+        Command::Doctor { scope } => {
+            wska::app::doctor(&root, scope, agent, &cwd, &env).map(|rows| {
+                let mut unhealthy: usize = 0;
+                for row in &rows {
+                    match &row.health {
+                        wska::doctor::Health::Ok => println!("{:<28} ok", row.name),
+                        wska::doctor::Health::Missing(tools) => {
+                            unhealthy = unhealthy.saturating_add(1);
+                            println!("{:<28} missing: {}", row.name, tools.join(", "));
+                        }
+                        wska::doctor::Health::Invalid(reason) => {
+                            unhealthy = unhealthy.saturating_add(1);
+                            println!("{:<28} invalid: {reason}", row.name);
+                        }
                     }
                 }
-            }
-            if unhealthy > 0 {
-                eprintln!("{unhealthy} item(s) cannot work here");
-                std::process::exit(1);
-            }
-        }),
+                if unhealthy > 0 {
+                    eprintln!("{unhealthy} item(s) cannot work here");
+                    std::process::exit(1);
+                }
+            })
+        }
         Command::Sync { source, check } => wska::app::sync(&root, &source, check).map(|outcomes| {
             for outcome in &outcomes {
                 println!("{outcome:?}");

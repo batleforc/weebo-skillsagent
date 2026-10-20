@@ -18,6 +18,7 @@ fn profiles(names: &[&str]) -> wska::selection::Selection {
     wska::selection::Selection {
         profiles: names.iter().map(|s| s.to_string()).collect(),
         items: vec![],
+        repos: vec![],
     }
 }
 
@@ -228,7 +229,14 @@ fn doctor_reports_missing_tools_and_unusable_skills() {
     )
     .unwrap();
 
-    let rows = wska::app::doctor(&root, &env_real).unwrap();
+    let rows = wska::app::doctor(
+        &root,
+        wska::cli::Scope::Project,
+        wska::cli::Agent::Claude,
+        &root,
+        &env_real,
+    )
+    .unwrap();
     let health = |name: &str| format!("{:?}", rows.iter().find(|r| r.name == name).unwrap().health);
 
     assert_eq!(health("fine"), "Ok");
@@ -272,6 +280,7 @@ fn records_profiles_and_single_items_and_a_bare_install_reapplies_them() {
     let chosen = wska::selection::Selection {
         profiles: vec!["base".into()],
         items: vec!["techdoc".into()],
+        repos: vec![],
     };
     let first = wska::app::install(
         &root,
@@ -335,6 +344,7 @@ fn add_extends_the_recorded_selection_instead_of_replacing_it() {
     let extra = wska::selection::Selection {
         profiles: vec!["base".into()], // already recorded: not duplicated
         items: vec!["techdoc".into()],
+        repos: vec![],
     };
     let added = wska::app::add(
         &root,
@@ -355,6 +365,7 @@ fn add_extends_the_recorded_selection_instead_of_replacing_it() {
         Some(wska::selection::Selection {
             profiles: vec!["base".into()],
             items: vec!["techdoc".into()],
+            repos: vec![],
         })
     );
 
@@ -385,6 +396,7 @@ fn remove_drops_recorded_names_and_refuses_unrecorded_ones() {
     let sel = |profiles: &[&str], items: &[&str]| wska::selection::Selection {
         profiles: profiles.iter().map(|s| s.to_string()).collect(),
         items: items.iter().map(|s| s.to_string()).collect(),
+        repos: vec![],
     };
     let target = root.join(".claude");
 
@@ -503,6 +515,7 @@ fn list_tables_show_profiles_per_item_and_the_recorded_selection() {
     let sel = wska::selection::Selection {
         profiles: vec!["base".into()],
         items: vec!["loose".into()],
+        repos: vec![],
     };
     wska::app::install(
         &root,
@@ -537,4 +550,126 @@ fn list_tables_show_profiles_per_item_and_the_recorded_selection() {
             vec!["loose".to_string(), "item".into(), "loose".into()],
         ]
     );
+}
+
+/// `repo()` plus a real commit, so the directory can be `git clone`d by path.
+fn git_repo(root: &Path, skills: &[&str], profiles_toml: &str) -> String {
+    repo(root, skills, profiles_toml);
+    fs::remove_dir_all(root.join(".git")).unwrap();
+    for args in [
+        &["init", "-q"][..],
+        &["add", "."],
+        &[
+            "-c",
+            "user.name=t",
+            "-c",
+            "user.email=t@t",
+            "commit",
+            "-qm",
+            "init",
+        ],
+    ] {
+        let ok = std::process::Command::new("git")
+            .args(args)
+            .current_dir(root)
+            .status()
+            .unwrap()
+            .success();
+        assert!(ok);
+    }
+    root.to_str().unwrap().to_string()
+}
+
+#[test]
+fn an_extra_repo_merges_its_items_and_profiles_and_is_kept_until_removed() {
+    let d = tempfile::tempdir().unwrap();
+    let root = d.path().join("repo");
+    repo(
+        &root,
+        &["ponytail"],
+        "[profiles.base]\nitems = [\"ponytail\"]\n",
+    );
+    // Its profile names an item of the primary repo: one namespace.
+    let url = git_repo(
+        &d.path().join("team"),
+        &["team-a"],
+        "[profiles.team]\nitems = [\"team-a\", \"ponytail\"]\n",
+    );
+    let data = d.path().join("data").to_str().unwrap().to_string();
+    let env = move |k: &str| (k == "XDG_DATA_HOME").then(|| data.clone());
+    let sel = |profiles: &[&str], repos: &[&str]| wska::selection::Selection {
+        profiles: profiles.iter().map(|s| s.to_string()).collect(),
+        items: vec![],
+        repos: repos.iter().map(|s| s.to_string()).collect(),
+    };
+    let install = |s: &wska::selection::Selection| {
+        wska::app::install(
+            &root,
+            s,
+            wska::cli::Scope::Project,
+            wska::cli::Agent::Claude,
+            false,
+            false,
+            &root,
+            &env,
+        )
+        .unwrap()
+    };
+    let links = root.join(".claude/skills");
+
+    assert_eq!(install(&sel(&["team"], &[&url])).linked, 2);
+    assert!(links.join("team-a/SKILL.md").exists());
+    assert!(fs::read_link(links.join("team-a"))
+        .unwrap()
+        .starts_with(d.path().join("data/wska/repos").canonicalize().unwrap()));
+
+    // Naming profiles anew keeps the recorded repo.
+    let narrowed = install(&sel(&["base"], &[]));
+    assert_eq!(narrowed.unlinked, 1);
+    let recorded = wska::selection::Selection::load(&root.join(".claude"))
+        .unwrap()
+        .unwrap();
+    assert_eq!(recorded.repos, vec![url.clone()]);
+
+    // Dropping the repo unlinks what came from it: those links stay owned.
+    install(&sel(&["team"], &[]));
+    let removed = wska::app::remove(
+        &root,
+        &sel(&["team"], &[&url]),
+        wska::cli::Scope::Project,
+        wska::cli::Agent::Claude,
+        false,
+        false,
+        &root,
+        &env,
+    )
+    .unwrap();
+    assert_eq!(removed.unlinked, 2);
+    assert!(fs::symlink_metadata(links.join("team-a")).is_err());
+}
+
+#[test]
+fn an_item_defined_by_two_repos_is_refused() {
+    let d = tempfile::tempdir().unwrap();
+    let root = d.path().join("repo");
+    repo(&root, &["ponytail"], "");
+    let url = git_repo(&d.path().join("team"), &["ponytail"], "");
+    let data = d.path().join("data").to_str().unwrap().to_string();
+    let env = move |k: &str| (k == "XDG_DATA_HOME").then(|| data.clone());
+    let err = wska::app::install(
+        &root,
+        &wska::selection::Selection {
+            profiles: vec![],
+            items: vec!["ponytail".into()],
+            repos: vec![url],
+        },
+        wska::cli::Scope::Project,
+        wska::cli::Agent::Claude,
+        false,
+        false,
+        &root,
+        &env,
+    )
+    .unwrap_err();
+    assert!(err.to_string().contains("item `ponytail`"), "{err}");
 }

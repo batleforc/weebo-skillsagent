@@ -19,6 +19,10 @@ pub enum TargetError {
     Pull { dir: PathBuf, detail: String },
     #[error("no profiles.toml in {0}: not a weebo-skillsagent repo")]
     NotItemsRepo(PathBuf),
+    #[error("cannot pick where to clone extra items repos: set XDG_DATA_HOME or HOME")]
+    NoReposDir,
+    #[error("`{0}` names no clonable items repo")]
+    BadRepoUrl(String),
     #[error("canonicalizing {path}: {source}")]
     Io {
         path: PathBuf,
@@ -77,19 +81,59 @@ pub fn items_root(
             if here.join("profiles.toml").exists() {
                 return Ok(here);
             }
-            let data = match env("XDG_DATA_HOME") {
-                Some(d) => PathBuf::from(d),
-                None => {
-                    PathBuf::from(env("HOME").ok_or(TargetError::NoCloneDir)?).join(".local/share")
-                }
-            };
-            data.join("wska/weebo-skillsagent")
+            data_dir(env)
+                .ok_or(TargetError::NoCloneDir)?
+                .join("wska/weebo-skillsagent")
         }
     };
-    if !dir.exists() {
-        clone(url, &dir)?;
+    cloned_items_repo(url, &dir)
+}
+
+fn data_dir(env: &dyn Fn(&str) -> Option<String>) -> Option<PathBuf> {
+    env("XDG_DATA_HOME")
+        .map(PathBuf::from)
+        .or_else(|| env("HOME").map(|h| PathBuf::from(h).join(".local/share")))
+}
+
+/// Where the extra items repos a wska.toml names are cloned, one directory
+/// per URL. Every link into it counts as wska's, so dropping a repo from
+/// wska.toml unlinks its items instead of leaving them as foreign links.
+/// Canonical, like every ownership comparison base; `None` without a data dir.
+pub fn repos_dir(env: &dyn Fn(&str) -> Option<String>) -> Result<Option<PathBuf>, TargetError> {
+    data_dir(env)
+        .map(|d| canonical_or_as_is(&d.join("wska/repos")))
+        .transpose()
+}
+
+/// The root of the extra items repo cloned from `url`, cloned first if absent.
+pub fn extra_root(url: &str, env: &dyn Fn(&str) -> Option<String>) -> Result<PathBuf, TargetError> {
+    let dirs = repos_dir(env)?.ok_or(TargetError::NoReposDir)?;
+    let slug: String = url
+        .trim_end_matches('/')
+        .trim_end_matches(".git")
+        .split_once("://")
+        .map_or(url, |(_, rest)| rest)
+        .chars()
+        .map(|c| {
+            if c.is_ascii_alphanumeric() || "-_.".contains(c) {
+                c
+            } else {
+                '_'
+            }
+        })
+        .collect();
+    // A slug of dots alone would join as `.` or `..` and land outside `dirs`.
+    if slug.chars().all(|c| c == '.') {
+        return Err(TargetError::BadRepoUrl(url.to_string()));
     }
-    let root = git_root(&dir)?;
+    cloned_items_repo(url, &dirs.join(slug))
+}
+
+fn cloned_items_repo(url: &str, dir: &Path) -> Result<PathBuf, TargetError> {
+    if !dir.exists() {
+        clone(url, dir)?;
+    }
+    let root = git_root(dir)?;
     if !root.join("profiles.toml").exists() {
         return Err(TargetError::NotItemsRepo(root));
     }
@@ -274,6 +318,24 @@ mod tests {
         );
         // Second run must not re-clone (a clone into a non-empty dir would fail).
         assert_eq!(items_root(&project, &env, &url).unwrap(), got);
+    }
+
+    #[test]
+    fn extra_root_clones_each_url_into_its_own_dir_under_repos() {
+        let d = tempfile::tempdir().unwrap();
+        let url = upstream_repo(&d.path().join("up/extra"));
+        let data = d.path().join("data");
+        let env = env_from(&[("XDG_DATA_HOME", data.to_str().unwrap())]);
+
+        let got = extra_root(&url, &env).unwrap();
+        let dirs = repos_dir(&env).unwrap().unwrap();
+        assert!(got.starts_with(&dirs), "{got:?} outside {dirs:?}");
+        assert!(got.join("profiles.toml").exists());
+        assert_eq!(extra_root(&url, &env).unwrap(), got);
+        assert!(matches!(
+            extra_root("..", &env),
+            Err(TargetError::BadRepoUrl(_))
+        ));
     }
 
     #[test]

@@ -30,3 +30,6 @@ __pycache__/
 .venv/
 .pytest_cache/
 .ruff_cache/
+
+# graphify update cache, rebuilt locally
+graphify-out/cache/

@@ -52,14 +52,14 @@ pub fn apply(plan: &Plan, dry_run: bool) -> Result<Applied, ApplyError> {
                 }
                 done.linked = done.linked.saturating_add(1);
             }
-            Action::Unlink { at, repo_root } => {
+            Action::Unlink { at, owned } => {
                 println!("unlink {}", at.display());
                 if !dry_run {
                     // Re-check ownership here, not just at plan time: the
                     // path may have been replaced by something we do not
                     // own in the window between planning and applying.
                     let owned = matches!(
-                        classify(at, repo_root, None).map_err(|source| ApplyError::Io {
+                        classify(at, owned, None).map_err(|source| ApplyError::Io {
                             op: "inspecting",
                             path: at.clone(),
                             source,
@@ -207,7 +207,7 @@ mod tests {
         let plan = Plan {
             actions: vec![Action::Unlink {
                 at: to.clone(),
-                repo_root: repo_root.clone(),
+                owned: vec![repo_root.clone()],
             }],
             refusals: vec![],
         };
@@ -232,7 +232,7 @@ mod tests {
         let plan = Plan {
             actions: vec![Action::Unlink {
                 at: to.clone(),
-                repo_root: repo_root.clone(),
+                owned: vec![repo_root.clone()],
             }],
             refusals: vec![],
         };

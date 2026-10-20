@@ -59,8 +59,8 @@ symlinked `~/.claude` still matches the links written through it.
 ### `install`
 
 ```bash
-wska install [--profile <name>…] [--item <name>…] [--scope project|user] [--dry-run] [--run-installers]
-task skills:install [PROFILE=base,planning] [ITEM=weebo-techdoc] [SCOPE=project|user] [RUN_INSTALLERS=0]
+wska install [--profile <name>…] [--item <name>…] [--repo <git url>…] [--scope project|user] [--dry-run] [--run-installers]
+task skills:install [PROFILE=base,planning] [ITEM=weebo-techdoc] [REPO=<git url>] [SCOPE=project|user] [RUN_INSTALLERS=0]
 ```
 
 Links every item named by the given profiles plus every `--item`, and removes
@@ -68,8 +68,9 @@ links it owns that are *not* in that set — so an install is a declaration of
 the whole desired state for that target, not an addition to it.
 
 `--profile` and `--item` are both repeatable. `--item` is how a skill that no
-profile lists gets installed; an unknown name is an error. The task wrapper
-takes comma-separated lists.
+profile lists gets installed; an unknown name is an error. `--repo` adds an
+[extra items repo](#extra-items-repos). The task wrapper takes comma-separated
+lists.
 
 Every applied install records what it was given in the target's
 [`wska.toml`](#the-target-file-wskatoml). With neither `--profile` nor
@@ -98,15 +99,15 @@ Running install twice changes nothing the second time.
 ### `add`
 
 ```bash
-wska add [--profile <name>…] [--item <name>…] [--scope project|user] [--dry-run] [--run-installers]
-task skills:add [PROFILE=design] [ITEM=weebo-techdoc] [SCOPE=project|user] [RUN_INSTALLERS=0]
+wska add [--profile <name>…] [--item <name>…] [--repo <git url>…] [--scope project|user] [--dry-run] [--run-installers]
+task skills:add [PROFILE=design] [ITEM=weebo-techdoc] [REPO=<git url>] [SCOPE=project|user] [RUN_INSTALLERS=0]
 ```
 
 `install` with the target's recorded [`wska.toml`](#the-target-file-wskatoml)
 plus the given profiles and items, so adding one skill does not mean
 re-typing everything already there. Names already recorded are not
 duplicated; with no `wska.toml` yet it behaves like `install`. At least one
-`--profile` or `--item` is required. The result is written back, so the next
+`--profile`, `--item` or `--repo` is required. The result is written back, so the next
 bare `install`/`update` keeps it.
 
 ```bash
@@ -116,8 +117,8 @@ wska add --item weebo-techdoc    # same as: wska install --profile base --item w
 ### `remove`
 
 ```bash
-wska remove [--profile <name>…] [--item <name>…] [--scope project|user] [--dry-run] [--run-installers]
-task skills:remove [PROFILE=design] [ITEM=weebo-techdoc] [SCOPE=project|user] [RUN_INSTALLERS=0]
+wska remove [--profile <name>…] [--item <name>…] [--repo <git url>…] [--scope project|user] [--dry-run] [--run-installers]
+task skills:remove [PROFILE=design] [ITEM=weebo-techdoc] [REPO=<git url>] [SCOPE=project|user] [RUN_INSTALLERS=0]
 ```
 
 The inverse of `add`: installs the recorded `wska.toml` minus the given
@@ -143,7 +144,8 @@ task skills:update [PROFILE=base,planning] [ITEM=weebo-techdoc] [SCOPE=project|u
 
 Fast-forwards the items repo (`git pull --ff-only`) — whichever one `wska`
 resolved: `$WSKA_REPO`, the repo you are in, or its own clone (see [Using wska
-in another project](#using-wska-in-another-project)). A local commit or a
+in another project](#using-wska-in-another-project)) — and every [extra items
+repo](#extra-items-repos) the target's `wska.toml` names. A local commit or a
 diverged branch makes the pull fail and nothing is installed.
 
 It then runs `install` with the given profiles and items, or, given none,
@@ -167,7 +169,11 @@ the project scope), by every applied install:
 # --profile/--item to re-apply it; commit it so other machines can.
 profiles = ["base", "docs"]
 items = ["batlehub-design"]
+repos = ["https://github.com/my-team/team-skills"]
 ```
+
+`repos` is only written when there is one (see [Extra items
+repos](#extra-items-repos)).
 
 It holds what was asked for, not the expanded item list, so a profile that
 gains an item upstream brings it on the next bare `install`/`update`. Edit it
@@ -244,9 +250,12 @@ batlehub-design  item         batlehub-design
 ### `doctor`
 
 ```bash
-wska doctor
-task skills:doctor
+wska doctor [--scope project|user]
+task skills:doctor [SCOPE=project|user]
 ```
+
+The scope only picks whose `wska.toml` names the [extra items
+repos](#extra-items-repos) to check as well; the items repo itself is always checked.
 
 Asks, per item, whether it could actually work on this machine:
 
@@ -385,6 +394,32 @@ pulls except through `update`. Updating the binary is re-running the install lin
 A `WSKA_REPO` pointing at an existing directory with no `profiles.toml` stops
 every command with `error: no profiles.toml in <dir>`; wska never clones into a
 directory that already exists.
+
+## Extra items repos
+
+A target can draw from more than one items repo. `--repo <git url>` on
+`install`, `add` or `remove` records it in the target's `wska.toml`:
+
+```bash
+wska add --repo https://github.com/my-team/team-skills --profile team
+wska remove --repo https://github.com/my-team/team-skills --profile team
+```
+
+- Each extra repo must have the wska layout: a `profiles.toml`, and
+  `skills/`, `agents/`, `mcp/` and an optional `vendor.toml`, like this one.
+  It is cloned on first use into `$XDG_DATA_HOME/wska/repos/<url as a
+  directory name>` (else `~/.local/share/wska/repos/…`), and pulled by `update`.
+- Items and profiles of every repo share one namespace, so a profile in one
+  repo may list items of another. A name defined by two repos stops every
+  command with `item `<name>` in <repo> is already defined by another items repo`.
+- Repos are a registry, not part of the choice: `install --profile …` keeps
+  the recorded ones, and only `remove --repo` drops one. The items it brought
+  are unlinked then, since every link into `wska/repos/` counts as wska's.
+- An installer runs with `WSKA_REPO` set to the repo that declares it.
+- `status`, `list` and `doctor` include the repos the target records.
+  `sync` only ever refreshes the items repo itself.
+
+Installers from an extra repo run commands that repo chose, so add only repos you trust.
 
 ## The `wska` skill
 

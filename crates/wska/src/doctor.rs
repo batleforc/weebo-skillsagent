@@ -400,6 +400,7 @@ mod tests {
                 scope: InstallerScope::Project,
                 gemini: None,
                 antigravity: None,
+                root: std::path::PathBuf::new(),
             },
         );
         let rows = collect(

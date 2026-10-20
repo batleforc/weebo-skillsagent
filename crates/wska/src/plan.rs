@@ -13,14 +13,14 @@ pub enum Action {
     },
     Unlink {
         at: PathBuf,
-        repo_root: PathBuf,
+        owned: Vec<PathBuf>,
     },
     RunInstaller {
         name: String,
         command: String,
         cwd: PathBuf,
-        /// This repo's root, exported to the installer as `WSKA_REPO` so its
-        /// command can reference files here (`uv tool install "$WSKA_REPO/judge"`).
+        /// The installer's own repo, exported as `WSKA_REPO` so its command
+        /// can reference files there (`uv tool install "$WSKA_REPO/judge"`).
         repo_root: PathBuf,
     },
     /// An installer not run, or an item the agent has no place for.
@@ -64,7 +64,7 @@ pub fn build(
     items: &BTreeMap<String, Item>,
     wanted: &BTreeSet<String>,
     target: &Path,
-    repo_root: &Path,
+    owned: &[PathBuf],
     scope: Scope,
     agent: Agent,
     run_installers: bool,
@@ -89,7 +89,7 @@ pub fn build(
             }
             Item::Linked { kind, path, .. } => {
                 let at = target.join(kind.subdir()).join(name);
-                match classify(&at, repo_root, Some(path))? {
+                match classify(&at, owned, Some(path))? {
                     Entry::OwnedCorrect => {}
                     Entry::Absent
                     | Entry::OwnedWrongTarget { .. }
@@ -117,6 +117,7 @@ pub fn build(
                 scope: want,
                 gemini,
                 antigravity,
+                root,
                 ..
             } => {
                 let setup = match agent {
@@ -143,7 +144,7 @@ pub fn build(
                         name: name.clone(),
                         command: command.clone(),
                         cwd: target.parent().unwrap_or(target).to_path_buf(),
-                        repo_root: repo_root.to_path_buf(),
+                        repo_root: root.clone(),
                     });
                 } else {
                     plan.actions.push(Action::Skip {
@@ -175,13 +176,13 @@ pub fn build(
             if keep {
                 continue;
             }
-            match classify(&entry.path(), repo_root, None)? {
+            match classify(&entry.path(), owned, None)? {
                 Entry::OwnedCorrect
                 | Entry::OwnedWrongTarget { .. }
                 | Entry::OwnedDangling { .. } => {
                     plan.actions.push(Action::Unlink {
                         at: entry.path(),
-                        repo_root: repo_root.to_path_buf(),
+                        owned: owned.to_vec(),
                     });
                 }
                 _ => {}
@@ -248,7 +249,7 @@ mod tests {
             &items(&f.repo, &["ponytail"]),
             &set(&["ponytail"]),
             &f.target,
-            &f.repo,
+            std::slice::from_ref(&f.repo),
             Scope::Project,
             Agent::Claude,
             false,
@@ -271,7 +272,7 @@ mod tests {
             &items(&f.repo, &["ponytail"]),
             &set(&["ponytail"]),
             &f.target,
-            &f.repo,
+            std::slice::from_ref(&f.repo),
             Scope::Project,
             Agent::Claude,
             false,
@@ -288,7 +289,7 @@ mod tests {
             &items(&f.repo, &["ponytail", "other"]),
             &set(&["ponytail"]),
             &f.target,
-            &f.repo,
+            std::slice::from_ref(&f.repo),
             Scope::Project,
             Agent::Claude,
             false,
@@ -308,7 +309,7 @@ mod tests {
             &items(&f.repo, &["ponytail"]),
             &set(&["ponytail"]),
             &f.target,
-            &f.repo,
+            std::slice::from_ref(&f.repo),
             Scope::Project,
             Agent::Claude,
             false,
@@ -328,7 +329,7 @@ mod tests {
             &items(&f.repo, &["ponytail"]),
             &set(&["ponytail"]),
             &f.target,
-            &f.repo,
+            std::slice::from_ref(&f.repo),
             Scope::Project,
             Agent::Claude,
             false,
@@ -346,7 +347,7 @@ mod tests {
             &items(&f.repo, &["ponytail"]),
             &set(&["ponytail"]),
             &f.target,
-            &f.repo,
+            std::slice::from_ref(&f.repo),
             Scope::Project,
             Agent::Claude,
             false,
@@ -369,7 +370,7 @@ mod tests {
             &items(&f.repo, &["ponytail"]),
             &set(&["ponytail"]),
             &f.target,
-            &f.repo,
+            std::slice::from_ref(&f.repo),
             Scope::Project,
             Agent::Claude,
             false,
@@ -408,7 +409,7 @@ mod tests {
             &map,
             &set(&["ponytail"]),
             &f.target,
-            &f.repo,
+            std::slice::from_ref(&f.repo),
             Scope::Project,
             Agent::Claude,
             false,
@@ -444,6 +445,7 @@ mod tests {
                     scope: InstallerScope::User,
                 }),
                 antigravity: None,
+                root: PathBuf::new(),
             },
         );
         map
@@ -456,7 +458,7 @@ mod tests {
             &bmad_map(),
             &set(&["bmad"]),
             &f.target,
-            &f.repo,
+            std::slice::from_ref(&f.repo),
             Scope::Project,
             Agent::Claude,
             false,
@@ -473,7 +475,7 @@ mod tests {
             &bmad_map(),
             &set(&["bmad"]),
             &f.target,
-            &f.repo,
+            std::slice::from_ref(&f.repo),
             Scope::Project,
             Agent::Claude,
             true,
@@ -489,7 +491,7 @@ mod tests {
             &bmad_map(),
             &set(&["bmad"]),
             &f.target,
-            &f.repo,
+            std::slice::from_ref(&f.repo),
             Scope::User,
             Agent::Claude,
             true,
@@ -516,7 +518,7 @@ mod tests {
             &map,
             &set(&["bmad", "doc-review", "ponytail"]),
             &f.target,
-            &f.repo,
+            std::slice::from_ref(&f.repo),
             Scope::Project,
             Agent::Gemini,
             true,
@@ -545,7 +547,7 @@ mod tests {
                 &bmad_map(),
                 &set(&["bmad"]),
                 &f.target,
-                &f.repo,
+                std::slice::from_ref(&f.repo),
                 scope,
                 agent,
                 true,
@@ -584,6 +586,7 @@ mod tests {
                 scope: InstallerScope::Any,
                 gemini: None,
                 antigravity: None,
+                root: f.repo.clone(),
             },
         );
         for scope in [Scope::Project, Scope::User] {
@@ -591,7 +594,7 @@ mod tests {
                 &map,
                 &set(&["judge"]),
                 &f.target,
-                &f.repo,
+                std::slice::from_ref(&f.repo),
                 scope,
                 Agent::Claude,
                 true,

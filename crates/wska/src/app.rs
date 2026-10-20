@@ -2,7 +2,8 @@ use crate::apply::{apply, Applied, ApplyError};
 use crate::cli::{Agent, Scope};
 use crate::selection::{Selection, SelectionError};
 use crate::{config, item, plan, profile, target};
-use std::path::Path;
+use std::collections::BTreeMap;
+use std::path::{Path, PathBuf};
 
 #[derive(Debug, thiserror::Error)]
 pub enum AppError {
@@ -26,6 +27,70 @@ pub enum AppError {
     Selection(#[from] SelectionError),
 }
 
+/// Every items repo a target draws from, the primary one then the clones its
+/// wska.toml names, merged into one item and profile namespace.
+struct Registry {
+    /// Each repo's root and vendor.toml, primary first.
+    repos: Vec<(PathBuf, config::Vendor)>,
+    profiles: config::Profiles,
+    items: BTreeMap<String, item::Item>,
+    requires: BTreeMap<String, Vec<String>>,
+    /// Where a link must point to count as wska's.
+    owned: Vec<PathBuf>,
+}
+
+fn registry(
+    repo_root: &Path,
+    extra: &[String],
+    env: &dyn Fn(&str) -> Option<String>,
+) -> Result<Registry, AppError> {
+    // Canonicalize once, up front: item paths and the ownership comparison
+    // base must share a prefix or nothing ever classifies as already-correct.
+    let primary = target::repo_root(repo_root)?;
+    let mut roots = vec![primary.clone()];
+    for url in extra {
+        roots.push(target::extra_root(url, env)?);
+    }
+    let mut reg = Registry {
+        repos: Vec::new(),
+        profiles: config::Profiles::default(),
+        items: BTreeMap::new(),
+        requires: BTreeMap::new(),
+        owned: std::iter::once(primary)
+            .chain(target::repos_dir(env)?)
+            .collect(),
+    };
+    for root in roots {
+        let cfg = config::load_profiles(&root.join("profiles.toml"))?;
+        let vendor = config::load_vendor(&root.join("vendor.toml"))?;
+        let clash = |what: &str, name: &str| {
+            AppError::Refused(format!(
+                "{what} `{name}` in {} is already defined by another items repo",
+                root.display()
+            ))
+        };
+        for (name, it) in item::scan(&root, &vendor)? {
+            if reg.items.insert(name.clone(), it).is_some() {
+                return Err(clash("item", &name));
+            }
+        }
+        for (name, p) in cfg.profiles {
+            if reg.profiles.profiles.insert(name.clone(), p).is_some() {
+                return Err(clash("profile", &name));
+            }
+        }
+        reg.requires.extend(vendor.requires.clone());
+        reg.repos.push((root, vendor));
+    }
+    Ok(reg)
+}
+
+fn recorded_repos(target_dir: &Path) -> Result<Vec<String>, AppError> {
+    Ok(Selection::load(target_dir)?
+        .map(|s| s.repos)
+        .unwrap_or_default())
+}
+
 /// Link `selection`, or the one recorded in the target when it is empty, and
 /// record what was applied so a bare `install`/`update` can re-apply it.
 #[expect(
@@ -42,13 +107,20 @@ pub fn install(
     cwd: &Path,
     env: &dyn Fn(&str) -> Option<String>,
 ) -> Result<Applied, AppError> {
+    let target_dir = target::resolve(scope, agent, cwd, env)?;
+    let recorded = Selection::load(&target_dir)?;
+    // Repos are a registry, not a choice: naming profiles anew keeps them.
     let selection = if selection.is_empty() {
-        let target_dir = target::resolve(scope, agent, cwd, env)?;
-        Selection::load(&target_dir)?
+        recorded
             .filter(|s| !s.is_empty())
             .ok_or_else(|| SelectionError::Missing(target_dir.join(crate::selection::FILE)))?
+            .merged(selection)
     } else {
-        selection.clone()
+        Selection {
+            repos: recorded.map(|s| s.repos).unwrap_or_default(),
+            ..Selection::default()
+        }
+        .merged(selection)
     };
     apply_selection(
         repo_root,
@@ -78,32 +150,33 @@ fn apply_selection(
     cwd: &Path,
     env: &dyn Fn(&str) -> Option<String>,
 ) -> Result<Applied, AppError> {
-    // Canonicalize once, up front: item paths and the ownership comparison
-    // base must share a prefix or nothing ever classifies as already-correct.
-    let repo_root = target::repo_root(repo_root)?;
-
-    let profiles_cfg = config::load_profiles(&repo_root.join("profiles.toml"))?;
-    let vendor = config::load_vendor(&repo_root.join("vendor.toml"))?;
-    let items = item::scan(&repo_root, &vendor)?;
+    let reg = registry(repo_root, &selection.repos, env)?;
     let target_dir = target::resolve(scope, agent, cwd, env)?;
-    let wanted = profile::resolve(&profiles_cfg, &selection.profiles, &selection.items, &items)?;
+    let wanted = profile::resolve(
+        &reg.profiles,
+        &selection.profiles,
+        &selection.items,
+        &reg.items,
+    )?;
 
     // Externals must be on disk before planning, or their links classify as
     // pointing at nothing. Clone-if-missing keeps a second install a no-op.
     if !dry_run {
-        let cache = repo_root.join(".task/wska-cache/external");
-        for (name, ext) in &vendor.external {
-            if wanted.contains(name) && crate::sync::fetch_external(name, ext, &cache, false)? {
-                println!("fetch  {name}: {}", ext.upstream);
+        for (root, vendor) in &reg.repos {
+            let cache = root.join(".task/wska-cache/external");
+            for (name, ext) in &vendor.external {
+                if wanted.contains(name) && crate::sync::fetch_external(name, ext, &cache, false)? {
+                    println!("fetch  {name}: {}", ext.upstream);
+                }
             }
         }
     }
 
     let built = plan::build(
-        &items,
+        &reg.items,
         &wanted,
         &target_dir,
-        &repo_root,
+        &reg.owned,
         scope,
         agent,
         run_installers,
@@ -122,7 +195,7 @@ fn apply_selection(
     let mut warnings = Vec::new();
     for name in &wanted {
         let missing = crate::doctor::unsatisfied(
-            vendor.requires.get(name).map(Vec::as_slice).unwrap_or(&[]),
+            reg.requires.get(name).map(Vec::as_slice).unwrap_or(&[]),
             &has,
         );
         if !missing.is_empty() {
@@ -157,9 +230,9 @@ pub fn add(
     cwd: &Path,
     env: &dyn Fn(&str) -> Option<String>,
 ) -> Result<Applied, AppError> {
-    if extra.is_empty() {
+    if extra.is_empty() && extra.repos.is_empty() {
         return Err(AppError::Refused(
-            "nothing to add: pass --profile or --item".into(),
+            "nothing to add: pass --profile, --item or --repo".into(),
         ));
     }
     let recorded = Selection::load(&target::resolve(scope, agent, cwd, env)?)?.unwrap_or_default();
@@ -192,9 +265,9 @@ pub fn remove(
     cwd: &Path,
     env: &dyn Fn(&str) -> Option<String>,
 ) -> Result<Applied, AppError> {
-    if gone.is_empty() {
+    if gone.is_empty() && gone.repos.is_empty() {
         return Err(AppError::Refused(
-            "nothing to remove: pass --profile or --item".into(),
+            "nothing to remove: pass --profile, --item or --repo".into(),
         ));
     }
     let target_dir = target::resolve(scope, agent, cwd, env)?;
@@ -210,6 +283,12 @@ pub fn remove(
                 .iter()
                 .filter(|n| !recorded.items.contains(n))
                 .map(|n| format!("item `{n}`")),
+        )
+        .chain(
+            gone.repos
+                .iter()
+                .filter(|n| !recorded.repos.contains(n))
+                .map(|n| format!("repo `{n}`")),
         )
         .collect();
     if !absent.is_empty() {
@@ -232,6 +311,12 @@ pub fn remove(
             .filter(|n| !gone.items.contains(n))
             .cloned()
             .collect(),
+        repos: recorded
+            .repos
+            .iter()
+            .filter(|n| !gone.repos.contains(n))
+            .cloned()
+            .collect(),
     };
     apply_selection(
         repo_root,
@@ -245,7 +330,7 @@ pub fn remove(
     )
 }
 
-/// Pull the items repo, then re-link `selection`, or the target's recorded one
+/// Pull the items repos, then re-link `selection`, or the target's recorded one
 /// if `selection` is empty. Links are symlinks into the repo, so the pull
 /// alone refreshes linked items; the re-install picks up items newly added to
 /// a profile, and installers. With nothing given and nothing recorded, it
@@ -260,8 +345,15 @@ pub fn update(
     env: &dyn Fn(&str) -> Option<String>,
 ) -> Result<Option<Applied>, AppError> {
     target::pull(repo_root)?;
-    if selection.is_empty() && Selection::load(&target::resolve(scope, agent, cwd, env)?)?.is_none()
+    let recorded = Selection::load(&target::resolve(scope, agent, cwd, env)?)?;
+    for url in recorded
+        .iter()
+        .flat_map(|s| &s.repos)
+        .chain(&selection.repos)
     {
+        target::pull(&target::extra_root(url, env)?)?;
+    }
+    if selection.is_empty() && recorded.is_none() {
         return Ok(None);
     }
     install(
@@ -277,20 +369,23 @@ pub fn update(
     .map(Some)
 }
 
-/// Whether each item in the repo can actually work here: its declared tools
-/// resolve on PATH, and (for skills) its SKILL.md is usable. Deliberately
-/// scope-free — whether a link is in place is what `status` answers.
+/// Whether each item in the repos can actually work here: its declared tools
+/// resolve on PATH, and (for skills) its SKILL.md is usable. The target only
+/// says which extra repos to check; whether a link is in place is what
+/// `status` answers.
 pub fn doctor(
     repo_root: &Path,
+    scope: Scope,
+    agent: Agent,
+    cwd: &Path,
     env: &dyn Fn(&str) -> Option<String>,
 ) -> Result<Vec<crate::doctor::Row>, AppError> {
-    let repo_root = target::repo_root(repo_root)?;
-    let vendor = config::load_vendor(&repo_root.join("vendor.toml"))?;
-    let items = item::scan(&repo_root, &vendor)?;
+    let target_dir = target::resolve(scope, agent, cwd, env)?;
+    let reg = registry(repo_root, &recorded_repos(&target_dir)?, env)?;
 
     let path_var = env("PATH").unwrap_or_default();
     let has = |tool: &str| crate::doctor::resolves_in(&path_var, tool);
-    Ok(crate::doctor::collect(&items, &vendor.requires, &has))
+    Ok(crate::doctor::collect(&reg.items, &reg.requires, &has))
 }
 
 pub fn status(
@@ -300,14 +395,9 @@ pub fn status(
     cwd: &Path,
     env: &dyn Fn(&str) -> Option<String>,
 ) -> Result<Vec<crate::status::Row>, AppError> {
-    // Canonicalize once, up front, same as install: item::scan and
-    // status::collect must share the same comparison base or nothing
-    // classifies as Linked.
-    let root = target::repo_root(repo_root)?;
-    let vendor = config::load_vendor(&root.join("vendor.toml"))?;
-    let items = item::scan(&root, &vendor)?;
     let target_dir = target::resolve(scope, agent, cwd, env)?;
-    Ok(crate::status::collect(&items, &target_dir, &root)?)
+    let reg = registry(repo_root, &recorded_repos(&target_dir)?, env)?;
+    Ok(crate::status::collect(&reg.items, &target_dir, &reg.owned)?)
 }
 
 /// Rows under a header, printed with every column but the last padded.
@@ -365,9 +455,10 @@ pub fn list(
     cwd: &Path,
     env: &dyn Fn(&str) -> Option<String>,
 ) -> Result<Table, AppError> {
-    // Canonical, like status: links only classify against a canonical root.
-    let repo_root = target::repo_root(repo_root)?;
-    let cfg = config::load_profiles(&repo_root.join("profiles.toml"))?;
+    let target_dir = target::resolve(scope, agent, cwd, env)?;
+    let reg = registry(repo_root, &recorded_repos(&target_dir)?, env)?;
+    let cfg = &reg.profiles;
+    let items = &reg.items;
     if profiles {
         let rows = cfg
             .profiles
@@ -385,14 +476,11 @@ pub fn list(
             rows,
         });
     }
-    let vendor = config::load_vendor(&repo_root.join("vendor.toml"))?;
-    let items = item::scan(&repo_root, &vendor)?;
-    let target_dir = target::resolve(scope, agent, cwd, env)?;
-    let states = crate::status::collect(&items, &target_dir, &repo_root)?;
+    let states = crate::status::collect(items, &target_dir, &reg.owned)?;
     // wska cannot see what an installer wrote; the recorded selection is the
     // honest stand-in for "asked to be installed here".
     let recorded = match Selection::load(&target_dir)? {
-        Some(s) => profile::resolve(&cfg, &s.profiles, &s.items, &items)?,
+        Some(s) => profile::resolve(cfg, &s.profiles, &s.items, items)?,
         None => Default::default(),
     };
     let rows = items
@@ -450,12 +538,13 @@ pub fn list_recorded(
     let path = target_dir.join(crate::selection::FILE);
     let recorded = Selection::load(&target_dir)?
         .ok_or_else(|| AppError::Refused(format!("no selection recorded in {}", path.display())))?;
-    let cfg = config::load_profiles(&repo_root.join("profiles.toml"))?;
-    let vendor = config::load_vendor(&repo_root.join("vendor.toml"))?;
-    let items = item::scan(repo_root, &vendor)?;
+    let reg = registry(repo_root, &recorded.repos, env)?;
     let mut rows = Vec::new();
+    for url in &recorded.repos {
+        rows.push(vec![url.clone(), "repo".into(), "-".into()]);
+    }
     for name in &recorded.profiles {
-        let brings = profile::resolve(&cfg, std::slice::from_ref(name), &[], &items)?;
+        let brings = profile::resolve(&reg.profiles, std::slice::from_ref(name), &[], &reg.items)?;
         rows.push(vec![name.clone(), "profile".into(), names_or_dash(&brings)]);
     }
     for name in &recorded.items {

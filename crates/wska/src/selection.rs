@@ -11,6 +11,10 @@ pub struct Selection {
     pub profiles: Vec<String>,
     #[serde(default)]
     pub items: Vec<String>,
+    /// Extra items repos (git URLs) whose items and profiles join this
+    /// repo's. Kept by an explicit `install`; only `remove --repo` drops one.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub repos: Vec<String>,
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -44,6 +48,7 @@ impl Selection {
         Self {
             profiles: union(&self.profiles, &other.profiles),
             items: union(&self.items, &other.items),
+            repos: union(&self.repos, &other.repos),
         }
     }
 
@@ -62,7 +67,7 @@ impl Selection {
 
     #[expect(
         clippy::expect_used,
-        reason = "two Vec<String> fields always serialize; test `round_trips_and_reads_absent_as_none` covers it"
+        reason = "Vec<String> fields always serialize; test `round_trips_and_reads_absent_as_none` covers it"
     )]
     pub fn save(&self, target_dir: &Path) -> Result<(), SelectionError> {
         let path = target_dir.join(FILE);
@@ -88,6 +93,7 @@ mod tests {
         let s = Selection {
             profiles: vec!["base".into()],
             items: vec!["weebo-techdoc".into()],
+            repos: vec!["https://example.invalid/team-skills".into()],
         };
         s.save(d.path()).unwrap();
         assert_eq!(Selection::load(d.path()).unwrap(), Some(s));
