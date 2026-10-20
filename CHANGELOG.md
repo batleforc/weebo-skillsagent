@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## [v0.13.0](https://github.com/batleforc/weebo-skillsagent/compare/53d885771dea677397b2cbe88ab3a9ffaf58c752..v0.13.0) - 2026-10-20
+#### Features
+- mise en place gemini / agy - ([53d8857](https://github.com/batleforc/weebo-skillsagent/commit/53d885771dea677397b2cbe88ab3a9ffaf58c752)) - Max Batleforc
+
+- - -
+
 ## [v0.12.0](https://github.com/batleforc/weebo-skillsagent/compare/7676e0e35d96f7848d3a677566a19ce7d0c98beb..v0.12.0) - 2026-10-18
 #### Features
 - (**skills**) add weebo-good-practice, vendor skill-nr via `copies` - ([f109f89](https://github.com/batleforc/weebo-skillsagent/commit/f109f89c955c224f004d533f39485127b25496a3)) - Max Batleforc, Claude Opus 5.5 (1M context)
