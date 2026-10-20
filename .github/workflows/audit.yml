@@ -22,7 +22,7 @@ jobs:
       - uses: jdx/mise-action@9b200bcecbfd6303e69a4a261b2e09e3757440a7 # v5.2.0
         with:
           # Only what `task audit` needs, not the whole dev toolchain.
-          install_args: task rust uv cargo-binstall cargo:cargo-audit github:mlab-sh/postmortem
+          install_args: task node rust uv cargo-binstall cargo:cargo-audit github:mlab-sh/postmortem
       - run: task audit
       - name: postmortem SARIF
         if: always()

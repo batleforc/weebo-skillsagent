@@ -7,6 +7,7 @@ includes:
   skills: ./.tasks/skills.yaml
   agent: ./.tasks/agents.yaml
   techdoc: ./.tasks/techdoc.yaml
+  docs: ./.tasks/docs.yaml
 
 tasks:
   init:
@@ -46,6 +47,8 @@ tasks:
       # pip-audit check the exact pins without resolving anything.
       - mkdir -p .task && uv export --project judge --frozen --no-emit-project -o .task/judge-requirements.txt
       - uvx pip-audit --disable-pip -r .task/judge-requirements.txt
+      # What the docs site ships (its lockfile; dev tooling left out).
+      - npm audit --prefix docs --omit=dev --audit-level=high
       # Supply-chain gate (malware, repo reputation, CVEs); policy in postmortem.conf.
       # Set GITHUB_TOKEN to lift GitHub's 60 req/h anonymous limit.
       - postmortem audit . --online --vulns --no-progress

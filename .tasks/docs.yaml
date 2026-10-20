@@ -1,0 +1,28 @@
+version: "3"
+
+tasks:
+  deps:
+    desc: "Install the documentation site's npm dependencies (docs/); reinstalls when the lockfile changes"
+    dir: docs
+    sources:
+      - package.json
+      - package-lock.json
+    generates:
+      - node_modules/.package-lock.json
+    cmds:
+      - npm ci --no-fund --no-audit
+
+  dev:
+    desc: "Run the documentation site (docs/) in dev mode (http://localhost:3000)"
+    deps: [deps]
+    dir: docs
+    cmds:
+      - npm run dev
+
+  build:
+    desc: "Lint + static export of the documentation site into docs/out/ (DOCS_BASE_PATH for a sub-path)"
+    deps: [deps]
+    dir: docs
+    cmds:
+      - npm run lint
+      - npm run build

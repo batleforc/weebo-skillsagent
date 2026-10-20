@@ -5,7 +5,7 @@
 
 One repo of Claude Code skills plus `wska`, the Rust CLI that links a chosen profile of
 them into a project or into `~/.claude/`. A one-member Cargo workspace (`crates/wska/`),
-driven by Task and mise. `readme.md` covers profiles, items and layout; `docs/wska.md` is
+driven by Task and mise. `readme.md` covers profiles, items and layout; `docs/content/docs/wska.md` is
 the CLI and TOML reference.
 
 ## Policy
@@ -23,7 +23,7 @@ the CLI and TOML reference.
 
 ## Where things are
 
-- `docs/superpowers/2026-10-15-wska-deferred-findings.md` — `wska` defects already triaged
+- `docs/content/docs/superpowers/2026-10-15-wska-deferred-findings.md` — `wska` defects already triaged
   and deliberately left unfixed. Read it before reporting one.
 
 ## Running and verifying

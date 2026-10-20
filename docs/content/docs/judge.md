@@ -1,4 +1,6 @@
-# judge — headless review gates
+---
+title: "judge — headless review gates"
+---
 
 `judge` runs review gates that a hook or CI job can act on. Each command
 prints one JSON report on stdout (`--format text` for people) and exits:

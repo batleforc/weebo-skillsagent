@@ -39,8 +39,8 @@ task skills:doctor                                # can each item actually work 
 
 To use the skills from **another project**, install the released binary and run
 `wska install` there — it clones this repo on first use; see
-[Using wska in another project](docs/wska.md#using-wska-in-another-project).
-Releases are cut with `task release`; see [Releasing](docs/wska.md#releasing).
+[Using wska in another project](docs/content/docs/wska.md#using-wska-in-another-project).
+Releases are cut with `task release`; see [Releasing](docs/content/docs/wska.md#releasing).
 
 Install is idempotent — run it twice and the second run changes nothing — and it
 never writes over a path it does not own. A real directory, or a symlink
@@ -120,7 +120,7 @@ named `all`.
 | `batlehub-rfc`    | symlink     | derived from `batlehub/batlehub`'s rfc skill + template, with security blocks | —   |
 | `diff-review`     | installer   | Claude mod (plugin) `diff-review@codemate-mods`: the `/diff-review` pane, ask Claude about any diff line, GitHub review threads | `claude`, `git`, `gh` |
 | `mlab`            | installer   | `claude mcp add` of the remote `mlab.sh/mcp` server (OAuth via `/mcp`) | `claude` |
-| `judge`           | installer   | `uv tool install --editable "$WSKA_REPO/judge"`: headless review gates `rfc-ready`, `doc-review` ([docs/judge.md](docs/judge.md)) | `uv` |
+| `judge`           | installer   | `uv tool install --editable "$WSKA_REPO/judge"`: headless review gates `rfc-ready`, `doc-review` ([docs/content/docs/judge.md](docs/content/docs/judge.md)) | `uv` |
 | `doc-review`      | symlink (agent) | ours: read-only documentation reviewer run by `judge doc-review` | `claude`, `judge` |
 | `weebo-techdoc`   | symlink     | ours: technical docs in `docs/techdoc/` (components, Mermaid, maintenance checks) for the IDP | `python3`, `git` |
 | `weebo-testing`   | symlink     | ours: house test practice from `batlehub/batlehub` (unit/integration, 80% coverage, cargo-fuzz, k6, heavy e2e) with Taskfile + CI templates | `cargo`, `cargo-llvm-cov`, `cargo-fuzz`, `k6` |
@@ -175,13 +175,13 @@ writes into this repo as its own target.
 
 ## Documentation
 
-- [`docs/judge.md`](docs/judge.md) — the judge CLI: rfc-ready, doc-review, the
+- [`docs/content/docs/judge.md`](docs/content/docs/judge.md) — the judge CLI: rfc-ready, doc-review, the
   report and exit-code contract, question files.
-- [`docs/guide.md`](docs/guide.md) — wska by use case, from a new project
+- [`docs/content/docs/guide.md`](docs/content/docs/guide.md) — wska by use case, from a new project
   to troubleshooting.
-- [`docs/wska.md`](docs/wska.md) — CLI and config reference: every command, the
+- [`docs/content/docs/wska.md`](docs/content/docs/wska.md) — CLI and config reference: every command, the
   ownership model, both TOML schemas, sync semantics, exit codes.
-- [`docs/superpowers/`](docs/superpowers/) — the design spec, the implementation
+- [`docs/content/docs/superpowers/`](docs/content/docs/superpowers/) — the design spec, the implementation
   plan, and the findings deliberately left unfixed.
 
 ## Development

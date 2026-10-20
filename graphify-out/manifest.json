@@ -54,9 +54,9 @@
     "semantic_hash": ""
   },
   "crates/wska/Cargo.toml": {
-    "mtime": 1792492058.7718635,
-    "seen": 1792496351.682024,
-    "ast_hash": "1b45b0cb49b71ae951e2838a77eba300",
+    "mtime": 1792496973.1187596,
+    "seen": 1792497694.3037944,
+    "ast_hash": "2a1d93612c63d632be6fc035cdd92436",
     "semantic_hash": ""
   },
   "crates/wska/src/app.rs": {
@@ -174,9 +174,9 @@
     "semantic_hash": ""
   },
   "judge/src/judge/__init__.py": {
-    "mtime": 1792245408.6464045,
-    "seen": 1792489192.1243575,
-    "ast_hash": "366da21aa87df012ce18f3c1d66cd477",
+    "mtime": 1792497665.04805,
+    "seen": 1792497694.304799,
+    "ast_hash": "12823658503376be6b180035f2a66769",
     "semantic_hash": ""
   },
   "judge/src/judge/backend.py": {
@@ -4932,9 +4932,9 @@
     "semantic_hash": ""
   },
   ".github/workflows/audit.yml": {
-    "mtime": 1792245408.6412184,
-    "seen": 1792489192.1258976,
-    "ast_hash": "694f75177ffb14fc481d2fafcc6647e4",
+    "mtime": 1792497665.0406334,
+    "seen": 1792497694.3192146,
+    "ast_hash": "a77e082c4dea369ae0fe9f90db4e3c37",
     "semantic_hash": ""
   },
   ".github/workflows/release.yml": {
@@ -4962,9 +4962,9 @@
     "semantic_hash": ""
   },
   ".tasks/skills.yaml": {
-    "mtime": 1792496338.1005862,
-    "seen": 1792496351.6955428,
-    "ast_hash": "0282afcbb54e588dc2fa07f11f450bd9",
+    "mtime": 1792496882.4975278,
+    "seen": 1792497694.3192732,
+    "ast_hash": "54a124f7b0407ed938eb2eadb35fc516",
     "semantic_hash": ""
   },
   ".tasks/techdoc.yaml": {
@@ -4980,15 +4980,15 @@
     "semantic_hash": ""
   },
   "AGENTS.md": {
-    "mtime": 1792245408.6417062,
-    "seen": 1792489192.1259131,
-    "ast_hash": "a874f8e77792edb35c24daef4c5e34c2",
+    "mtime": 1792497665.047859,
+    "seen": 1792497694.3193004,
+    "ast_hash": "1dd5dba5d0d4ed098966f247a821267a",
     "semantic_hash": ""
   },
   "CHANGELOG.md": {
-    "mtime": 1792492058.765867,
-    "seen": 1792496351.695579,
-    "ast_hash": "9a3db55409a62b889898960bdd19c23a",
+    "mtime": 1792496973.113957,
+    "seen": 1792497694.3193014,
+    "ast_hash": "bf63a472a3ca97f2c4285da9006c2655",
     "semantic_hash": ""
   },
   "CLAUDE.md": {
@@ -5040,9 +5040,9 @@
     "semantic_hash": ""
   },
   "Taskfile.yaml": {
-    "mtime": 1792245408.6423075,
-    "seen": 1792489192.1259325,
-    "ast_hash": "2bd5938c6b2d8af1d292bcb8321acb2b",
+    "mtime": 1792497665.0403872,
+    "seen": 1792497694.3194196,
+    "ast_hash": "d8c73dd076433fe634c1117550603f80",
     "semantic_hash": ""
   },
   "_bmad/_config/manifest.yaml": {
@@ -5087,66 +5087,6 @@
     "ast_hash": "fdacc18db6d4a03162a710b39cbb9e8f",
     "semantic_hash": ""
   },
-  "docs/judge.md": {
-    "mtime": 1792245408.644938,
-    "seen": 1792489192.1259515,
-    "ast_hash": "4dc2d21630723cec89914f56bebfd090",
-    "semantic_hash": ""
-  },
-  "docs/readme.md": {
-    "mtime": 1792496795.359699,
-    "seen": 1792496804.00559,
-    "ast_hash": "525f86620cc44e2b85f297af21fa0d70",
-    "semantic_hash": ""
-  },
-  "docs/superpowers/2026-10-15-wska-deferred-findings.md": {
-    "mtime": 1792245408.6450465,
-    "seen": 1792489192.1259556,
-    "ast_hash": "230495d305a0e31a9ce345278336b21b",
-    "semantic_hash": ""
-  },
-  "docs/superpowers/plans/2026-10-15-wska-skills-spine.md": {
-    "mtime": 1792245408.6451461,
-    "seen": 1792489192.1259577,
-    "ast_hash": "351ff4ab8c9b9e1242dac6ee7b382b73",
-    "semantic_hash": ""
-  },
-  "docs/superpowers/plans/2026-10-16-agents-b1-judge.md": {
-    "mtime": 1792245408.645458,
-    "seen": 1792489192.1259592,
-    "ast_hash": "13e8e400c14a37c244b995a48ab5d382",
-    "semantic_hash": ""
-  },
-  "docs/superpowers/plans/2026-10-16-weebo-techdoc.md": {
-    "mtime": 1792245408.645458,
-    "seen": 1792489192.125961,
-    "ast_hash": "c00d1fab4c413e3da5f143121ddaa4bc",
-    "semantic_hash": ""
-  },
-  "docs/superpowers/specs/2026-10-15-skills-spine-design.md": {
-    "mtime": 1792245408.645458,
-    "seen": 1792489192.1259625,
-    "ast_hash": "c817b86c4d7a6156da141cc79c0fc67e",
-    "semantic_hash": ""
-  },
-  "docs/superpowers/specs/2026-10-16-agents-b1-judge-design.md": {
-    "mtime": 1792245408.645938,
-    "seen": 1792489192.125964,
-    "ast_hash": "21711db31907d270410bd223d549362c",
-    "semantic_hash": ""
-  },
-  "docs/superpowers/specs/2026-10-16-weebo-techdoc-design.md": {
-    "mtime": 1792245408.645938,
-    "seen": 1792489192.1259656,
-    "ast_hash": "fd610a46287c15a1dd9b60e54d5fd870",
-    "semantic_hash": ""
-  },
-  "docs/wska.md": {
-    "mtime": 1792496795.3595345,
-    "seen": 1792496804.0056922,
-    "ast_hash": "b431c2bfb12fcf7b53b4124077ab78c9",
-    "semantic_hash": ""
-  },
   "judge/src/judge/questions/finding-filter.yaml": {
     "mtime": 1792245408.6464577,
     "seen": 1792489192.1259692,
@@ -5166,9 +5106,9 @@
     "semantic_hash": ""
   },
   "readme.md": {
-    "mtime": 1792496795.3598566,
-    "seen": 1792496804.005743,
-    "ast_hash": "835106af853b826a00ac5766c460b8da",
+    "mtime": 1792497665.0472426,
+    "seen": 1792497694.3196156,
+    "ast_hash": "17794912bd5c352e1c542d539cc76375",
     "semantic_hash": ""
   },
   "skills/3dviz-pro-max/SKILL.md": {
@@ -6132,9 +6072,9 @@
     "semantic_hash": ""
   },
   "skills/wska/SKILL.md": {
-    "mtime": 1792496338.1014538,
-    "seen": 1792496351.699991,
-    "ast_hash": "64a9ac570f6579d4f7f8d75893440169",
+    "mtime": 1792497665.0482805,
+    "seen": 1792497694.3236232,
+    "ast_hash": "cf3d6bbc2d4f731d9c45e34bc05987e2",
     "semantic_hash": ""
   },
   "skills/theme-factory/theme-showcase.pdf": {
@@ -6839,10 +6779,202 @@
     "ast_hash": "2ff009a73e1069571ee34d1b269fe828",
     "semantic_hash": ""
   },
-  "docs/guide.md": {
-    "mtime": 1792496795.3591335,
-    "seen": 1792496804.0055752,
-    "ast_hash": "303040bc778cd6b2d77b1e81de369ab7",
+  "docs/content/docs/meta.json": {
+    "mtime": 1792497451.4491146,
+    "seen": 1792497694.3046978,
+    "ast_hash": "4a8c0f6786c3af8cf10bf5396b53513b",
+    "semantic_hash": ""
+  },
+  "docs/eslint.config.mjs": {
+    "mtime": 1792497414.1529512,
+    "seen": 1792497694.3047018,
+    "ast_hash": "60bbb6cffde5eb155da632c787346894",
+    "semantic_hash": ""
+  },
+  "docs/next.config.mjs": {
+    "mtime": 1792497423.891279,
+    "seen": 1792497694.304704,
+    "ast_hash": "54e2b6658ba68ed31f0fa8c3cdfd5a98",
+    "semantic_hash": ""
+  },
+  "docs/package.json": {
+    "mtime": 1792497423.889279,
+    "seen": 1792497694.304706,
+    "ast_hash": "320e7ea017225fb42d901f887adc4979",
+    "semantic_hash": ""
+  },
+  "docs/postcss.config.mjs": {
+    "mtime": 1792497414.153106,
+    "seen": 1792497694.3047087,
+    "ast_hash": "e9d66e1263ec6f84f9c7f4b88b00e4f9",
+    "semantic_hash": ""
+  },
+  "docs/source.config.ts": {
+    "mtime": 1792497580.501166,
+    "seen": 1792497694.3047106,
+    "ast_hash": "78107d328a350c360bedb1b7bf242768",
+    "semantic_hash": ""
+  },
+  "docs/src/app/(home)/layout.tsx": {
+    "mtime": 1792497414.1519673,
+    "seen": 1792497694.3047128,
+    "ast_hash": "2505cdd84e8476d4390dfbbd9d9ee708",
+    "semantic_hash": ""
+  },
+  "docs/src/app/(home)/page.tsx": {
+    "mtime": 1792497441.1045942,
+    "seen": 1792497694.3047152,
+    "ast_hash": "85f98b1f23ae3926d6feb7a290cca5fa",
+    "semantic_hash": ""
+  },
+  "docs/src/app/api/search/route.ts": {
+    "mtime": 1792497414.1521678,
+    "seen": 1792497694.3047173,
+    "ast_hash": "f8f1cc210882811dbcfdb042cd4520c1",
+    "semantic_hash": ""
+  },
+  "docs/src/app/docs/[[...slug]]/page.tsx": {
+    "mtime": 1792497414.1522543,
+    "seen": 1792497694.3047197,
+    "ast_hash": "8ab04596bd261ed11eb32dac3b04a97c",
+    "semantic_hash": ""
+  },
+  "docs/src/app/docs/layout.tsx": {
+    "mtime": 1792497414.152289,
+    "seen": 1792497694.3047216,
+    "ast_hash": "045acaf88411f8be70a4c582eaf51bcb",
+    "semantic_hash": ""
+  },
+  "docs/src/app/layout.tsx": {
+    "mtime": 1792497414.1523583,
+    "seen": 1792497694.3047237,
+    "ast_hash": "22d8c0942f451e9045db0a27866041ed",
+    "semantic_hash": ""
+  },
+  "docs/src/app/llms-full.txt/route.ts": {
+    "mtime": 1792497414.152406,
+    "seen": 1792497694.3047256,
+    "ast_hash": "fdcf44c5cdb365ff50cf2e39585c33a8",
+    "semantic_hash": ""
+  },
+  "docs/src/app/llms.mdx/docs/[[...slug]]/route.ts": {
+    "mtime": 1792497414.1525323,
+    "seen": 1792497694.3047278,
+    "ast_hash": "cdae1a48de8ed209dc5944212064cb72",
+    "semantic_hash": ""
+  },
+  "docs/src/app/llms.txt/route.ts": {
+    "mtime": 1792497414.1525912,
+    "seen": 1792497694.30473,
+    "ast_hash": "05d1692d00092edb65aca5431412788f",
+    "semantic_hash": ""
+  },
+  "docs/src/app/og/docs/[...slug]/route.tsx": {
+    "mtime": 1792497414.1527064,
+    "seen": 1792497694.304733,
+    "ast_hash": "b180ccfb637e49c212ab81ba8a4c09ad",
+    "semantic_hash": ""
+  },
+  "docs/src/components/mdx.tsx": {
+    "mtime": 1792497423.894246,
+    "seen": 1792497694.3047352,
+    "ast_hash": "0c49ffc564c5f0ec0e3237dee00bb489",
+    "semantic_hash": ""
+  },
+  "docs/src/lib/shared.ts": {
+    "mtime": 1792497423.8902788,
+    "seen": 1792497694.3047376,
+    "ast_hash": "cf5eaa89a4078386087dd91cdd56b911",
+    "semantic_hash": ""
+  },
+  "docs/src/lib/source.ts": {
+    "mtime": 1792497414.1529052,
+    "seen": 1792497694.3047395,
+    "ast_hash": "17ec5254be180217e295eee6e3177a3b",
+    "semantic_hash": ""
+  },
+  "docs/tsconfig.json": {
+    "mtime": 1792497414.153188,
+    "seen": 1792497694.3047428,
+    "ast_hash": "4a695d7d731851d41c5fd7d780d6c161",
+    "semantic_hash": ""
+  },
+  ".github/workflows/docs.yml": {
+    "mtime": 1792497665.0447795,
+    "seen": 1792497694.3192158,
+    "ast_hash": "bcd20b4d27354d33bef18fc849bfd32c",
+    "semantic_hash": ""
+  },
+  ".tasks/docs.yaml": {
+    "mtime": 1792497664.9167802,
+    "seen": 1792497694.3192594,
+    "ast_hash": "05b671d7fdadb416a4b6914b1046dc4e",
+    "semantic_hash": ""
+  },
+  "docs/content/docs/guide.md": {
+    "mtime": 1792497609.0801466,
+    "seen": 1792497694.3195534,
+    "ast_hash": "81eff3ab50138ad0a9e3e927f09a4262",
+    "semantic_hash": ""
+  },
+  "docs/content/docs/index.md": {
+    "mtime": 1792497609.0797465,
+    "seen": 1792497694.3195543,
+    "ast_hash": "ccfd54c6a0df90968facfecf3e59cbde",
+    "semantic_hash": ""
+  },
+  "docs/content/docs/judge.md": {
+    "mtime": 1792497441.241429,
+    "seen": 1792497694.319555,
+    "ast_hash": "b4945335a8beaa9f8443142091dc4140",
+    "semantic_hash": ""
+  },
+  "docs/content/docs/superpowers/2026-10-15-wska-deferred-findings.md": {
+    "mtime": 1792497441.24198,
+    "seen": 1792497694.3195558,
+    "ast_hash": "b4929e336d0cc78ecb18f87968d51498",
+    "semantic_hash": ""
+  },
+  "docs/content/docs/superpowers/plans/2026-10-15-wska-skills-spine.md": {
+    "mtime": 1792497441.2426438,
+    "seen": 1792497694.3195567,
+    "ast_hash": "f69191a5a738866f84d5b0854e581be4",
+    "semantic_hash": ""
+  },
+  "docs/content/docs/superpowers/plans/2026-10-16-agents-b1-judge.md": {
+    "mtime": 1792497441.2431846,
+    "seen": 1792497694.3195574,
+    "ast_hash": "fc18fe89fbe3865776b8aab77d1a4bab",
+    "semantic_hash": ""
+  },
+  "docs/content/docs/superpowers/plans/2026-10-16-weebo-techdoc.md": {
+    "mtime": 1792497441.2433689,
+    "seen": 1792497694.3195581,
+    "ast_hash": "60ad49c13f54ec2442c1282c2948f68e",
+    "semantic_hash": ""
+  },
+  "docs/content/docs/superpowers/specs/2026-10-15-skills-spine-design.md": {
+    "mtime": 1792497441.243528,
+    "seen": 1792497694.3195589,
+    "ast_hash": "6520e75a67716371ea8410bffddc766d",
+    "semantic_hash": ""
+  },
+  "docs/content/docs/superpowers/specs/2026-10-16-agents-b1-judge-design.md": {
+    "mtime": 1792497441.2436306,
+    "seen": 1792497694.3195593,
+    "ast_hash": "f7e4f9f4f1ab10f4bc3c0abb72360a37",
+    "semantic_hash": ""
+  },
+  "docs/content/docs/superpowers/specs/2026-10-16-weebo-techdoc-design.md": {
+    "mtime": 1792497441.2437236,
+    "seen": 1792497694.3195605,
+    "ast_hash": "38b26adb799789082946d008709ef5ca",
+    "semantic_hash": ""
+  },
+  "docs/content/docs/wska.md": {
+    "mtime": 1792497609.0803857,
+    "seen": 1792497694.3195612,
+    "ast_hash": "f2e3d2a58293d6fb738bedca9796227d",
     "semantic_hash": ""
   }
 }

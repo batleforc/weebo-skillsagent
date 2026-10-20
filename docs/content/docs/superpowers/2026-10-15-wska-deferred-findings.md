@@ -1,4 +1,6 @@
-# wska spine — known findings left unfixed
+---
+title: "wska spine — known findings left unfixed"
+---
 
 From the 13-task implementation of `docs/superpowers/specs/2026-10-15-skills-spine-design.md`.
 Each was raised by a task review, judged non-blocking, and deliberately not fixed.

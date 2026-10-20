@@ -1,4 +1,6 @@
-# Skills spine — design
+---
+title: "Skills spine — design"
+---
 
 - Date: 2026-10-15
 - Status: proposed

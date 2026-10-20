@@ -1,7 +1,9 @@
-# wska — guide by use case
+---
+title: "wska — guide by use case"
+---
 
 Find your situation, run what it says. Every command is explained in full in
-the [reference](wska.md); this page only says which ones to string together.
+the [reference](./wska.md); this page only says which ones to string together.
 
 Two ways to call the same CLI:
 
@@ -50,7 +52,7 @@ task init             # mise, plugins, git hooks, every item linked into this re
 3. Commit the selection, ignore the links (they are absolute paths into your
    clone):
 
-   ```gitignore
+   ```text
    .claude/skills/
    .claude/agents/   # only if you keep no hand-written agents there
    ```
@@ -270,5 +272,5 @@ A `x86_64-pc-windows-msvc` binary ships with each release. It needs:
 | a skill is linked but never triggers                            | `wska doctor` checks its `SKILL.md` has `name` and `description` |
 | `remove` refuses a name                                         | it comes from a profile: remove the profile, or `install` a new selection |
 
-Still stuck: [known limits](wska.md#known-limits) and the
-[deferred findings](superpowers/2026-10-15-wska-deferred-findings.md).
+Still stuck: [known limits](./wska.md#known-limits) and the
+[deferred findings](./superpowers/2026-10-15-wska-deferred-findings.md).

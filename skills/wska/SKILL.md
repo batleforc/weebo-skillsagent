@@ -12,7 +12,7 @@ description: >
 
 `wska` links items (skills, agents, installer-driven tools) from the
 weebo-skillsagent repo into a Claude Code target. It is the only supported way
-to put Weebo skills into a project. Full reference: `docs/wska.md` in that repo.
+to put Weebo skills into a project. Full reference: `docs/content/docs/wska.md` in that repo.
 
 ## Hard rules
 

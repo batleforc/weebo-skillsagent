@@ -1,4 +1,6 @@
-# Agents B1 — judge and the first two reviewers
+---
+title: "Agents B1 — judge and the first two reviewers"
+---
 
 - Date: 2026-10-16
 - Status: proposed

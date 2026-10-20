@@ -1,4 +1,6 @@
-# weebo-techdoc — design
+---
+title: "weebo-techdoc — design"
+---
 
 Status: draft, awaiting approval · 2026-10-16
 

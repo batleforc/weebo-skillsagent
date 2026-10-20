@@ -1,1 +1,1 @@
-"""Headless review gates. See docs/judge.md."""
+"""Headless review gates. See docs/content/docs/judge.md."""

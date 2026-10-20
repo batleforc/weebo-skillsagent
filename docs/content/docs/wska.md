@@ -1,6 +1,8 @@
-# wska — reference
+---
+title: "wska — reference"
+---
 
-Looking for *how do I…*? Start with the [guide by use case](guide.md).
+Looking for *how do I…*? Start with the [guide by use case](./guide.md).
 
 `wska` links this repo's items into a Claude Code target. One binary,
 `crates/wska`, wrapped by the tasks in `.tasks/skills.yaml`.
@@ -386,7 +388,7 @@ project's `mise.toml`: `[env] WSKA_REPO = "{{env.HOME}}/git/weebo-skillsagent"`)
 Gitignore the links, because they are absolute paths into the clone and mean
 nothing on another machine, but commit `.claude/wska.toml`:
 
-```gitignore
+```text
 .claude/skills/
 ```
 
@@ -619,7 +621,7 @@ the next install fetches again.
 
 ## Known limits
 
-Recorded in [`2026-10-15-wska-deferred-findings.md`](superpowers/2026-10-15-wska-deferred-findings.md).
+Recorded in [`2026-10-15-wska-deferred-findings.md`](./superpowers/2026-10-15-wska-deferred-findings.md).
 The two worth knowing while using the tool:
 
 - **Apply is not atomic.** Installers run before unlinks, so a failing installer
