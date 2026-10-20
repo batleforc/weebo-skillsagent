@@ -176,13 +176,22 @@ weebo-helm          = ["helm", "helm-docs"]
 wska            = ["wska|cargo"]
 doc-review      = ["claude", "judge"]
 
+# Gemini CLI / Antigravity: `--tools` is the whole IDE list, not an addition
+# to it -- naming only gemini deletes the claude-code skills of an existing
+# install. So the command re-reads the IDEs from bmad's manifest and appends its
+# own. --action update installs fresh too; --yes keeps it unattended and keeps
+# an existing install's settings (a fresh one gets the defaults).
 [installers.bmad]
 command = "npx bmad-method install"
 scope   = "project"
+gemini      = { scope = "project", command = '''ides=$(sed -n '/^ides:/,/^[^ ]/s/^  - //p' _bmad/_config/manifest.yaml 2>/dev/null | grep -vx gemini | paste -sd, -); npx bmad-method install --yes --action update --tools "${ides:+$ides,}gemini"''' }
+antigravity = { scope = "project", command = '''ides=$(sed -n '/^ides:/,/^[^ ]/s/^  - //p' _bmad/_config/manifest.yaml 2>/dev/null | grep -vx antigravity | paste -sd, -); npx bmad-method install --yes --action update --tools "${ides:+$ides,}antigravity"''' }
 
 [installers.graphify]
 command = "graphify install --project --platform claude"
 scope   = "project"
+gemini      = { scope = "project", command = "graphify install --project --platform gemini" }
+antigravity = { scope = "project", command = "graphify install --project --platform antigravity" }
 
 # BMGD, the game dev studio module (installer code `gds`). Its own item because
 # the bmad installer treats `--modules` as the whole install rather than an
@@ -192,20 +201,31 @@ scope   = "project"
 [installers.bmad-gds]
 command = "npx bmad-method install --modules bmm,gds"
 scope   = "project"
+gemini      = { scope = "project", command = '''ides=$(sed -n '/^ides:/,/^[^ ]/s/^  - //p' _bmad/_config/manifest.yaml 2>/dev/null | grep -vx gemini | paste -sd, -); npx bmad-method install --yes --action update --modules bmm,gds --tools "${ides:+$ides,}gemini"''' }
+antigravity = { scope = "project", command = '''ides=$(sed -n '/^ides:/,/^[^ ]/s/^  - //p' _bmad/_config/manifest.yaml 2>/dev/null | grep -vx antigravity | paste -sd, -); npx bmad-method install --yes --action update --modules bmm,gds --tools "${ides:+$ides,}antigravity"''' }
 
 # `rtk init` writes RTK.md into the target and patches .claude/settings.json
 # with rtk's hooks. --auto-patch is what keeps it unattended: without it the
 # settings.json step prompts, and an install run from a task would hang.
+# rtk sets Gemini CLI up globally only (~/.gemini hooks + GEMINI.md), so that
+# variant needs `--scope user`; Antigravity gets a project plugin in .agents/.
 [installers.rtk]
 command = "rtk init --auto-patch"
 scope   = "project"
+gemini      = { scope = "user", command = "rtk init -g --gemini --auto-patch" }
+antigravity = { scope = "project", command = "rtk init --agent antigravity --auto-patch" }
 
 # Ponytail as upstream ships it: the plugin, whose SessionStart hook arms
 # ponytail mode in every session, which the vendored `ponytail` skill cannot do.
 # Its skills come namespaced (ponytail:*), so it can sit beside the vendored ones.
+# Gemini CLI gets upstream's extension (always-on ruleset + /ponytail commands,
+# no hooks), user-wide only; install refuses one already there, hence uninstall
+# first. Antigravity gets upstream's plugin (skills only); untested here, no `agy`.
 [installers.ponytail-plugin]
 command = "claude plugin marketplace add DietrichGebert/ponytail --scope project; claude plugin install ponytail@ponytail --scope project"
 scope   = "project"
+gemini      = { scope = "user", command = "gemini extensions uninstall ponytail 2>/dev/null; gemini extensions install https://github.com/DietrichGebert/ponytail --consent" }
+antigravity = { scope = "user", command = "agy plugin install https://github.com/DietrichGebert/ponytail" }
 
 # A Claude Code mod (nicolas-codemate/claude-code-mods, MIT): mods ship as
 # plugins, so a mod is an installer like ponytail-plugin. diff-review is the
@@ -216,12 +236,14 @@ command = "claude plugin marketplace add nicolas-codemate/claude-code-mods --sco
 scope   = "project"
 
 # mlab.sh's remote MCP server (https://github.com/mlab-sh/mcp, MIT listing,
-# closed server), written into the target's .mcp.json. OAuth, so no token lands
-# in the repo: run /mcp in Claude Code once to sign in. remove-then-add because
-# `claude mcp add` fails on a name that already exists, which would break reruns.
+# closed server), written into the target's .mcp.json (.gemini/settings.json
+# for Gemini CLI). OAuth, so no token lands in the repo: run /mcp once to sign
+# in. remove-then-add because `claude mcp add` fails on a name that already
+# exists, which would break reruns. No Antigravity setup: it has no `mcp add`.
 [installers.mlab]
 command = "claude mcp remove mlab --scope project; claude mcp add --transport http --scope project mlab https://mlab.sh/mcp"
 scope   = "project"
+gemini  = { scope = "project", command = "gemini mcp remove mlab --scope project; gemini mcp add --transport http --scope project mlab https://mlab.sh/mcp" }
 
 # The judge CLI (rfc-ready, doc-review), installed machine-wide by uv. scope
 # "any": the review profile is usually installed with --scope project, where a

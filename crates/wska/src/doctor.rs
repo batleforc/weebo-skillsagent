@@ -398,6 +398,8 @@ mod tests {
                 name: "bmad".to_string(),
                 command: "npx bmad-method install".to_string(),
                 scope: InstallerScope::Project,
+                gemini: None,
+                antigravity: None,
             },
         );
         let rows = collect(

@@ -1,5 +1,5 @@
 use crate::apply::{apply, Applied, ApplyError};
-use crate::cli::Scope;
+use crate::cli::{Agent, Scope};
 use crate::selection::{Selection, SelectionError};
 use crate::{config, item, plan, profile, target};
 use std::path::Path;
@@ -28,17 +28,22 @@ pub enum AppError {
 
 /// Link `selection`, or the one recorded in the target when it is empty, and
 /// record what was applied so a bare `install`/`update` can re-apply it.
+#[expect(
+    clippy::too_many_arguments,
+    reason = "flat CLI options; a struct would only rename them"
+)]
 pub fn install(
     repo_root: &Path,
     selection: &Selection,
     scope: Scope,
+    agent: Agent,
     dry_run: bool,
     run_installers: bool,
     cwd: &Path,
     env: &dyn Fn(&str) -> Option<String>,
 ) -> Result<Applied, AppError> {
     let selection = if selection.is_empty() {
-        let target_dir = target::resolve(scope, cwd, env)?;
+        let target_dir = target::resolve(scope, agent, cwd, env)?;
         Selection::load(&target_dir)?
             .filter(|s| !s.is_empty())
             .ok_or_else(|| SelectionError::Missing(target_dir.join(crate::selection::FILE)))?
@@ -49,6 +54,7 @@ pub fn install(
         repo_root,
         &selection,
         scope,
+        agent,
         dry_run,
         run_installers,
         cwd,
@@ -58,10 +64,15 @@ pub fn install(
 
 /// Link exactly `selection` — empty means unlink everything wska owns there —
 /// and record it in the target's wska.toml.
+#[expect(
+    clippy::too_many_arguments,
+    reason = "flat CLI options; a struct would only rename them"
+)]
 fn apply_selection(
     repo_root: &Path,
     selection: &Selection,
     scope: Scope,
+    agent: Agent,
     dry_run: bool,
     run_installers: bool,
     cwd: &Path,
@@ -74,7 +85,7 @@ fn apply_selection(
     let profiles_cfg = config::load_profiles(&repo_root.join("profiles.toml"))?;
     let vendor = config::load_vendor(&repo_root.join("vendor.toml"))?;
     let items = item::scan(&repo_root, &vendor)?;
-    let target_dir = target::resolve(scope, cwd, env)?;
+    let target_dir = target::resolve(scope, agent, cwd, env)?;
     let wanted = profile::resolve(&profiles_cfg, &selection.profiles, &selection.items, &items)?;
 
     // Externals must be on disk before planning, or their links classify as
@@ -94,6 +105,7 @@ fn apply_selection(
         &target_dir,
         &repo_root,
         scope,
+        agent,
         run_installers,
     )?;
     if let Err(e) = built.validate() {
@@ -131,10 +143,15 @@ fn apply_selection(
 
 /// Install the target's recorded selection plus `extra`, so adding one item
 /// does not mean re-typing everything already there.
+#[expect(
+    clippy::too_many_arguments,
+    reason = "flat CLI options; a struct would only rename them"
+)]
 pub fn add(
     repo_root: &Path,
     extra: &Selection,
     scope: Scope,
+    agent: Agent,
     dry_run: bool,
     run_installers: bool,
     cwd: &Path,
@@ -145,11 +162,12 @@ pub fn add(
             "nothing to add: pass --profile or --item".into(),
         ));
     }
-    let recorded = Selection::load(&target::resolve(scope, cwd, env)?)?.unwrap_or_default();
+    let recorded = Selection::load(&target::resolve(scope, agent, cwd, env)?)?.unwrap_or_default();
     install(
         repo_root,
         &recorded.merged(extra),
         scope,
+        agent,
         dry_run,
         run_installers,
         cwd,
@@ -160,10 +178,15 @@ pub fn add(
 /// Install the target's recorded selection minus `gone`. Every name must be
 /// recorded: an item that only comes through a recorded profile would stay
 /// linked, so that is refused rather than silently doing nothing.
+#[expect(
+    clippy::too_many_arguments,
+    reason = "flat CLI options; a struct would only rename them"
+)]
 pub fn remove(
     repo_root: &Path,
     gone: &Selection,
     scope: Scope,
+    agent: Agent,
     dry_run: bool,
     run_installers: bool,
     cwd: &Path,
@@ -174,7 +197,7 @@ pub fn remove(
             "nothing to remove: pass --profile or --item".into(),
         ));
     }
-    let target_dir = target::resolve(scope, cwd, env)?;
+    let target_dir = target::resolve(scope, agent, cwd, env)?;
     let recorded = Selection::load(&target_dir)?
         .ok_or_else(|| SelectionError::Missing(target_dir.join(crate::selection::FILE)))?;
     let absent: Vec<String> = gone
@@ -210,7 +233,16 @@ pub fn remove(
             .cloned()
             .collect(),
     };
-    apply_selection(repo_root, &kept, scope, dry_run, run_installers, cwd, env)
+    apply_selection(
+        repo_root,
+        &kept,
+        scope,
+        agent,
+        dry_run,
+        run_installers,
+        cwd,
+        env,
+    )
 }
 
 /// Pull the items repo, then re-link `selection`, or the target's recorded one
@@ -222,15 +254,27 @@ pub fn update(
     repo_root: &Path,
     selection: &Selection,
     scope: Scope,
+    agent: Agent,
     run_installers: bool,
     cwd: &Path,
     env: &dyn Fn(&str) -> Option<String>,
 ) -> Result<Option<Applied>, AppError> {
     target::pull(repo_root)?;
-    if selection.is_empty() && Selection::load(&target::resolve(scope, cwd, env)?)?.is_none() {
+    if selection.is_empty() && Selection::load(&target::resolve(scope, agent, cwd, env)?)?.is_none()
+    {
         return Ok(None);
     }
-    install(repo_root, selection, scope, false, run_installers, cwd, env).map(Some)
+    install(
+        repo_root,
+        selection,
+        scope,
+        agent,
+        false,
+        run_installers,
+        cwd,
+        env,
+    )
+    .map(Some)
 }
 
 /// Whether each item in the repo can actually work here: its declared tools
@@ -252,6 +296,7 @@ pub fn doctor(
 pub fn status(
     repo_root: &Path,
     scope: Scope,
+    agent: Agent,
     cwd: &Path,
     env: &dyn Fn(&str) -> Option<String>,
 ) -> Result<Vec<crate::status::Row>, AppError> {
@@ -261,7 +306,7 @@ pub fn status(
     let root = target::repo_root(repo_root)?;
     let vendor = config::load_vendor(&root.join("vendor.toml"))?;
     let items = item::scan(&root, &vendor)?;
-    let target_dir = target::resolve(scope, cwd, env)?;
+    let target_dir = target::resolve(scope, agent, cwd, env)?;
     Ok(crate::status::collect(&items, &target_dir, &root)?)
 }
 
@@ -316,6 +361,7 @@ pub fn list(
     repo_root: &Path,
     profiles: bool,
     scope: Scope,
+    agent: Agent,
     cwd: &Path,
     env: &dyn Fn(&str) -> Option<String>,
 ) -> Result<Table, AppError> {
@@ -341,7 +387,7 @@ pub fn list(
     }
     let vendor = config::load_vendor(&repo_root.join("vendor.toml"))?;
     let items = item::scan(&repo_root, &vendor)?;
-    let target_dir = target::resolve(scope, cwd, env)?;
+    let target_dir = target::resolve(scope, agent, cwd, env)?;
     let states = crate::status::collect(&items, &target_dir, &repo_root)?;
     // wska cannot see what an installer wrote; the recorded selection is the
     // honest stand-in for "asked to be installed here".
@@ -396,10 +442,11 @@ pub fn list(
 pub fn list_recorded(
     repo_root: &Path,
     scope: Scope,
+    agent: Agent,
     cwd: &Path,
     env: &dyn Fn(&str) -> Option<String>,
 ) -> Result<Table, AppError> {
-    let target_dir = target::resolve(scope, cwd, env)?;
+    let target_dir = target::resolve(scope, agent, cwd, env)?;
     let path = target_dir.join(crate::selection::FILE);
     let recorded = Selection::load(&target_dir)?
         .ok_or_else(|| AppError::Refused(format!("no selection recorded in {}", path.display())))?;

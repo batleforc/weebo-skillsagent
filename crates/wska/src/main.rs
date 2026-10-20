@@ -59,6 +59,7 @@ fn main() {
         }
     };
 
+    let agent = cli.agent;
     let result = match cli.command {
         Command::Install {
             profile,
@@ -75,6 +76,7 @@ fn main() {
                 &root,
                 &selection,
                 scope,
+                agent,
                 dry_run,
                 run_installers,
                 &cwd,
@@ -93,8 +95,17 @@ fn main() {
                 profiles: profile,
                 items: item,
             };
-            wska::app::add(&root, &extra, scope, dry_run, run_installers, &cwd, &env)
-                .map(|a| print_applied(&a))
+            wska::app::add(
+                &root,
+                &extra,
+                scope,
+                agent,
+                dry_run,
+                run_installers,
+                &cwd,
+                &env,
+            )
+            .map(|a| print_applied(&a))
         }
         Command::Remove {
             profile,
@@ -107,8 +118,17 @@ fn main() {
                 profiles: profile,
                 items: item,
             };
-            wska::app::remove(&root, &gone, scope, dry_run, run_installers, &cwd, &env)
-                .map(|a| print_applied(&a))
+            wska::app::remove(
+                &root,
+                &gone,
+                scope,
+                agent,
+                dry_run,
+                run_installers,
+                &cwd,
+                &env,
+            )
+            .map(|a| print_applied(&a))
         }
         Command::Update {
             profile,
@@ -120,26 +140,30 @@ fn main() {
                 profiles: profile,
                 items: item,
             };
-            wska::app::update(&root, &selection, scope, run_installers, &cwd, &env).map(|applied| {
-                println!("updated {}", root.display());
-                if let Some(a) = applied {
-                    print_applied(&a);
+            wska::app::update(&root, &selection, scope, agent, run_installers, &cwd, &env).map(
+                |applied| {
+                    println!("updated {}", root.display());
+                    if let Some(a) = applied {
+                        print_applied(&a);
+                    }
+                },
+            )
+        }
+        Command::Status { scope } => {
+            wska::app::status(&root, scope, agent, &cwd, &env).map(|rows| {
+                for row in rows {
+                    println!("{:<28} {:?}", row.name, row.state);
                 }
             })
         }
-        Command::Status { scope } => wska::app::status(&root, scope, &cwd, &env).map(|rows| {
-            for row in rows {
-                println!("{:<28} {:?}", row.name, row.state);
-            }
-        }),
         Command::List {
             profiles,
             recorded,
             scope,
         } => if recorded {
-            wska::app::list_recorded(&root, scope, &cwd, &env)
+            wska::app::list_recorded(&root, scope, agent, &cwd, &env)
         } else {
-            wska::app::list(&root, profiles, scope, &cwd, &env)
+            wska::app::list(&root, profiles, scope, agent, &cwd, &env)
         }
         .map(|table| print!("{table}")),
         Command::Doctor => wska::app::doctor(&root, &env).map(|rows| {

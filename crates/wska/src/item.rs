@@ -1,5 +1,5 @@
-use crate::config::InstallerScope;
 use crate::config::Vendor;
+use crate::config::{InstallerScope, Setup};
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 
@@ -35,6 +35,8 @@ pub enum Item {
         name: String,
         command: String,
         scope: InstallerScope,
+        gemini: Option<Setup>,
+        antigravity: Option<Setup>,
     },
 }
 
@@ -115,6 +117,8 @@ pub fn scan(repo_root: &Path, vendor: &Vendor) -> Result<BTreeMap<String, Item>,
                 name: name.clone(),
                 command: installer.command.clone(),
                 scope: installer.scope,
+                gemini: installer.gemini.clone(),
+                antigravity: installer.antigravity.clone(),
             },
             "installers",
         )?;
@@ -191,6 +195,8 @@ mod tests {
             Installer {
                 command: "echo hi".into(),
                 scope,
+                gemini: None,
+                antigravity: None,
             },
         );
         v

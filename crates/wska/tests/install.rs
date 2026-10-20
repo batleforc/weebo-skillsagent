@@ -52,6 +52,7 @@ items = ["impeccable"]
         &root,
         &profiles(&["frontend"]),
         wska::cli::Scope::Project,
+        wska::cli::Agent::Claude,
         false,
         false,
         &root,
@@ -73,6 +74,7 @@ items = ["impeccable"]
         &root,
         &profiles(&["frontend"]),
         wska::cli::Scope::Project,
+        wska::cli::Agent::Claude,
         false,
         false,
         &root,
@@ -87,6 +89,7 @@ items = ["impeccable"]
         &root,
         &profiles(&["base"]),
         wska::cli::Scope::Project,
+        wska::cli::Agent::Claude,
         false,
         false,
         &root,
@@ -115,6 +118,7 @@ fn refuses_to_replace_a_hand_written_directory_and_changes_nothing() {
         &root,
         &profiles(&["base"]),
         wska::cli::Scope::Project,
+        wska::cli::Agent::Claude,
         false,
         false,
         &root,
@@ -150,6 +154,7 @@ fn install_links_a_skill_whose_required_tool_is_missing_and_warns_about_it() {
         &root,
         &profiles(&["base"]),
         wska::cli::Scope::Project,
+        wska::cli::Agent::Claude,
         false,
         false,
         &root,
@@ -184,6 +189,7 @@ fn install_warns_about_nothing_when_every_requirement_is_satisfied() {
         &root,
         &profiles(&["base"]),
         wska::cli::Scope::Project,
+        wska::cli::Agent::Claude,
         false,
         false,
         &root,
@@ -254,6 +260,7 @@ fn records_profiles_and_single_items_and_a_bare_install_reapplies_them() {
         &root,
         &bare,
         wska::cli::Scope::Project,
+        wska::cli::Agent::Claude,
         false,
         false,
         &root,
@@ -270,6 +277,7 @@ fn records_profiles_and_single_items_and_a_bare_install_reapplies_them() {
         &root,
         &chosen,
         wska::cli::Scope::Project,
+        wska::cli::Agent::Claude,
         false,
         false,
         &root,
@@ -291,6 +299,7 @@ fn records_profiles_and_single_items_and_a_bare_install_reapplies_them() {
         &root,
         &bare,
         wska::cli::Scope::Project,
+        wska::cli::Agent::Claude,
         false,
         false,
         &root,
@@ -315,6 +324,7 @@ fn add_extends_the_recorded_selection_instead_of_replacing_it() {
         &root,
         &profiles(&["base"]),
         scope,
+        wska::cli::Agent::Claude,
         false,
         false,
         &root,
@@ -326,7 +336,17 @@ fn add_extends_the_recorded_selection_instead_of_replacing_it() {
         profiles: vec!["base".into()], // already recorded: not duplicated
         items: vec!["techdoc".into()],
     };
-    let added = wska::app::add(&root, &extra, scope, false, false, &root, &env_none).unwrap();
+    let added = wska::app::add(
+        &root,
+        &extra,
+        scope,
+        wska::cli::Agent::Claude,
+        false,
+        false,
+        &root,
+        &env_none,
+    )
+    .unwrap();
     assert_eq!(added.linked, 1);
     assert_eq!(added.unlinked, 0);
     assert!(fs::symlink_metadata(root.join(".claude/skills/ponytail")).is_ok());
@@ -339,7 +359,17 @@ fn add_extends_the_recorded_selection_instead_of_replacing_it() {
     );
 
     let bare = wska::selection::Selection::default();
-    assert!(wska::app::add(&root, &bare, scope, false, false, &root, &env_none).is_err());
+    assert!(wska::app::add(
+        &root,
+        &bare,
+        scope,
+        wska::cli::Agent::Claude,
+        false,
+        false,
+        &root,
+        &env_none
+    )
+    .is_err());
 }
 
 #[test]
@@ -363,6 +393,7 @@ fn remove_drops_recorded_names_and_refuses_unrecorded_ones() {
         &root,
         &sel(&[], &["techdoc"]),
         scope,
+        wska::cli::Agent::Claude,
         false,
         false,
         &root,
@@ -374,6 +405,7 @@ fn remove_drops_recorded_names_and_refuses_unrecorded_ones() {
         &root,
         &sel(&["base"], &["techdoc"]),
         scope,
+        wska::cli::Agent::Claude,
         false,
         false,
         &root,
@@ -386,6 +418,7 @@ fn remove_drops_recorded_names_and_refuses_unrecorded_ones() {
         &root,
         &sel(&[], &["ponytail"]),
         scope,
+        wska::cli::Agent::Claude,
         false,
         false,
         &root,
@@ -399,6 +432,7 @@ fn remove_drops_recorded_names_and_refuses_unrecorded_ones() {
         &root,
         &sel(&[], &["techdoc"]),
         scope,
+        wska::cli::Agent::Claude,
         false,
         false,
         &root,
@@ -416,6 +450,7 @@ fn remove_drops_recorded_names_and_refuses_unrecorded_ones() {
         &root,
         &sel(&["base"], &[]),
         scope,
+        wska::cli::Agent::Claude,
         false,
         false,
         &root,
@@ -439,7 +474,15 @@ fn list_tables_show_profiles_per_item_and_the_recorded_selection() {
         "[profiles.base]\nitems = [\"ponytail\"]\n\n[profiles.docs]\ninclude = [\"base\"]\nitems = [\"techdoc\", \"ponytail\"]\n",
     );
     let scope = wska::cli::Scope::Project;
-    let items = wska::app::list(&root, false, scope, &root, &env_none).unwrap();
+    let items = wska::app::list(
+        &root,
+        false,
+        scope,
+        wska::cli::Agent::Claude,
+        &root,
+        &env_none,
+    )
+    .unwrap();
     assert_eq!(items.headers, ["ITEM", "KIND", "INSTALLED", "PROFILES"]);
     let row =
         |t: &wska::app::Table, name: &str| t.rows.iter().find(|r| r[0] == name).unwrap().clone();
@@ -454,18 +497,39 @@ fn list_tables_show_profiles_per_item_and_the_recorded_selection() {
         "{items}"
     );
 
-    assert!(wska::app::list_recorded(&root, scope, &root, &env_none).is_err());
+    assert!(
+        wska::app::list_recorded(&root, scope, wska::cli::Agent::Claude, &root, &env_none).is_err()
+    );
     let sel = wska::selection::Selection {
         profiles: vec!["base".into()],
         items: vec!["loose".into()],
     };
-    wska::app::install(&root, &sel, scope, false, false, &root, &env_none).unwrap();
-    let after = wska::app::list(&root, false, scope, &root, &env_none).unwrap();
+    wska::app::install(
+        &root,
+        &sel,
+        scope,
+        wska::cli::Agent::Claude,
+        false,
+        false,
+        &root,
+        &env_none,
+    )
+    .unwrap();
+    let after = wska::app::list(
+        &root,
+        false,
+        scope,
+        wska::cli::Agent::Claude,
+        &root,
+        &env_none,
+    )
+    .unwrap();
     assert_eq!(row(&after, "ponytail")[2], "yes");
     assert_eq!(row(&after, "loose")[2], "yes");
     assert_eq!(row(&after, "techdoc")[2], "-");
 
-    let recorded = wska::app::list_recorded(&root, scope, &root, &env_none).unwrap();
+    let recorded =
+        wska::app::list_recorded(&root, scope, wska::cli::Agent::Claude, &root, &env_none).unwrap();
     assert_eq!(
         recorded.rows,
         vec![

@@ -31,6 +31,26 @@ the git root containing the working directory (falling back to the working
 directory itself when there is no `.git`, which keeps the CLI usable in a plain
 directory). `user` resolves to `$CLAUDE_CONFIG_DIR`, else `$HOME/.claude`.
 
+**Agent** — `--agent claude|gemini|antigravity` (default `claude`, accepted by
+every command) picks whose directory the scope resolves to:
+
+| agent         | `project`   | `user`                  |
+|---------------|-------------|-------------------------|
+| `claude`      | `.claude/`  | `$CLAUDE_CONFIG_DIR` or `~/.claude/` |
+| `gemini`      | `.gemini/`  | `~/.gemini/`            |
+| `antigravity` | `.agents/`  | `~/.gemini/antigravity/` |
+
+Gemini CLI and Antigravity read the same `SKILL.md` folders, so skills link
+as-is. Agents and MCP servers are Claude Code formats: for the other two
+agents they are skipped with a reason. An installer runs for them only when
+`vendor.toml` declares a setup for that agent (see `[installers.<item>]`):
+today bmad, bmad-gds, graphify, rtk and ponytail-plugin for both, and
+mlab (MCP) for Gemini CLI only. Each agent's directory holds
+its own `wska.toml`, so `wska install --agent gemini` with no profile re-applies
+the Gemini selection only. Gemini CLI also reads `.agents/skills/`, so in a
+project linked for both, it sees each skill twice; the copies are the same
+links, so it does not matter which one wins.
+
 Target directories are canonicalized before anything is compared, so a
 symlinked `~/.claude` still matches the links written through it.
 
@@ -514,6 +534,19 @@ the marketplace is already declared:
 [installers.ponytail-plugin]
 command = "claude plugin marketplace add DietrichGebert/ponytail --scope project; claude plugin install ponytail@ponytail --scope project"
 scope   = "project"
+```
+
+An installer runs for Claude Code only, unless it declares a `gemini` or
+`antigravity` setup: that agent's own command and scope, since they differ
+(rtk sets up Gemini CLI globally only, so `--scope user`). Without one, the
+item is skipped for that agent with a reason.
+
+```toml
+[installers.rtk]
+command = "rtk init --auto-patch"
+scope   = "project"
+gemini      = { scope = "user", command = "rtk init -g --gemini --auto-patch" }
+antigravity = { scope = "project", command = "rtk init --agent antigravity --auto-patch" }
 ```
 
 Dropping an installer item from a profile does not uninstall it: `wska` never

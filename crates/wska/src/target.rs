@@ -1,9 +1,11 @@
-use crate::cli::Scope;
+use crate::cli::{Agent, Scope};
 use std::path::{Path, PathBuf};
 
 #[derive(Debug, thiserror::Error)]
 pub enum TargetError {
-    #[error("cannot determine the user config directory: set CLAUDE_CONFIG_DIR or HOME")]
+    #[error(
+        "cannot determine the user config directory: set HOME (or CLAUDE_CONFIG_DIR for claude)"
+    )]
     NoUserDir,
     #[error("cannot pick where to clone the items repo: set WSKA_REPO, XDG_DATA_HOME or HOME")]
     NoCloneDir,
@@ -24,19 +26,29 @@ pub enum TargetError {
     },
 }
 
-/// The `.claude` directory for a scope, canonicalized when it already exists
-/// so that a symlinked `~/.claude` compares correctly against link targets.
+/// The agent's config directory for a scope (`.claude`, `.gemini`, ...),
+/// canonicalized when it already exists so that a symlinked `~/.claude`
+/// compares correctly against link targets.
 pub fn resolve(
     scope: Scope,
+    agent: Agent,
     cwd: &Path,
     env: &dyn Fn(&str) -> Option<String>,
 ) -> Result<PathBuf, TargetError> {
-    let raw = match scope {
-        Scope::User => match env("CLAUDE_CONFIG_DIR") {
+    let home = || env("HOME").map(PathBuf::from).ok_or(TargetError::NoUserDir);
+    let raw = match (scope, agent) {
+        (Scope::User, Agent::Claude) => match env("CLAUDE_CONFIG_DIR") {
             Some(dir) => PathBuf::from(dir),
-            None => PathBuf::from(env("HOME").ok_or(TargetError::NoUserDir)?).join(".claude"),
+            None => home()?.join(".claude"),
         },
-        Scope::Project => git_root(cwd)?.join(".claude"),
+        (Scope::User, Agent::Gemini) => home()?.join(".gemini"),
+        // shortcut: the Antigravity IDE path from Google's codelab; Antigravity 2.0
+        // documents ~/.gemini/config/skills, switch if the IDE path stops being read.
+        (Scope::User, Agent::Antigravity) => home()?.join(".gemini/antigravity"),
+        (Scope::Project, Agent::Claude) => git_root(cwd)?.join(".claude"),
+        (Scope::Project, Agent::Gemini) => git_root(cwd)?.join(".gemini"),
+        // `.agents` is the shared Agent Skills dir; Gemini CLI reads it too.
+        (Scope::Project, Agent::Antigravity) => git_root(cwd)?.join(".agents"),
     };
     canonical_or_as_is(&raw)
 }
@@ -179,7 +191,7 @@ mod tests {
         let cfg = d.path().join("cfg");
         fs::create_dir(&cfg).unwrap();
         let env = env_from(&[("CLAUDE_CONFIG_DIR", cfg.to_str().unwrap())]);
-        let got = resolve(Scope::User, d.path(), &env).unwrap();
+        let got = resolve(Scope::User, Agent::Claude, d.path(), &env).unwrap();
         assert_eq!(got, cfg.canonicalize().unwrap());
     }
 
@@ -188,7 +200,7 @@ mod tests {
         let d = tempfile::tempdir().unwrap();
         fs::create_dir(d.path().join(".claude")).unwrap();
         let env = env_from(&[("HOME", d.path().to_str().unwrap())]);
-        let got = resolve(Scope::User, d.path(), &env).unwrap();
+        let got = resolve(Scope::User, Agent::Claude, d.path(), &env).unwrap();
         assert_eq!(got, d.path().join(".claude").canonicalize().unwrap());
     }
 
@@ -196,7 +208,7 @@ mod tests {
     fn user_scope_errors_without_home_or_config_dir() {
         let d = tempfile::tempdir().unwrap();
         let env = env_from(&[]);
-        let result = resolve(Scope::User, d.path(), &env);
+        let result = resolve(Scope::User, Agent::Claude, d.path(), &env);
         assert!(matches!(result, Err(TargetError::NoUserDir)));
     }
 
@@ -207,7 +219,7 @@ mod tests {
         let deep = d.path().join("a/b");
         fs::create_dir_all(&deep).unwrap();
         let env = env_from(&[]);
-        let got = resolve(Scope::Project, &deep, &env).unwrap();
+        let got = resolve(Scope::Project, Agent::Claude, &deep, &env).unwrap();
         assert_eq!(got, d.path().canonicalize().unwrap().join(".claude"));
     }
 
@@ -215,7 +227,7 @@ mod tests {
     fn project_scope_falls_back_to_cwd_without_a_git_root() {
         let d = tempfile::tempdir().unwrap();
         let env = env_from(&[]);
-        let got = resolve(Scope::Project, d.path(), &env).unwrap();
+        let got = resolve(Scope::Project, Agent::Claude, d.path(), &env).unwrap();
         assert_eq!(got, d.path().canonicalize().unwrap().join(".claude"));
     }
 
@@ -322,6 +334,21 @@ mod tests {
         assert!(matches!(result, Err(TargetError::NotItemsRepo(_))));
     }
 
+    #[test]
+    fn gemini_and_antigravity_have_their_own_dirs() {
+        let d = tempfile::tempdir().unwrap();
+        let env = env_from(&[("HOME", d.path().to_str().unwrap())]);
+        let base = d.path().canonicalize().unwrap();
+        let at = |scope, agent| resolve(scope, agent, d.path(), &env).unwrap();
+        assert_eq!(at(Scope::User, Agent::Gemini), base.join(".gemini"));
+        assert_eq!(
+            at(Scope::User, Agent::Antigravity),
+            base.join(".gemini/antigravity")
+        );
+        assert_eq!(at(Scope::Project, Agent::Gemini), base.join(".gemini"));
+        assert_eq!(at(Scope::Project, Agent::Antigravity), base.join(".agents"));
+    }
+
     // Review Focus 2
     #[test]
     fn a_symlinked_target_directory_is_canonicalized() {
@@ -332,7 +359,7 @@ mod tests {
         fs::create_dir_all(link.parent().unwrap()).unwrap();
         symlink(&real, &link).unwrap();
         let env = env_from(&[("HOME", d.path().join("home").to_str().unwrap())]);
-        let got = resolve(Scope::User, d.path(), &env).unwrap();
+        let got = resolve(Scope::User, Agent::Claude, d.path(), &env).unwrap();
         assert_eq!(got, real.canonicalize().unwrap());
     }
 }

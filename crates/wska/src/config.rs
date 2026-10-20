@@ -121,6 +121,20 @@ impl InstallerScope {
 pub struct Installer {
     pub command: String,
     pub scope: InstallerScope,
+    /// The same tool set up for another agent. Absent: Claude Code only,
+    /// skipped for that agent.
+    #[serde(default)]
+    pub gemini: Option<Setup>,
+    #[serde(default)]
+    pub antigravity: Option<Setup>,
+}
+
+/// An installer's command and scope for one non-Claude agent: they differ
+/// per agent (rtk sets up Gemini CLI globally only).
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+pub struct Setup {
+    pub command: String,
+    pub scope: InstallerScope,
 }
 
 pub fn load_profiles(path: &Path) -> Result<Profiles, ConfigError> {
@@ -340,6 +354,29 @@ licence = "Apache-2.0"
         let (_d, p) = tmp("[installers.judge]\ncommand = \"true\"\nscope = \"any\"\n");
         let got = load_vendor(&p).unwrap();
         assert_eq!(got.installers["judge"].scope, InstallerScope::Any);
+    }
+
+    #[test]
+    fn parses_per_agent_installer_setups() {
+        let (_d, p) = tmp(r#"
+[installers.rtk]
+command = "rtk init"
+scope = "project"
+
+[installers.rtk.gemini]
+command = "rtk init -g --gemini"
+scope = "user"
+"#);
+        let got = load_vendor(&p).unwrap();
+        let rtk = &got.installers["rtk"];
+        assert_eq!(
+            rtk.gemini,
+            Some(Setup {
+                command: "rtk init -g --gemini".into(),
+                scope: InstallerScope::User,
+            })
+        );
+        assert_eq!(rtk.antigravity, None);
     }
 
     #[test]

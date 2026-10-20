@@ -1,4 +1,4 @@
-use crate::cli::Scope;
+use crate::cli::{Agent, Scope};
 use crate::item::{Item, Kind};
 use crate::ownership::{classify, Entry};
 use std::collections::{BTreeMap, BTreeSet};
@@ -23,7 +23,8 @@ pub enum Action {
         /// command can reference files here (`uv tool install "$WSKA_REPO/judge"`).
         repo_root: PathBuf,
     },
-    SkipInstaller {
+    /// An installer not run, or an item the agent has no place for.
+    Skip {
         name: String,
         reason: String,
     },
@@ -65,6 +66,7 @@ pub fn build(
     target: &Path,
     repo_root: &Path,
     scope: Scope,
+    agent: Agent,
     run_installers: bool,
 ) -> io::Result<Plan> {
     let mut plan = Plan::default();
@@ -75,6 +77,16 @@ pub fn build(
             continue;
         };
         match item {
+            // Other agents' subagent and MCP formats differ from Claude Code's.
+            Item::Linked { kind, .. } if agent != Agent::Claude && *kind != Kind::Skill => {
+                plan.actions.push(Action::Skip {
+                    name: name.clone(),
+                    reason: format!(
+                        "{} are Claude Code only, not linked for {agent:?}",
+                        kind.subdir()
+                    ),
+                });
+            }
             Item::Linked { kind, path, .. } => {
                 let at = target.join(kind.subdir()).join(name);
                 match classify(&at, repo_root, Some(path))? {
@@ -103,10 +115,26 @@ pub fn build(
             Item::Installer {
                 command,
                 scope: want,
+                gemini,
+                antigravity,
                 ..
             } => {
+                let setup = match agent {
+                    Agent::Claude => Some((command, *want)),
+                    Agent::Gemini => gemini.as_ref().map(|s| (&s.command, s.scope)),
+                    Agent::Antigravity => antigravity.as_ref().map(|s| (&s.command, s.scope)),
+                };
+                let Some((command, want)) = setup else {
+                    plan.actions.push(Action::Skip {
+                        name: name.clone(),
+                        reason: format!(
+                            "vendor.toml declares no {agent:?} setup, Claude Code only"
+                        ),
+                    });
+                    continue;
+                };
                 if !want.admits(scope) {
-                    plan.actions.push(Action::SkipInstaller {
+                    plan.actions.push(Action::Skip {
                         name: name.clone(),
                         reason: format!("declared for {want:?} scope, invoked at {scope:?}"),
                     });
@@ -118,7 +146,7 @@ pub fn build(
                         repo_root: repo_root.to_path_buf(),
                     });
                 } else {
-                    plan.actions.push(Action::SkipInstaller {
+                    plan.actions.push(Action::Skip {
                         name: name.clone(),
                         reason: "installers run only with --run-installers".to_string(),
                     });
@@ -222,6 +250,7 @@ mod tests {
             &f.target,
             &f.repo,
             Scope::Project,
+            Agent::Claude,
             false,
         )
         .unwrap();
@@ -244,6 +273,7 @@ mod tests {
             &f.target,
             &f.repo,
             Scope::Project,
+            Agent::Claude,
             false,
         )
         .unwrap();
@@ -260,6 +290,7 @@ mod tests {
             &f.target,
             &f.repo,
             Scope::Project,
+            Agent::Claude,
             false,
         )
         .unwrap();
@@ -279,6 +310,7 @@ mod tests {
             &f.target,
             &f.repo,
             Scope::Project,
+            Agent::Claude,
             false,
         )
         .unwrap();
@@ -298,6 +330,7 @@ mod tests {
             &f.target,
             &f.repo,
             Scope::Project,
+            Agent::Claude,
             false,
         )
         .unwrap();
@@ -315,6 +348,7 @@ mod tests {
             &f.target,
             &f.repo,
             Scope::Project,
+            Agent::Claude,
             false,
         )
         .unwrap();
@@ -337,6 +371,7 @@ mod tests {
             &f.target,
             &f.repo,
             Scope::Project,
+            Agent::Claude,
             false,
         )
         .unwrap();
@@ -375,6 +410,7 @@ mod tests {
             &f.target,
             &f.repo,
             Scope::Project,
+            Agent::Claude,
             false,
         )
         .unwrap();
@@ -403,6 +439,11 @@ mod tests {
                 name: "bmad".into(),
                 command: "echo hi".into(),
                 scope: InstallerScope::Project,
+                gemini: Some(crate::config::Setup {
+                    command: "echo gemini".into(),
+                    scope: InstallerScope::User,
+                }),
+                antigravity: None,
             },
         );
         map
@@ -417,10 +458,11 @@ mod tests {
             &f.target,
             &f.repo,
             Scope::Project,
+            Agent::Claude,
             false,
         )
         .unwrap();
-        assert!(matches!(plan.actions[0], Action::SkipInstaller { .. }));
+        assert!(matches!(plan.actions[0], Action::Skip { .. }));
         assert!(plan.validate().is_ok());
     }
 
@@ -433,6 +475,7 @@ mod tests {
             &f.target,
             &f.repo,
             Scope::Project,
+            Agent::Claude,
             true,
         )
         .unwrap();
@@ -448,11 +491,85 @@ mod tests {
             &f.target,
             &f.repo,
             Scope::User,
+            Agent::Claude,
             true,
         )
         .unwrap();
-        assert!(matches!(plan.actions[0], Action::SkipInstaller { .. }));
+        assert!(matches!(plan.actions[0], Action::Skip { .. }));
         assert!(plan.validate().is_ok());
+    }
+
+    #[test]
+    fn gemini_links_skills_and_skips_agents_and_installers() {
+        let f = fx(&["ponytail"]);
+        let mut map = bmad_map();
+        map.extend(items(&f.repo, &["ponytail"]));
+        map.insert(
+            "doc-review".to_string(),
+            Item::Linked {
+                name: "doc-review".into(),
+                kind: Kind::Agent,
+                path: f.repo.join("agents/doc-review"),
+            },
+        );
+        let plan = build(
+            &map,
+            &set(&["bmad", "doc-review", "ponytail"]),
+            &f.target,
+            &f.repo,
+            Scope::Project,
+            Agent::Gemini,
+            true,
+        )
+        .unwrap();
+        let skipped: Vec<&str> = plan
+            .actions
+            .iter()
+            .filter_map(|a| match a {
+                Action::Skip { name, .. } => Some(name.as_str()),
+                _ => None,
+            })
+            .collect();
+        assert_eq!(skipped, ["bmad", "doc-review"]);
+        assert!(plan
+            .actions
+            .iter()
+            .any(|a| matches!(a, Action::Link { to, .. } if to.ends_with("skills/ponytail"))));
+    }
+
+    #[test]
+    fn an_installer_runs_its_own_command_and_scope_per_agent() {
+        let f = fx(&[]);
+        let run = |scope, agent| {
+            let plan = build(
+                &bmad_map(),
+                &set(&["bmad"]),
+                &f.target,
+                &f.repo,
+                scope,
+                agent,
+                true,
+            )
+            .unwrap();
+            match &plan.actions[0] {
+                Action::RunInstaller { command, .. } => Some(command.clone()),
+                _ => None,
+            }
+        };
+        assert_eq!(
+            run(Scope::User, Agent::Gemini).as_deref(),
+            Some("echo gemini")
+        );
+        assert_eq!(
+            run(Scope::Project, Agent::Gemini),
+            None,
+            "gemini setup is user-scoped"
+        );
+        assert_eq!(
+            run(Scope::Project, Agent::Antigravity),
+            None,
+            "no antigravity setup"
+        );
     }
 
     #[test]
@@ -465,10 +582,21 @@ mod tests {
                 name: "judge".into(),
                 command: "true".into(),
                 scope: InstallerScope::Any,
+                gemini: None,
+                antigravity: None,
             },
         );
         for scope in [Scope::Project, Scope::User] {
-            let plan = build(&map, &set(&["judge"]), &f.target, &f.repo, scope, true).unwrap();
+            let plan = build(
+                &map,
+                &set(&["judge"]),
+                &f.target,
+                &f.repo,
+                scope,
+                Agent::Claude,
+                true,
+            )
+            .unwrap();
             match &plan.actions[0] {
                 Action::RunInstaller { repo_root, .. } => assert_eq!(repo_root, &f.repo),
                 other => panic!("expected RunInstaller at {scope:?}, got {other:?}"),

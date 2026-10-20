@@ -108,7 +108,7 @@ pub fn apply(plan: &Plan, dry_run: bool) -> Result<Applied, ApplyError> {
                 }
                 done.installers_run.push(name.clone());
             }
-            Action::SkipInstaller { name, reason } => {
+            Action::Skip { name, reason } => {
                 println!("skip   {name}: {reason}");
                 done.skipped.push(name.clone());
             }

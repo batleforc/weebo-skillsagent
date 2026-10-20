@@ -112,6 +112,8 @@ mod tests {
                 name: "bmad".into(),
                 command: "true".into(),
                 scope: InstallerScope::Project,
+                gemini: None,
+                antigravity: None,
             },
         );
 

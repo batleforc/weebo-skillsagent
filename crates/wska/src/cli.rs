@@ -4,9 +4,13 @@ use clap::{Parser, Subcommand, ValueEnum};
 #[command(
     name = "wska",
     version,
-    about = "Link this repo's skills into a Claude Code target"
+    about = "Link this repo's skills into a Claude Code, Gemini CLI or Antigravity target"
 )]
 pub struct Cli {
+    /// Which agent's directory to link into. Gemini CLI and Antigravity get skills only:
+    /// agents, MCP servers and installers are Claude Code formats
+    #[arg(long, global = true, value_enum, default_value_t = Agent::Claude)]
+    pub agent: Agent,
     #[command(subcommand)]
     pub command: Command,
 }
@@ -109,6 +113,13 @@ pub enum Scope {
     User,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, ValueEnum)]
+pub enum Agent {
+    Claude,
+    Gemini,
+    Antigravity,
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -144,6 +155,13 @@ mod tests {
             }
             other => panic!("expected Install, got {other:?}"),
         }
+        assert_eq!(cli.agent, Agent::Claude);
+    }
+
+    #[test]
+    fn agent_is_accepted_after_the_subcommand() {
+        let cli = Cli::parse_from(["wska", "status", "--agent", "antigravity"]);
+        assert_eq!(cli.agent, Agent::Antigravity);
     }
 
     #[test]
