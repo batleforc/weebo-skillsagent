@@ -177,6 +177,8 @@ writes into this repo as its own target.
 
 - [`docs/judge.md`](docs/judge.md) — the judge CLI: rfc-ready, doc-review, the
   report and exit-code contract, question files.
+- [`docs/guide.md`](docs/guide.md) — wska by use case, from a new project
+  to troubleshooting.
 - [`docs/wska.md`](docs/wska.md) — CLI and config reference: every command, the
   ownership model, both TOML schemas, sync semantics, exit codes.
 - [`docs/superpowers/`](docs/superpowers/) — the design spec, the implementation

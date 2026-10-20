@@ -1,5 +1,7 @@
 # wska — reference
 
+Looking for *how do I…*? Start with the [guide by use case](guide.md).
+
 `wska` links this repo's items into a Claude Code target. One binary,
 `crates/wska`, wrapped by the tasks in `.tasks/skills.yaml`.
 
@@ -50,6 +52,12 @@ its own `wska.toml`, so `wska install --agent gemini` with no profile re-applies
 the Gemini selection only. Gemini CLI also reads `.agents/skills/`, so in a
 project linked for both, it sees each skill twice; the copies are the same
 links, so it does not matter which one wins.
+
+The Task wrappers take it as `AGENT` (default `claude`): `task skills:install AGENT=gemini PROFILE=base`.
+
+On Windows, linking needs Developer Mode (or an elevated shell), `HOME` must be
+set (wska does not read `USERPROFILE`), and installers need `sh` on PATH (Git
+for Windows), since every installer command runs through `sh -c`.
 
 Target directories are canonicalized before anything is compared, so a
 symlinked `~/.claude` still matches the links written through it.
@@ -452,7 +460,8 @@ task release              # cog bump --auto: sets crates/wska version, updates C
 ```
 
 The workflow runs the tests, then builds `wska` for `x86_64-unknown-linux-musl`,
-`aarch64-unknown-linux-musl` and `aarch64-apple-darwin` and attaches each as
+`aarch64-unknown-linux-musl`, `aarch64-apple-darwin` and `x86_64-pc-windows-msvc`
+and attaches each as
 `wska-<target>.tar.gz` to the GitHub release for the tag. That naming is what
 `mise use github:…` looks for.
 

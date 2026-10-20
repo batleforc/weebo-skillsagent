@@ -3,6 +3,7 @@ version: "3"
 vars:
   WSKA: '{{.WSKA | default "cargo run --quiet -p wska --"}}'
   SCOPE: '{{.SCOPE | default "project"}}'
+  AGENT: '{{.AGENT | default "claude"}}'
 
 tasks:
   build:
@@ -11,50 +12,50 @@ tasks:
       - cargo build --release -p wska
 
   install:
-    desc: "Link profiles and single items into a target, recorded in its .claude/wska.toml with any extra items repos; with neither, re-apply that file (usage: task skills:install [PROFILE=base,planning] [ITEM=weebo-techdoc] [REPO=<git url>] [SCOPE=project|user] [RUN_INSTALLERS=0])"
+    desc: "Link profiles and single items into a target, recorded in its .claude/wska.toml with any extra items repos; with neither, re-apply that file (usage: task skills:install [PROFILE=base,planning] [ITEM=weebo-techdoc] [REPO=<git url>] [SCOPE=project|user] [AGENT=claude|gemini|antigravity] [RUN_INSTALLERS=0])"
     vars:
       # Installers (bmad, graphify) write project-coupled state that cannot be
       # symlinked, so skipping them leaves those items installed nowhere.
       # RUN_INSTALLERS=0 opts out when you only want the links.
       RUN_INSTALLERS: '{{.RUN_INSTALLERS | default "1"}}'
     cmds:
-      - '{{.WSKA}} install{{if .PROFILE}}{{range splitList "," .PROFILE}} --profile {{.}}{{end}}{{end}}{{if .ITEM}}{{range splitList "," .ITEM}} --item {{.}}{{end}}{{end}}{{if .REPO}}{{range splitList "," .REPO}} --repo {{.}}{{end}}{{end}} --scope {{.SCOPE}} {{if ne .RUN_INSTALLERS "0"}}--run-installers{{end}}'
+      - '{{.WSKA}} --agent {{.AGENT}} install{{if .PROFILE}}{{range splitList "," .PROFILE}} --profile {{.}}{{end}}{{end}}{{if .ITEM}}{{range splitList "," .ITEM}} --item {{.}}{{end}}{{end}}{{if .REPO}}{{range splitList "," .REPO}} --repo {{.}}{{end}}{{end}} --scope {{.SCOPE}} {{if ne .RUN_INSTALLERS "0"}}--run-installers{{end}}'
 
   add:
-    desc: "Add profiles, single items or extra items repos to the target's .claude/wska.toml and install the whole selection (usage: task skills:add [PROFILE=design] [ITEM=weebo-techdoc] [REPO=<git url>] [SCOPE=project|user] [RUN_INSTALLERS=0])"
+    desc: "Add profiles, single items or extra items repos to the target's .claude/wska.toml and install the whole selection (usage: task skills:add [PROFILE=design] [ITEM=weebo-techdoc] [REPO=<git url>] [SCOPE=project|user] [AGENT=claude|gemini|antigravity] [RUN_INSTALLERS=0])"
     vars:
       RUN_INSTALLERS: '{{.RUN_INSTALLERS | default "1"}}'
     cmds:
-      - '{{.WSKA}} add{{if .PROFILE}}{{range splitList "," .PROFILE}} --profile {{.}}{{end}}{{end}}{{if .ITEM}}{{range splitList "," .ITEM}} --item {{.}}{{end}}{{end}}{{if .REPO}}{{range splitList "," .REPO}} --repo {{.}}{{end}}{{end}} --scope {{.SCOPE}} {{if ne .RUN_INSTALLERS "0"}}--run-installers{{end}}'
+      - '{{.WSKA}} --agent {{.AGENT}} add{{if .PROFILE}}{{range splitList "," .PROFILE}} --profile {{.}}{{end}}{{end}}{{if .ITEM}}{{range splitList "," .ITEM}} --item {{.}}{{end}}{{end}}{{if .REPO}}{{range splitList "," .REPO}} --repo {{.}}{{end}}{{end}} --scope {{.SCOPE}} {{if ne .RUN_INSTALLERS "0"}}--run-installers{{end}}'
 
   remove:
-    desc: "Remove profiles, single items or extra items repos from the target's .claude/wska.toml and install what is left (usage: task skills:remove [PROFILE=design] [ITEM=weebo-techdoc] [REPO=<git url>] [SCOPE=project|user] [RUN_INSTALLERS=0])"
+    desc: "Remove profiles, single items or extra items repos from the target's .claude/wska.toml and install what is left (usage: task skills:remove [PROFILE=design] [ITEM=weebo-techdoc] [REPO=<git url>] [SCOPE=project|user] [AGENT=claude|gemini|antigravity] [RUN_INSTALLERS=0])"
     vars:
       RUN_INSTALLERS: '{{.RUN_INSTALLERS | default "1"}}'
     cmds:
-      - '{{.WSKA}} remove{{if .PROFILE}}{{range splitList "," .PROFILE}} --profile {{.}}{{end}}{{end}}{{if .ITEM}}{{range splitList "," .ITEM}} --item {{.}}{{end}}{{end}}{{if .REPO}}{{range splitList "," .REPO}} --repo {{.}}{{end}}{{end}} --scope {{.SCOPE}} {{if ne .RUN_INSTALLERS "0"}}--run-installers{{end}}'
+      - '{{.WSKA}} --agent {{.AGENT}} remove{{if .PROFILE}}{{range splitList "," .PROFILE}} --profile {{.}}{{end}}{{end}}{{if .ITEM}}{{range splitList "," .ITEM}} --item {{.}}{{end}}{{end}}{{if .REPO}}{{range splitList "," .REPO}} --repo {{.}}{{end}}{{end}} --scope {{.SCOPE}} {{if ne .RUN_INSTALLERS "0"}}--run-installers{{end}}'
 
   update:
-    desc: "Pull the items repos, then re-install the given profiles/items, else the target's .claude/wska.toml if any (usage: task skills:update [PROFILE=base,planning] [ITEM=weebo-techdoc] [SCOPE=project|user] [RUN_INSTALLERS=0])"
+    desc: "Pull the items repos, then re-install the given profiles/items, else the target's .claude/wska.toml if any (usage: task skills:update [PROFILE=base,planning] [ITEM=weebo-techdoc] [SCOPE=project|user] [AGENT=claude|gemini|antigravity] [RUN_INSTALLERS=0])"
     vars:
       RUN_INSTALLERS: '{{.RUN_INSTALLERS | default "1"}}'
     cmds:
-      - '{{.WSKA}} update{{if .PROFILE}}{{range splitList "," .PROFILE}} --profile {{.}}{{end}}{{end}}{{if .ITEM}}{{range splitList "," .ITEM}} --item {{.}}{{end}}{{end}} --scope {{.SCOPE}} {{if ne .RUN_INSTALLERS "0"}}--run-installers{{end}}'
+      - '{{.WSKA}} --agent {{.AGENT}} update{{if .PROFILE}}{{range splitList "," .PROFILE}} --profile {{.}}{{end}}{{end}}{{if .ITEM}}{{range splitList "," .ITEM}} --item {{.}}{{end}}{{end}} --scope {{.SCOPE}} {{if ne .RUN_INSTALLERS "0"}}--run-installers{{end}}'
 
   status:
-    desc: "Show what is linked in a target (usage: task skills:status [SCOPE=project|user])"
+    desc: "Show what is linked in a target (usage: task skills:status [SCOPE=project|user] [AGENT=claude|gemini|antigravity])"
     cmds:
-      - '{{.WSKA}} status --scope {{.SCOPE}}'
+      - '{{.WSKA}} --agent {{.AGENT}} status --scope {{.SCOPE}}'
 
   list:
-    desc: "Table of items and their profiles; PROFILES=1 for profiles, RECORDED=1 for the target's .claude/wska.toml (usage: task skills:list [PROFILES=1|RECORDED=1] [SCOPE=project|user])"
+    desc: "Table of items and their profiles; PROFILES=1 for profiles, RECORDED=1 for the target's .claude/wska.toml (usage: task skills:list [PROFILES=1|RECORDED=1] [SCOPE=project|user] [AGENT=claude|gemini|antigravity] [AGENT=claude|gemini|antigravity])"
     cmds:
-      - '{{.WSKA}} list {{if .PROFILES}}--profiles{{end}}{{if .RECORDED}}--recorded --scope {{.SCOPE}}{{end}}'
+      - '{{.WSKA}} --agent {{.AGENT}} list {{if .PROFILES}}--profiles{{end}}{{if .RECORDED}}--recorded --scope {{.SCOPE}}{{end}}'
 
   doctor:
-    desc: "Check every item can work here: required tools on PATH and a usable SKILL.md, extra repos of the target's wska.toml included (usage: task skills:doctor [SCOPE=project|user])"
+    desc: "Check every item can work here: required tools on PATH and a usable SKILL.md, extra repos of the target's wska.toml included (usage: task skills:doctor [SCOPE=project|user] [AGENT=claude|gemini|antigravity])"
     cmds:
-      - '{{.WSKA}} doctor --scope {{.SCOPE}}'
+      - '{{.WSKA}} --agent {{.AGENT}} doctor --scope {{.SCOPE}}'
 
   sync:
     desc: "Refresh vendored sources from upstream (usage: task skills:sync [SOURCE=impeccable])"

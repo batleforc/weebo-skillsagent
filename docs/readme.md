@@ -4,6 +4,9 @@ Plain markdown, no static site — this is a single-CLI repo and a reference pag
 plus the design history is the whole of it. Switch to
 [fumadocs](https://fumadocs.dev/) if that ever stops being true.
 
+- [`guide.md`](guide.md) — wska by use case: new project, fresh clone,
+  user scope, Gemini CLI / Antigravity, editing, authoring or vendoring a
+  skill, team repos, CI, Windows, troubleshooting.
 - [`wska.md`](wska.md) — CLI and config reference. Every command and its exit
   codes, using it from another project, cutting a release, the ownership rules that decide what `wska` will and will not touch,
   the `profiles.toml` and `vendor.toml` schemas, and how `sync` treats a locally

@@ -5094,9 +5094,9 @@
     "semantic_hash": ""
   },
   "docs/readme.md": {
-    "mtime": 1792245408.6450465,
-    "seen": 1792489192.1259532,
-    "ast_hash": "ada146a1f5c72a5a2b93ef19966bcfa6",
+    "mtime": 1792496795.359699,
+    "seen": 1792496804.00559,
+    "ast_hash": "525f86620cc44e2b85f297af21fa0d70",
     "semantic_hash": ""
   },
   "docs/superpowers/2026-10-15-wska-deferred-findings.md": {
@@ -5142,9 +5142,9 @@
     "semantic_hash": ""
   },
   "docs/wska.md": {
-    "mtime": 1792496338.1012628,
-    "seen": 1792496351.6959667,
-    "ast_hash": "9f2c23ca789085f9010978427936813e",
+    "mtime": 1792496795.3595345,
+    "seen": 1792496804.0056922,
+    "ast_hash": "b431c2bfb12fcf7b53b4124077ab78c9",
     "semantic_hash": ""
   },
   "judge/src/judge/questions/finding-filter.yaml": {
@@ -5166,9 +5166,9 @@
     "semantic_hash": ""
   },
   "readme.md": {
-    "mtime": 1792317093.1018105,
-    "seen": 1792489192.1259751,
-    "ast_hash": "9e654e60898c0071d319808dfeb5d689",
+    "mtime": 1792496795.3598566,
+    "seen": 1792496804.005743,
+    "ast_hash": "835106af853b826a00ac5766c460b8da",
     "semantic_hash": ""
   },
   "skills/3dviz-pro-max/SKILL.md": {
@@ -6837,6 +6837,12 @@
     "mtime": 1792246692.7329729,
     "seen": 1792489192.1264133,
     "ast_hash": "2ff009a73e1069571ee34d1b269fe828",
+    "semantic_hash": ""
+  },
+  "docs/guide.md": {
+    "mtime": 1792496795.3591335,
+    "seen": 1792496804.0055752,
+    "ast_hash": "303040bc778cd6b2d77b1e81de369ab7",
     "semantic_hash": ""
   }
 }
