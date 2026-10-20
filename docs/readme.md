@@ -4,6 +4,11 @@ Plain markdown, no static site — this is a single-CLI repo and a reference pag
 plus the design history is the whole of it. Switch to
 [fumadocs](https://fumadocs.dev/) if that ever stops being true.
 
+Published at <https://batleforc.github.io/weebo-skillsagent/> by
+[`docs.yml`](https://github.com/batleforc/weebo-skillsagent/blob/main/.github/workflows/docs.yml)
+on every push to `main` that touches `docs/`; GitHub Pages' Jekyll renders
+the markdown as-is, so links between docs stay relative `.md` links.
+
 - [`guide.md`](guide.md) — wska by use case: new project, fresh clone,
   user scope, Gemini CLI / Antigravity, editing, authoring or vendoring a
   skill, team repos, CI, Windows, troubleshooting.
@@ -26,4 +31,5 @@ plus the design history is the whole of it. Switch to
     reformatting vendored skills.
 
 For the repo itself — what it holds, the profiles, the quick start — see the
-[root readme](../readme.md).
+[root readme](https://github.com/batleforc/weebo-skillsagent#readme)
+(absolute, since the published site only holds `docs/`).
