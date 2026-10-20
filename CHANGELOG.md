@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## [v0.14.0](https://github.com/batleforc/weebo-skillsagent/compare/200012eb81d14c0ae6f00f521af34877c8c10430..v0.14.0) - 2026-10-20
+#### Features
+- further improve handling of gemini - ([200012e](https://github.com/batleforc/weebo-skillsagent/commit/200012eb81d14c0ae6f00f521af34877c8c10430)) - Max Batleforc
+
+- - -
+
 ## [v0.13.0](https://github.com/batleforc/weebo-skillsagent/compare/53d885771dea677397b2cbe88ab3a9ffaf58c752..v0.13.0) - 2026-10-20
 #### Features
 - mise en place gemini / agy - ([53d8857](https://github.com/batleforc/weebo-skillsagent/commit/53d885771dea677397b2cbe88ab3a9ffaf58c752)) - Max Batleforc
