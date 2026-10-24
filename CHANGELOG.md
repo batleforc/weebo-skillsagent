@@ -2,6 +2,20 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## [v0.15.0](https://github.com/batleforc/weebo-skillsagent/compare/68a4693f381ff07d11a07afeaf1a826ec89e51b9..v0.15.0) - 2026-10-24
+#### Features
+- (**skills**) add weebo-deps dependency hygiene skill - ([b9d4daf](https://github.com/batleforc/weebo-skillsagent/commit/b9d4daf0326772280041eee5779817ed8cd9f724)) - Max Batleforc, Claude Opus 5.5
+- (**wska**) keep linked items out of the project's git - ([0b3f6e1](https://github.com/batleforc/weebo-skillsagent/commit/0b3f6e1b497bfd6f073462385536bbdb816b92c5)) - Max Batleforc, Claude Opus 5.5
+- (**wska**) installers can declare an update command - ([1a94704](https://github.com/batleforc/weebo-skillsagent/commit/1a947048d8462aeb9e90d743f3975b852ce1d67f)) - Max Batleforc, Claude Opus 5.5
+- mise en place doc - ([65ea6c4](https://github.com/batleforc/weebo-skillsagent/commit/65ea6c4a3e4b649ab61da748fea29b1006a1b139)) - Max Batleforc
+- mise en place publish doc - ([68a4693](https://github.com/batleforc/weebo-skillsagent/commit/68a4693f381ff07d11a07afeaf1a826ec89e51b9)) - Max Batleforc
+#### Continuous Integration
+- weekly vendor-sync workflow opening a PR with upstream skill updates - ([7e77c19](https://github.com/batleforc/weebo-skillsagent/commit/7e77c198ffd9038c7ab0c9c34165170e3fbd9b5d)) - Max Batleforc, Claude Opus 5.5
+#### Miscellaneous Chores
+- (**deps**) refresh mise.lock - ([a77e05c](https://github.com/batleforc/weebo-skillsagent/commit/a77e05cac8e40fdc54004e9a11a4ad002e7477d8)) - Max Batleforc, Claude Opus 5.5
+
+- - -
+
 ## [v0.14.0](https://github.com/batleforc/weebo-skillsagent/compare/200012eb81d14c0ae6f00f521af34877c8c10430..v0.14.0) - 2026-10-20
 #### Features
 - further improve handling of gemini - ([200012e](https://github.com/batleforc/weebo-skillsagent/commit/200012eb81d14c0ae6f00f521af34877c8c10430)) - Max Batleforc
