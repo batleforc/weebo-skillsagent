@@ -107,6 +107,34 @@ pub fn install(
     cwd: &Path,
     env: &dyn Fn(&str) -> Option<String>,
 ) -> Result<Applied, AppError> {
+    install_with(
+        repo_root,
+        selection,
+        scope,
+        agent,
+        dry_run,
+        plan::Installers::install_if(run_installers),
+        cwd,
+        env,
+    )
+}
+
+/// `install`, with installers run as `installers` says: `update` runs their
+/// update commands instead.
+#[expect(
+    clippy::too_many_arguments,
+    reason = "flat CLI options; a struct would only rename them"
+)]
+fn install_with(
+    repo_root: &Path,
+    selection: &Selection,
+    scope: Scope,
+    agent: Agent,
+    dry_run: bool,
+    installers: plan::Installers,
+    cwd: &Path,
+    env: &dyn Fn(&str) -> Option<String>,
+) -> Result<Applied, AppError> {
     let target_dir = target::resolve(scope, agent, cwd, env)?;
     let recorded = Selection::load(&target_dir)?;
     // Repos are a registry, not a choice: naming profiles anew keeps them.
@@ -123,14 +151,7 @@ pub fn install(
         .merged(selection)
     };
     apply_selection(
-        repo_root,
-        &selection,
-        scope,
-        agent,
-        dry_run,
-        run_installers,
-        cwd,
-        env,
+        repo_root, &selection, scope, agent, dry_run, installers, cwd, env,
     )
 }
 
@@ -146,7 +167,7 @@ fn apply_selection(
     scope: Scope,
     agent: Agent,
     dry_run: bool,
-    run_installers: bool,
+    installers: plan::Installers,
     cwd: &Path,
     env: &dyn Fn(&str) -> Option<String>,
 ) -> Result<Applied, AppError> {
@@ -179,7 +200,7 @@ fn apply_selection(
         &reg.owned,
         scope,
         agent,
-        run_installers,
+        installers,
     )?;
     if let Err(e) = built.validate() {
         for refusal in &built.refusals {
@@ -324,7 +345,7 @@ pub fn remove(
         scope,
         agent,
         dry_run,
-        run_installers,
+        plan::Installers::install_if(run_installers),
         cwd,
         env,
     )
@@ -333,7 +354,8 @@ pub fn remove(
 /// Pull the items repos, then re-link `selection`, or the target's recorded one
 /// if `selection` is empty. Links are symlinks into the repo, so the pull
 /// alone refreshes linked items; the re-install picks up items newly added to
-/// a profile, and installers. With nothing given and nothing recorded, it
+/// a profile, and installers (their `update` command when they declare one).
+/// With nothing given and nothing recorded, it
 /// only pulls.
 pub fn update(
     repo_root: &Path,
@@ -356,13 +378,17 @@ pub fn update(
     if selection.is_empty() && recorded.is_none() {
         return Ok(None);
     }
-    install(
+    install_with(
         repo_root,
         selection,
         scope,
         agent,
         false,
-        run_installers,
+        if run_installers {
+            plan::Installers::Update
+        } else {
+            plan::Installers::Skip
+        },
         cwd,
         env,
     )

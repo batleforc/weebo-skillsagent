@@ -182,8 +182,13 @@ doc-review      = ["claude", "judge"]
 # install. So the command re-reads the IDEs from bmad's manifest and appends its
 # own. --action update installs fresh too; --yes keeps it unattended and keeps
 # an existing install's settings (a fresh one gets the defaults).
+#
+# `update` is what `wska update` runs instead of `command`; absent, it re-runs
+# `command`. bmad's plain install is interactive, so its update is the
+# unattended `--action update` the other agents already use.
 [installers.bmad]
 command = "npx bmad-method install"
+update  = "npx bmad-method install --yes --action update"
 scope   = "project"
 gemini      = { scope = "project", command = '''ides=$(sed -n '/^ides:/,/^[^ ]/s/^  - //p' _bmad/_config/manifest.yaml 2>/dev/null | grep -vx gemini | paste -sd, -); npx bmad-method install --yes --action update --tools "${ides:+$ides,}gemini"''' }
 antigravity = { scope = "project", command = '''ides=$(sed -n '/^ides:/,/^[^ ]/s/^  - //p' _bmad/_config/manifest.yaml 2>/dev/null | grep -vx antigravity | paste -sd, -); npx bmad-method install --yes --action update --tools "${ides:+$ides,}antigravity"''' }
@@ -203,6 +208,7 @@ antigravity = { scope = "project", command = 'graphify install --project --platf
 # run twice.
 [installers.bmad-gds]
 command = "npx bmad-method install --modules bmm,gds"
+update  = "npx bmad-method install --yes --action update --modules bmm,gds"
 scope   = "project"
 gemini      = { scope = "project", command = '''ides=$(sed -n '/^ides:/,/^[^ ]/s/^  - //p' _bmad/_config/manifest.yaml 2>/dev/null | grep -vx gemini | paste -sd, -); npx bmad-method install --yes --action update --modules bmm,gds --tools "${ides:+$ides,}gemini"''' }
 antigravity = { scope = "project", command = '''ides=$(sed -n '/^ides:/,/^[^ ]/s/^  - //p' _bmad/_config/manifest.yaml 2>/dev/null | grep -vx antigravity | paste -sd, -); npx bmad-method install --yes --action update --modules bmm,gds --tools "${ides:+$ides,}antigravity"''' }
@@ -224,18 +230,21 @@ antigravity = { scope = "project", command = "rtk init --agent antigravity --aut
 # Gemini CLI gets upstream's extension (always-on ruleset + /ponytail commands,
 # no hooks), user-wide only; install refuses one already there, hence uninstall
 # first. Antigravity gets upstream's plugin (skills only); untested here, no `agy`.
+# Re-installing a plugin does not move it: update refreshes the marketplace
+# catalog, then the plugin.
 [installers.ponytail-plugin]
 command = "claude plugin marketplace add DietrichGebert/ponytail --scope project; claude plugin install ponytail@ponytail --scope project"
+update  = "claude plugin marketplace update ponytail; claude plugin update ponytail@ponytail --scope project"
 scope   = "project"
-gemini      = { scope = "user", command = "gemini extensions uninstall ponytail 2>/dev/null; gemini extensions install https://github.com/DietrichGebert/ponytail --consent" }
+gemini      = { scope = "user", command = "gemini extensions uninstall ponytail 2>/dev/null; gemini extensions install https://github.com/DietrichGebert/ponytail --consent", update = "gemini extensions update ponytail" }
 antigravity = { scope = "user", command = "agy plugin install https://github.com/DietrichGebert/ponytail" }
 
 # A Claude Code mod (nicolas-codemate/claude-code-mods, MIT): mods ship as
 # plugins, so a mod is an installer like ponytail-plugin. diff-review is the
 # /diff-review pane: uncommitted, PR and per-commit diffs, ask Claude per line.
-# Upstream doesn't auto-update: `claude plugin marketplace update codemate-mods`.
 [installers.diff-review]
 command = "claude plugin marketplace add nicolas-codemate/claude-code-mods --scope project; claude plugin install diff-review@codemate-mods --scope project"
+update  = "claude plugin marketplace update codemate-mods; claude plugin update diff-review@codemate-mods --scope project"
 scope   = "project"
 
 # mlab.sh's remote MCP server (https://github.com/mlab-sh/mcp, MIT listing,

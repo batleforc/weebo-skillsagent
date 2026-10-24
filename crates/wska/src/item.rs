@@ -34,6 +34,7 @@ pub enum Item {
     Installer {
         name: String,
         command: String,
+        update: Option<String>,
         scope: InstallerScope,
         gemini: Option<Setup>,
         antigravity: Option<Setup>,
@@ -118,6 +119,7 @@ pub fn scan(repo_root: &Path, vendor: &Vendor) -> Result<BTreeMap<String, Item>,
             Item::Installer {
                 name: name.clone(),
                 command: installer.command.clone(),
+                update: installer.update.clone(),
                 scope: installer.scope,
                 gemini: installer.gemini.clone(),
                 antigravity: installer.antigravity.clone(),
@@ -197,6 +199,7 @@ mod tests {
             name.to_string(),
             Installer {
                 command: "echo hi".into(),
+                update: None,
                 scope,
                 gemini: None,
                 antigravity: None,

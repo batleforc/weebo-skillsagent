@@ -164,6 +164,10 @@ removed from a profile upstream. With nothing given and no `wska.toml`, the
 pull is all it does — links are live, so pulled edits to existing skills
 already apply.
 
+With `--run-installers`, each installer runs its `update` command when it
+declares one (`claude plugin update` for a plugin, which a re-install would not
+move), else its install `command` again.
+
 Passing profiles or items replaces the recorded selection (use `add` to
 extend it), with the same
 declarative rule as `install`: whatever is not named is unlinked. There is no
@@ -325,6 +329,10 @@ arriving without a licence fails the audit.
 
 After a sync, read `git diff skills/` before committing — upstream content lands
 in your tree unreviewed.
+
+The `vendor-sync` workflow runs `task skills:sync` every Monday (or on demand)
+and opens or refreshes a single PR on `chore/vendor-sync` when anything moved,
+with the sync output as its body. That diff still needs the same review.
 
 ### `completions`
 
@@ -579,8 +587,14 @@ the marketplace is already declared:
 ```toml
 [installers.ponytail-plugin]
 command = "claude plugin marketplace add DietrichGebert/ponytail --scope project; claude plugin install ponytail@ponytail --scope project"
+update  = "claude plugin marketplace update ponytail; claude plugin update ponytail@ponytail --scope project"
 scope   = "project"
 ```
+
+`update` is optional and is what `wska update` runs instead of `command`;
+without it, `update` re-runs `command`, which is enough for an idempotent setup
+(rtk, graphify) whose binary mise or uv upgrades. A `gemini` or `antigravity`
+setup takes its own `update` key too.
 
 An installer runs for Claude Code only, unless it declares a `gemini` or
 `antigravity` setup: that agent's own command and scope, since they differ

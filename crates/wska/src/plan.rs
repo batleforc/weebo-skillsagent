@@ -30,6 +30,26 @@ pub enum Action {
     },
 }
 
+/// What to do with installers: leave them, run their install command, or
+/// their update command (falling back to install when none is declared).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Installers {
+    Skip,
+    Install,
+    Update,
+}
+
+impl Installers {
+    /// `--run-installers` as passed to install/add/remove.
+    pub fn install_if(run: bool) -> Self {
+        if run {
+            Installers::Install
+        } else {
+            Installers::Skip
+        }
+    }
+}
+
 #[derive(Debug)]
 pub struct Refusal {
     pub path: PathBuf,
@@ -67,7 +87,7 @@ pub fn build(
     owned: &[PathBuf],
     scope: Scope,
     agent: Agent,
-    run_installers: bool,
+    installers: Installers,
 ) -> io::Result<Plan> {
     let mut plan = Plan::default();
 
@@ -114,6 +134,7 @@ pub fn build(
             }
             Item::Installer {
                 command,
+                update,
                 scope: want,
                 gemini,
                 antigravity,
@@ -121,11 +142,13 @@ pub fn build(
                 ..
             } => {
                 let setup = match agent {
-                    Agent::Claude => Some((command, *want)),
-                    Agent::Gemini => gemini.as_ref().map(|s| (&s.command, s.scope)),
-                    Agent::Antigravity => antigravity.as_ref().map(|s| (&s.command, s.scope)),
+                    Agent::Claude => Some((command, update, *want)),
+                    Agent::Gemini => gemini.as_ref().map(|s| (&s.command, &s.update, s.scope)),
+                    Agent::Antigravity => antigravity
+                        .as_ref()
+                        .map(|s| (&s.command, &s.update, s.scope)),
                 };
-                let Some((command, want)) = setup else {
+                let Some((command, update, want)) = setup else {
                     plan.actions.push(Action::Skip {
                         name: name.clone(),
                         reason: format!(
@@ -139,7 +162,11 @@ pub fn build(
                         name: name.clone(),
                         reason: format!("declared for {want:?} scope, invoked at {scope:?}"),
                     });
-                } else if run_installers {
+                } else if installers != Installers::Skip {
+                    let command = match (installers, update) {
+                        (Installers::Update, Some(update)) => update,
+                        _ => command,
+                    };
                     plan.actions.push(Action::RunInstaller {
                         name: name.clone(),
                         command: command.clone(),
@@ -252,7 +279,7 @@ mod tests {
             std::slice::from_ref(&f.repo),
             Scope::Project,
             Agent::Claude,
-            false,
+            Installers::Skip,
         )
         .unwrap();
         assert_eq!(plan.actions.len(), 1);
@@ -275,7 +302,7 @@ mod tests {
             std::slice::from_ref(&f.repo),
             Scope::Project,
             Agent::Claude,
-            false,
+            Installers::Skip,
         )
         .unwrap();
         assert!(plan.actions.is_empty(), "{:?}", plan.actions);
@@ -292,7 +319,7 @@ mod tests {
             std::slice::from_ref(&f.repo),
             Scope::Project,
             Agent::Claude,
-            false,
+            Installers::Skip,
         )
         .unwrap();
         assert!(plan
@@ -312,7 +339,7 @@ mod tests {
             std::slice::from_ref(&f.repo),
             Scope::Project,
             Agent::Claude,
-            false,
+            Installers::Skip,
         )
         .unwrap();
         assert_eq!(plan.refusals.len(), 1);
@@ -332,7 +359,7 @@ mod tests {
             std::slice::from_ref(&f.repo),
             Scope::Project,
             Agent::Claude,
-            false,
+            Installers::Skip,
         )
         .unwrap();
         assert_eq!(plan.refusals.len(), 1);
@@ -350,7 +377,7 @@ mod tests {
             std::slice::from_ref(&f.repo),
             Scope::Project,
             Agent::Claude,
-            false,
+            Installers::Skip,
         )
         .unwrap();
         assert!(plan.refusals.is_empty(), "{:?}", plan.refusals);
@@ -373,7 +400,7 @@ mod tests {
             std::slice::from_ref(&f.repo),
             Scope::Project,
             Agent::Claude,
-            false,
+            Installers::Skip,
         )
         .unwrap();
         assert!(plan.refusals.is_empty(), "{:?}", plan.refusals);
@@ -412,7 +439,7 @@ mod tests {
             std::slice::from_ref(&f.repo),
             Scope::Project,
             Agent::Claude,
-            false,
+            Installers::Skip,
         )
         .unwrap();
 
@@ -439,9 +466,11 @@ mod tests {
             Item::Installer {
                 name: "bmad".into(),
                 command: "echo hi".into(),
+                update: None,
                 scope: InstallerScope::Project,
                 gemini: Some(crate::config::Setup {
                     command: "echo gemini".into(),
+                    update: None,
                     scope: InstallerScope::User,
                 }),
                 antigravity: None,
@@ -461,7 +490,7 @@ mod tests {
             std::slice::from_ref(&f.repo),
             Scope::Project,
             Agent::Claude,
-            false,
+            Installers::Skip,
         )
         .unwrap();
         assert!(matches!(plan.actions[0], Action::Skip { .. }));
@@ -478,7 +507,7 @@ mod tests {
             std::slice::from_ref(&f.repo),
             Scope::Project,
             Agent::Claude,
-            true,
+            Installers::Install,
         )
         .unwrap();
         assert!(matches!(plan.actions[0], Action::RunInstaller { .. }));
@@ -494,7 +523,7 @@ mod tests {
             std::slice::from_ref(&f.repo),
             Scope::User,
             Agent::Claude,
-            true,
+            Installers::Install,
         )
         .unwrap();
         assert!(matches!(plan.actions[0], Action::Skip { .. }));
@@ -521,7 +550,7 @@ mod tests {
             std::slice::from_ref(&f.repo),
             Scope::Project,
             Agent::Gemini,
-            true,
+            Installers::Install,
         )
         .unwrap();
         let skipped: Vec<&str> = plan
@@ -550,7 +579,7 @@ mod tests {
                 std::slice::from_ref(&f.repo),
                 scope,
                 agent,
-                true,
+                Installers::Install,
             )
             .unwrap();
             match &plan.actions[0] {
@@ -575,6 +604,34 @@ mod tests {
     }
 
     #[test]
+    fn update_runs_the_update_command_and_falls_back_to_install() {
+        let f = fx(&[]);
+        let run = |update: Option<&str>, installers| {
+            let mut map = bmad_map();
+            if let Some(Item::Installer { update: u, .. }) = map.get_mut("bmad") {
+                *u = update.map(str::to_string);
+            }
+            let plan = build(
+                &map,
+                &set(&["bmad"]),
+                &f.target,
+                std::slice::from_ref(&f.repo),
+                Scope::Project,
+                Agent::Claude,
+                installers,
+            )
+            .unwrap();
+            match &plan.actions[0] {
+                Action::RunInstaller { command, .. } => command.clone(),
+                other => panic!("expected RunInstaller, got {other:?}"),
+            }
+        };
+        assert_eq!(run(Some("echo up"), Installers::Update), "echo up");
+        assert_eq!(run(None, Installers::Update), "echo hi");
+        assert_eq!(run(Some("echo up"), Installers::Install), "echo hi");
+    }
+
+    #[test]
     fn an_any_scope_installer_runs_at_both_scopes() {
         let f = fx(&[]);
         let mut map = BTreeMap::new();
@@ -583,6 +640,7 @@ mod tests {
             Item::Installer {
                 name: "judge".into(),
                 command: "true".into(),
+                update: None,
                 scope: InstallerScope::Any,
                 gemini: None,
                 antigravity: None,
@@ -597,7 +655,7 @@ mod tests {
                 std::slice::from_ref(&f.repo),
                 scope,
                 Agent::Claude,
-                true,
+                Installers::Install,
             )
             .unwrap();
             match &plan.actions[0] {

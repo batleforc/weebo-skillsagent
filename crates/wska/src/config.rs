@@ -120,6 +120,10 @@ impl InstallerScope {
 #[derive(Debug, Deserialize)]
 pub struct Installer {
     pub command: String,
+    /// Run by `wska update` instead of `command` (a plugin is upgraded with
+    /// `claude plugin update`, not re-installed). Absent: `command` again.
+    #[serde(default)]
+    pub update: Option<String>,
     pub scope: InstallerScope,
     /// The same tool set up for another agent. Absent: Claude Code only,
     /// skipped for that agent.
@@ -134,6 +138,8 @@ pub struct Installer {
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 pub struct Setup {
     pub command: String,
+    #[serde(default)]
+    pub update: Option<String>,
     pub scope: InstallerScope,
 }
 
@@ -373,10 +379,37 @@ scope = "user"
             rtk.gemini,
             Some(Setup {
                 command: "rtk init -g --gemini".into(),
+                update: None,
                 scope: InstallerScope::User,
             })
         );
         assert_eq!(rtk.antigravity, None);
+    }
+
+    #[test]
+    fn parses_an_optional_installer_update_command() {
+        let (_d, p) = tmp(r#"
+[installers.ponytail-plugin]
+command = "claude plugin install ponytail@ponytail"
+update = "claude plugin update ponytail@ponytail"
+scope = "project"
+gemini = { scope = "user", command = "g install", update = "g update" }
+
+[installers.rtk]
+command = "rtk init"
+scope = "project"
+"#);
+        let got = load_vendor(&p).unwrap();
+        let pt = &got.installers["ponytail-plugin"];
+        assert_eq!(
+            pt.update.as_deref(),
+            Some("claude plugin update ponytail@ponytail")
+        );
+        assert_eq!(
+            pt.gemini.as_ref().unwrap().update.as_deref(),
+            Some("g update")
+        );
+        assert_eq!(got.installers["rtk"].update, None);
     }
 
     #[test]

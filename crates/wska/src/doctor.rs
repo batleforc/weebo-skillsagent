@@ -397,6 +397,7 @@ mod tests {
             Item::Installer {
                 name: "bmad".to_string(),
                 command: "npx bmad-method install".to_string(),
+                update: None,
                 scope: InstallerScope::Project,
                 gemini: None,
                 antigravity: None,

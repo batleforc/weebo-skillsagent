@@ -111,6 +111,7 @@ mod tests {
             Item::Installer {
                 name: "bmad".into(),
                 command: "true".into(),
+                update: None,
                 scope: InstallerScope::Project,
                 gemini: None,
                 antigravity: None,
