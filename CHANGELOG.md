@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## [v0.17.0](https://github.com/batleforc/weebo-skillsagent/compare/52f6b3aa251ef67487699aa8a6009b582b4636f4..v0.17.0) - 2026-10-24
+#### Features
+- (**weebo-hud**) WEEBO_HUD_DISQUE_HOME hides the $HOME disk - ([52f6b3a](https://github.com/batleforc/weebo-skillsagent/commit/52f6b3aa251ef67487699aa8a6009b582b4636f4)) - Max Batleforc, Claude Opus 5.5
+
+- - -
+
 ## [v0.16.0](https://github.com/batleforc/weebo-skillsagent/compare/11c2abd78168beec0b660584b87004a85210f97f..v0.16.0) - 2026-10-24
 #### Features
 - (**weebo-containerfile**) cache Rust dependencies with cargo-chef - ([11c2abd](https://github.com/batleforc/weebo-skillsagent/commit/11c2abd78168beec0b660584b87004a85210f97f)) - Max Batleforc, Claude Opus 5.5
