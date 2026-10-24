@@ -1,0 +1,12 @@
+{
+  "name": "weebo",
+  "owner": {
+    "name": "batleforc"
+  },
+  "plugins": [
+    {
+      "name": "weebo-hud",
+      "source": "./mods/weebo-hud"
+    }
+  ]
+}

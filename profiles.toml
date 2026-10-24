@@ -9,7 +9,8 @@
 # weebo-testing is the house test practice; every Weebo project has tests.
 # weebo-good-practice is the house coding rules; it calls ponytail and the
 # nr-check agents (skill-nr's eco-check, accessibilite-check), so they travel together.
-items = ["wska", "graphify", "rtk", "ponytail", "ponytail-plugin", "grill-me", "grilling", "weebo-testing", "weebo-good-practice", "nr-check"]
+# weebo-hud is user-scope only: a project-scope install skips it (see vendor.toml).
+items = ["wska", "graphify", "rtk", "ponytail", "ponytail-plugin", "grill-me", "grilling", "weebo-testing", "weebo-good-practice", "nr-check", "weebo-hud"]
 
 [profiles.weebo]
 include = ["base"]

@@ -8,6 +8,7 @@ includes:
   agent: ./.tasks/agents.yaml
   techdoc: ./.tasks/techdoc.yaml
   docs: ./.tasks/docs.yaml
+  mods: ./.tasks/mods.yaml
 
 tasks:
   init:

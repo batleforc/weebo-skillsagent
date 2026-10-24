@@ -1,0 +1,19 @@
+version: "3"
+
+tasks:
+  test:
+    desc: "Validate, type-check and test the weebo-hud mod"
+    cmds:
+      - claude plugin validate mods/weebo-hud
+      - |
+        if [ -f mods/weebo-hud/.claude-plugin/types/claude-code/index.d.ts ]; then
+          npx -y -p typescript@5.9.3 tsc -p mods/weebo-hud
+        else
+          echo "WARNING: skipping tsc, types not generated yet: run 'task mods:dev' once" >&2
+        fi
+      - claude plugin test mods/weebo-hud
+
+  dev:
+    desc: "Run Claude Code with the weebo-hud mod loaded from its folder"
+    cmds:
+      - claude --plugin-dir mods/weebo-hud

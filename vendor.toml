@@ -32,8 +32,8 @@ provides = ["impeccable"]
 # and adding it there by hand would make the local hash diverge from the
 # recorded upstream hash, marking the skill as patched forever.
 licence  = "Apache-2.0"
-commit = "9304afa"
-hashes = { impeccable = "sha256:fe36514a563a8e1d42e0edb948e1a5fb7fa705914b0ca7349523dc99bdb7bafc" }
+commit = "9368675"
+hashes = { impeccable = "sha256:b40a20b4783d16b6f9fab5187dad1de5743261ca1ae5d1c7e83ea105fbf10061" }
 
 [sources.blender-game-skills]
 upstream = "https://github.com/majidmanzarpour/blender-game-skills"
@@ -159,6 +159,7 @@ ponytail-plugin = ["claude", "node"]
 mlab            = ["claude"]
 # gh only for the pull-request views; uncommitted/commits work with git alone.
 diff-review     = ["claude", "git", "gh"]
+weebo-hud       = ["claude", "wska", "df"]
 judge           = ["uv"]
 weebo-techdoc   = ["python3", "git"]
 # cargo-fuzz and k6 serve conditional layers, but are listed so a red row
@@ -246,6 +247,18 @@ antigravity = { scope = "user", command = "agy plugin install https://github.com
 command = "claude plugin marketplace add nicolas-codemate/claude-code-mods --scope project; claude plugin install diff-review@codemate-mods --scope project"
 update  = "claude plugin marketplace update codemate-mods; claude plugin update diff-review@codemate-mods --scope project"
 scope   = "project"
+
+# Ours (mods/weebo-hud, served by this repo's .claude-plugin/marketplace.json):
+# a resume pane, plus `wska hud install` for the status line under the prompt
+# (a plugin cannot set statusLine). The status line needs the `wska` binary on
+# PATH, as the mise install provides it, and one new enough to have `hud`: the
+# guard in front of the command fails early with a clear message when the PATH
+# wska is older (a mise machine needs a wska release, `task release`, first). User scope on purpose: it replaces the
+# user-wide status line, so a per-project install would fight it.
+[installers.weebo-hud]
+command = "wska hud --help >/dev/null 2>&1 || { echo \"weebo-hud: the wska on PATH has no 'hud' subcommand; upgrade it (mise upgrade) or release wska first\" >&2; exit 1; }; wska hud install && { claude plugin marketplace add batleforc/weebo-skillsagent --scope user; claude plugin install weebo-hud@weebo --scope user; }"
+update  = "claude plugin marketplace update weebo; claude plugin update weebo-hud@weebo --scope user"
+scope   = "user"
 
 # mlab.sh's remote MCP server (https://github.com/mlab-sh/mcp, MIT listing,
 # closed server), written into the target's .mcp.json (.gemini/settings.json

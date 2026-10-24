@@ -5,6 +5,7 @@ pub mod config;
 pub mod doctor;
 pub mod gitignore;
 pub mod hash;
+pub mod hud;
 pub mod item;
 pub mod ownership;
 pub mod plan;

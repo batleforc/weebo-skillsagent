@@ -64,6 +64,8 @@ You don't have the right to commit directly has all commit should be signed and 
 
 Weebo Dev skills live in [weebo-skillsagent](https://github.com/batleforc/weebo-skillsagent) and are linked with `wska` (`task skills:install`). If you work on UI, the most important one is the batlehub-design skill, which is the design system.
 
+When the weebo-hud mod is active, keep its resume pane current with `mcp__weebo-hud__set_status` (objectif, notes, attente) at the start of work, after each step and whenever you wait on the user.
+
 ## Doc / Gen / Guideline
 
 ### Backend

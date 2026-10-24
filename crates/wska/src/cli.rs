@@ -1,4 +1,5 @@
 use clap::{Parser, Subcommand, ValueEnum};
+use std::path::PathBuf;
 
 #[derive(Debug, Parser)]
 #[command(
@@ -16,7 +17,29 @@ pub struct Cli {
 }
 
 #[derive(Debug, Subcommand)]
+pub enum HudCommand {
+    /// Print the powerline status line for Claude Code's `statusLine` (JSON on stdin)
+    Statusline,
+    /// Set Claude Code's `statusLine` to `wska hud statusline` (no jq needed)
+    Install {
+        /// Settings file to edit (default: $CLAUDE_CONFIG_DIR/settings.json, else ~/.claude/settings.json)
+        #[arg(long)]
+        settings: Option<PathBuf>,
+    },
+    /// Remove `statusLine` when it is `wska hud statusline`
+    Uninstall {
+        #[arg(long)]
+        settings: Option<PathBuf>,
+    },
+}
+
+#[derive(Debug, Subcommand)]
 pub enum Command {
+    /// The weebo-hud status line
+    Hud {
+        #[command(subcommand)]
+        cmd: HudCommand,
+    },
     /// Link the items named by the given profiles, removing owned links not in that set
     /// With neither --profile nor --item, re-applies the selection recorded in the target's wska.toml
     Install {

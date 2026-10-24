@@ -1,0 +1,14 @@
+{
+  "name": "weebo-hud",
+  "version": "0.1.0",
+  "description": "Weebo HUD resume pane: goal, plan, notes and what Claude waits on, kept current by Claude.",
+  "types": "./types/index.d.ts",
+  "userConfig": {
+    "paneAuto": {
+      "type": "boolean",
+      "default": true,
+      "title": "Open the pane automatically",
+      "description": "Open the detail pane automatically"
+    }
+  }
+}

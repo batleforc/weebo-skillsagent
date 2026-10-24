@@ -334,6 +334,22 @@ The `vendor-sync` workflow runs `task skills:sync` every Monday (or on demand)
 and opens or refreshes a single PR on `chore/vendor-sync` when anything moved,
 with the sync output as its body. That diff still needs the same review.
 
+### `hud`
+
+```bash
+wska hud statusline                     # print the status line (Claude Code runs this)
+wska hud install   [--settings <path>]  # set statusLine in settings.json
+wska hud uninstall [--settings <path>]  # remove it, only when it is ours
+```
+
+The status line of [weebo-hud](weebo-hud): an ANSI powerline under the prompt with the folder, the model, context, the 5h and 7j quotas, and the machine's free RAM, CPU and disk. `statusline` reads Claude Code's JSON on stdin and never fails: a missing figure shows `—`.
+
+`install` writes `statusLine = {type: command, command: "wska hud statusline", refreshInterval: 5}` into `$CLAUDE_CONFIG_DIR/settings.json`, or `~/.claude/settings.json`. It keeps the other keys and their order, the file mode and symlinks, and never runs `jq`. Before its first change it copies the file to `settings.json.weebo-hud-bak` (an existing backup is never overwritten). When the setting is already there it changes nothing. It fails on invalid JSON, or when neither `CLAUDE_CONFIG_DIR` nor `HOME` is set. `uninstall` removes the setting only when it is the one `install` writes.
+
+The installer of `weebo-hud` needs a wska that has `hud`: it checks `wska hud --help` first and stops with a message otherwise. Mise machines need a wska release (`task release`) first.
+
+Machines that install `wska` through mise only get `hud` after a wska release (`task release`). Until then, use the binary built from this repo.
+
 ### `completions`
 
 ```bash

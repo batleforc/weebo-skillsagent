@@ -57,7 +57,7 @@ one profile serves both `--scope project` and `--scope user`.
 
 | Profile    | Includes  | Adds                                       |
 | ---------- | --------- | ------------------------------------------ |
-| `base`     | —         | `wska`, `graphify`, `rtk`, `ponytail`, `ponytail-plugin`, `grill-me`, `grilling`, `weebo-testing`, `weebo-good-practice`, `nr-check` |
+| `base`     | —         | `wska`, `graphify`, `rtk`, `ponytail`, `ponytail-plugin`, `grill-me`, `grilling`, `weebo-testing`, `weebo-good-practice`, `nr-check`, `weebo-hud` |
 | `weebo`    | `base`    | `weebo-taskfile-mise`, `weebo-security`, `weebo-deps`, `weebo-containerfile`, `weebo-api-contract`, `weebo-release`, `weebo-cde` |
 | `planning` | `base`    | `bmad`, `batlehub-rfc`, `judge`            |
 | `design`   | `base`    | `frontend-design`, `theme-factory`, `impeccable`, `batlehub-design` |
@@ -119,6 +119,7 @@ named `all`.
 | `batlehub-design` | symlink     | snapshot of `batlehub/batlehub`'s design system | —                                 |
 | `batlehub-rfc`    | symlink     | derived from `batlehub/batlehub`'s rfc skill + template, with security blocks | —   |
 | `diff-review`     | installer   | Claude mod (plugin) `diff-review@codemate-mods`: the `/diff-review` pane, ask Claude about any diff line, GitHub review threads | `claude`, `git`, `gh` |
+| `weebo-hud`       | installer   | ours: Claude mod (plugin) `weebo-hud@weebo`, user scope: status line under the prompt (`wska hud install`), resume pane, `/etat` ([docs/content/docs/weebo-hud.md](docs/content/docs/weebo-hud.md)) | `claude`, `wska`, `df` |
 | `mlab`            | installer   | `claude mcp add` of the remote `mlab.sh/mcp` server (OAuth via `/mcp`) | `claude` |
 | `judge`           | installer   | `uv tool install --editable "$WSKA_REPO/judge"`: headless review gates `rfc-ready`, `doc-review` ([docs/content/docs/judge.md](docs/content/docs/judge.md)) | `uv` |
 | `doc-review`      | symlink (agent) | ours: read-only documentation reviewer run by `judge doc-review` | `claude`, `judge` |

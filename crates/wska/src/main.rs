@@ -1,5 +1,5 @@
 use clap::Parser;
-use wska::cli::{Cli, Command};
+use wska::cli::{Cli, Command, HudCommand};
 
 /// Cloned on first run when wska is used outside this repo without WSKA_REPO.
 const REPO_URL: &str = "https://github.com/batleforc/weebo-skillsagent";
@@ -41,6 +41,25 @@ fn main() {
     if let Command::Completions { shell } = cli.command {
         use clap::CommandFactory;
         clap_complete::generate(shell, &mut Cli::command(), "wska", &mut std::io::stdout());
+        return;
+    }
+    // No repo needed, and nothing may reach stderr or fail the status line.
+    if let Command::Hud { cmd } = cli.command {
+        let res = match cmd {
+            HudCommand::Statusline => {
+                wska::hud::statusline();
+                return;
+            }
+            HudCommand::Install { settings } => wska::hud::install::run(true, settings),
+            HudCommand::Uninstall { settings } => wska::hud::install::run(false, settings),
+        };
+        match res {
+            Ok(msg) => println!("{msg}"),
+            Err(e) => {
+                eprintln!("error: {e}");
+                std::process::exit(1);
+            }
+        }
         return;
     }
     let cwd = match std::env::current_dir() {
@@ -223,9 +242,9 @@ fn main() {
         }),
         #[expect(
             clippy::unreachable,
-            reason = "Completions returns before items_root, above"
+            reason = "Completions and Hud return before items_root, above"
         )]
-        Command::Completions { .. } => unreachable!("handled above"),
+        Command::Completions { .. } | Command::Hud { .. } => unreachable!("handled above"),
     };
 
     if let Err(e) = result {
