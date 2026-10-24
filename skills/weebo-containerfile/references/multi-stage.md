@@ -1,20 +1,26 @@
 # Multi-stage build and cache strategy
 
-## 1. Rust: the stub-crate dependency layer
+## 1. Rust: cargo-chef dependency layer
 
-Docker caches a layer until one of its inputs changes. The `builder` stage splits the build so
-that a source edit does not recompile the dependency tree:
+Always use [cargo-chef](https://github.com/LukeMathWalker/cargo-chef) for a Rust image. Docker
+caches a layer until one of its inputs changes; cargo-chef splits the build so that a source
+edit, or a release version bump, does not recompile the dependency tree:
 
-1. `COPY Cargo.toml Cargo.lock` and **every** workspace member's `Cargo.toml` (one line each,
-   plus any `[patch]` directory such as batlehub's `patches/`).
-2. Write a stub `src/lib.rs` (`pub fn _stub() {}`) or `src/main.rs` (`fn main() {}`) per member.
-3. `cargo build --locked --release -p <bins>`: compiles only the dependencies. Cached while the
-   manifests and lockfile are unchanged.
-4. `COPY` the real sources, `touch` every `lib.rs`/`main.rs` (`COPY` keeps the context's mtimes,
-   which can be older than the stub build, and cargo would then skip the real files), build again.
+1. `chef`: the Rust base + system build deps + `cargo install --locked cargo-chef@<exact>`.
+2. `planner` (from `chef`): copy the workspace, `cargo chef prepare --recipe-path recipe.json`.
+   The recipe holds the manifests and lockfile with the workspace version normalised, so it only
+   changes when dependencies or the member list change.
+3. `builder` (from `chef`): `COPY --from=planner recipe.json`, then
+   `cargo chef cook --locked --release -p <bins> --recipe-path recipe.json`. Cached while the
+   recipe is unchanged. Use the same profile, target and features as the final build, or cook
+   compiles the wrong artefacts.
+4. `COPY` the real sources, `cargo build --locked --release -p <bins>`: only workspace crates
+   recompile.
 
-A member missing from steps 1-2 makes step 3 fail, which the template's `; exit 0` hides: the
-build still succeeds, uncached. When adding a crate, add its lines.
+This replaces the hand-written stub crates (one `COPY` + one stub per member, a `touch` for
+mtimes, a `; exit 0` that hid failures): a new member needs no Containerfile edit, and a failed
+cook fails the build. `cargo-chef` is not a `FROM`, so updatecli does not move it: bump its pin
+with the Rust image.
 
 ## 2. Frontend
 
@@ -38,14 +44,14 @@ overrides arguments without restating the binary.
 
 ## 4. Known debt (batlehub TD-0003)
 
-The release build of the image took 3 h 04 for v1.5.0; the native binary job, 19 min. Likely
-causes, none measured yet, with the retirement batlehub recorded:
+The release build of the image took 3 h 04 for v1.5.0; the native binary job, 19 min. Two
+causes are fixed in the templates by cargo-chef (§1): the dependency layer invalidated by every
+version bump, and the stub build whose failure `; exit 0` hid. Remaining likely causes, none
+measured yet, with the retirement batlehub recorded:
 
 | Cause | Fix when it matters |
 | --- | --- |
 | arm64 `cargo build` runs under QEMU | native arm64 runner per platform joined into a manifest, or `--platform=$BUILDPLATFORM` + a cross target in `builder` |
-| A release bumps the workspace version, so the dependency layer never matches on the one build that counts | `cargo-chef` (normalises the version) or BuildKit `--mount=type=cache` on `target/` and `~/.cargo/registry` |
-| `2>/dev/null; exit 0` hides a failed stub build | let the stub build fail the build |
 | `ui-builder` waits for the Rust build to run `dump-spec` | build the UI from the committed spec; check spec drift in CI instead |
 | The server compiles once per image and again for the release binary | one shared builder, or pass the built binary in |
 | Two images on the default `type=gha` scope evict each other | a `scope=<image>` per image (the templates already do this) |

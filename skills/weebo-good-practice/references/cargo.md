@@ -47,7 +47,7 @@ Each of these is a full second `target/`:
 | --- | --- | --- |
 | `cargo llvm-cov` | `target/llvm-cov-target/` | `cargo llvm-cov clean --workspace` after a coverage run |
 | `cargo fuzz` | `fuzz/target/` | its own workspace; `cargo clean` inside `fuzz/` when done |
-| `--release` builds | `target/release/` | only in CI and the Containerfile, not for local checks |
+| `--release` builds | `target/release/` | only in CI and the Containerfile (deps cached with cargo-chef, weebo-containerfile), not for local checks |
 | rust-analyzer with a different `--target` or features | `target/` again | keep its settings equal to `task check` |
 
 ## 4. Cleaning

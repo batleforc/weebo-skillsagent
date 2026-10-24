@@ -1,6 +1,6 @@
 ---
 name: weebo-containerfile
-description: House container image practice for Weebo projects (Rust backend + TS frontend), modelled on batlehub — the multi-stage Containerfile (cached Rust deps, pnpm UI stage, distroless non-root runtime), its Containerfile.hardened twin on Red Hat Hardened Images, digest-pinned bases kept current by updatecli, the .dockerignore, the GitHub Actions jobs that build, scan, sign and attest the image, and the podman compose tasks. Use when writing or reviewing a Containerfile, adding an image to a project, shrinking or speeding up an image build, or wiring image build/push into CI.
+description: House container image practice for Weebo projects (Rust backend + TS frontend), modelled on batlehub — the multi-stage Containerfile (Rust deps cached with cargo-chef, pnpm UI stage, distroless non-root runtime), its Containerfile.hardened twin on Red Hat Hardened Images, digest-pinned bases kept current by updatecli, the .dockerignore, the GitHub Actions jobs that build, scan, sign and attest the image, and the podman compose tasks. Use when writing or reviewing a Containerfile, adding an image to a project, shrinking or speeding up an image build, or wiring image build/push into CI.
 ---
 
 # Weebo container images
@@ -24,11 +24,13 @@ When a template and this text disagree, the template wins: it is what ran.
 Named `Containerfile`, not `Dockerfile`: CI passes `file: ./Containerfile`. Use `.dockerignore`:
 docker reads only that name, and podman/buildah read it too when no `.containerignore` exists.
 
-## 2. Three stages
+## 2. Stages
 
 | Stage | Base | Does |
 | --- | --- | --- |
-| `builder` | `rust:<ver>-slim-bookworm` | manifests + stub sources → dependency layer; then real sources → `cargo build --locked --release` |
+| `chef` | `rust:<ver>-slim-bookworm` | system build deps + pinned `cargo-chef`; shared by the next two |
+| `planner` | `chef` | workspace sources → `cargo chef prepare` → `recipe.json` |
+| `builder` | `chef` | `cargo chef cook --locked --release` (dependency layer); then real sources → `cargo build --locked --release` |
 | `ui-builder` | `node:<ver>-slim` | pnpm pinned, `--frozen-lockfile`, spec dumped from the built binary → HeyApi client → `vite build` |
 | `runtime` | `gcr.io/distroless/cc-debian12` | the binary, the SPA `dist/`, one writable dir. No shell, no package manager, no curl |
 
@@ -71,15 +73,14 @@ built image; heavy e2e runs the binary (weebo-testing).
 
 batlehub's release image step takes about 3 hours (its TD-0003). The template keeps batlehub's
 shape but flags each cause; fix them when the build time matters:
-arm64 under QEMU, a dependency layer invalidated by every version bump, a stub build whose
-failure is hidden by `; exit 0`, the UI stage waiting on Rust for `dump-spec`, the server
-compiled once per image. [references/multi-stage.md §4](references/multi-stage.md).
+arm64 under QEMU, the UI stage waiting on Rust for `dump-spec`, the server compiled once per
+image. The version-bump cache miss is fixed by cargo-chef. [references/multi-stage.md §4](references/multi-stage.md).
 
 ## Templates
 
 ```
 templates/
-├── Containerfile                     builder → ui-builder → distroless runtime
+├── Containerfile                     chef → planner → builder → ui-builder → distroless runtime
 ├── Containerfile.hardened            same, on registry.access.redhat.com/hi/*
 ├── .dockerignore
 ├── docker-compose.yml                postgres + commented server service
@@ -90,5 +91,5 @@ templates/
     └── image-release.yaml            tag: build, push, sign, attest, gate
 ```
 
-Replace every `my-server` / `my_server` / `my-crate` placeholder, add one `COPY` + stub line per
-workspace member, and let updatecli refresh the digests.
+Replace every `my-server` / `my_server` / `my-crate` placeholder, list each top-level source
+directory in the planner and builder `COPY`s, and let updatecli refresh the digests.

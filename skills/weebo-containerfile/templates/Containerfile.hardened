@@ -3,35 +3,35 @@
 # package manager differ. Keep the two files in step.
 # ── Build stage ───────────────────────────────────────────────────────────────
 # Pin every base by tag AND digest; updatecli moves both (see .updatecli/).
-FROM registry.access.redhat.com/hi/rust:latest-builder@sha256:8055c3dede8892b3685e99f690c7ec3772ce815add533a9c9e05f000f8b9e3ba AS builder
+FROM registry.access.redhat.com/hi/rust:latest-builder@sha256:8055c3dede8892b3685e99f690c7ec3772ce815add533a9c9e05f000f8b9e3ba AS chef
 
 RUN dnf install -y awk gcc make openssl-devel pkgconfig && dnf clean all
 
+# cargo-chef builds the dependency layer from a recipe instead of hand-written
+# stub crates. Pinned like the bases; bump it with the Rust image.
+RUN cargo install --locked cargo-chef@0.1.78
+
 WORKDIR /build
 
-# Cache dependency compilation separately from source changes.
-# One COPY per workspace member manifest.
+# ── Planner: workspace manifests → recipe.json ────────────────────────────────
+# The recipe drops the workspace version, so a release bump does not invalidate
+# the dependency layer, and every member is picked up without a COPY line each.
+FROM chef AS planner
 COPY Cargo.toml Cargo.lock ./
-COPY crates/my-crate/Cargo.toml crates/my-crate/Cargo.toml
-COPY server/Cargo.toml          server/Cargo.toml
-
-# Stub out every lib/main so cargo can resolve and compile deps.
-RUN mkdir -p crates/my-crate/src && echo "pub fn _stub() {}" > crates/my-crate/src/lib.rs && \
-    mkdir -p server/src && echo "fn main() {}" > server/src/main.rs
-
-# --locked: build exactly what Cargo.lock resolves and fail if it would need
-# updating — the image must not resolve a dependency the repository never saw.
-# Known debt (batlehub TD-0003): `; exit 0` hides a failed stub build, and a
-# version bump in Cargo.toml invalidates this layer on every release.
-RUN cargo build --locked --release -p my-server 2>/dev/null; exit 0
-
-# Now copy real source and rebuild (only changed crates recompile).
 COPY crates/ crates/
 COPY server/ server/
+RUN cargo chef prepare --recipe-path recipe.json
 
-# Touch lib/main files so cargo detects the change.
-RUN touch crates/*/src/lib.rs server/src/main.rs
+# ── Builder: dependencies (cached while recipe.json is unchanged), then sources ─
+FROM chef AS builder
+COPY --from=planner /build/recipe.json recipe.json
+# --locked: build exactly what Cargo.lock resolves and fail if it would need
+# updating — the image must not resolve a dependency the repository never saw.
+RUN cargo chef cook --locked --release -p my-server --recipe-path recipe.json
 
+COPY Cargo.toml Cargo.lock ./
+COPY crates/ crates/
+COPY server/ server/
 RUN cargo build --locked --release -p my-server
 
 # Pre-create runtime directories here so they can be copied, already owned by the
