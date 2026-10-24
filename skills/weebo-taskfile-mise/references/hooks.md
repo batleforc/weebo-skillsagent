@@ -50,6 +50,7 @@ sees a local patch and refuses to update it.
 | `coverage/`, `lcov.info` | coverage output (`weebo-testing`) |
 | `.env`, `.env.local` | secrets, loaded by Task's `dotenv` |
 | `.claude/settings.local.json` | per-user Claude Code settings |
+| `/.claude/skills/<name>`, `/.claude/agents/<name>` | wska links (absolute paths into a clone); `wska install` keeps them in its own block. Commit `.claude/wska.toml` |
 | `__pycache__/`, `*.pyc`, `.venv/`, `*.log` | |
 
 Generated files that should be reviewed as a diff (an OpenAPI spec, `mise.lock`, `Cargo.lock`,

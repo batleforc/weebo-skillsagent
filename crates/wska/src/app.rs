@@ -231,6 +231,21 @@ fn apply_selection(
     applied.warnings = warnings;
     if !dry_run {
         selection.save(&target_dir)?;
+        // Advisory like the tool warnings: the links are in place already, and
+        // a .gitignore wska cannot update must not report the install failed.
+        if scope == Scope::Project {
+            let root = target::repo_root(cwd)?;
+            let dir = target::project_dir(agent);
+            match crate::gitignore::sync(&root, dir, &target_dir, &reg.owned) {
+                Ok(true) => println!("ignore {}", root.join(".gitignore").display()),
+                Ok(false) => {}
+                Err(e) => {
+                    let warning = format!(".gitignore not updated: {e}");
+                    eprintln!("warn   {warning}");
+                    applied.warnings.push(warning);
+                }
+            }
+        }
     }
     Ok(applied)
 }

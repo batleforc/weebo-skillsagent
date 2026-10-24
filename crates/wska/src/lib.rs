@@ -3,6 +3,7 @@ pub mod apply;
 pub mod cli;
 pub mod config;
 pub mod doctor;
+pub mod gitignore;
 pub mod hash;
 pub mod item;
 pub mod ownership;

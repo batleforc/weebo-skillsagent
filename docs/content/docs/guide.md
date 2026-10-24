@@ -49,13 +49,8 @@ task init             # mise, plugins, git hooks, every item linked into this re
    wska doctor                                            # tools each item needs
    ```
 
-3. Commit the selection, ignore the links (they are absolute paths into your
-   clone):
-
-   ```text
-   .claude/skills/
-   .claude/agents/   # only if you keep no hand-written agents there
-   ```
+3. Commit the selection. The install already added its links (absolute paths
+   into your clone) to the project's `.gitignore`, in a block it rewrites:
 
    ```bash
    git add .claude/wska.toml .gitignore

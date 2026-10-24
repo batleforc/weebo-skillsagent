@@ -49,12 +49,19 @@ pub fn resolve(
         // shortcut: the Antigravity IDE path from Google's codelab; Antigravity 2.0
         // documents ~/.gemini/config/skills, switch if the IDE path stops being read.
         (Scope::User, Agent::Antigravity) => home()?.join(".gemini/antigravity"),
-        (Scope::Project, Agent::Claude) => git_root(cwd)?.join(".claude"),
-        (Scope::Project, Agent::Gemini) => git_root(cwd)?.join(".gemini"),
-        // `.agents` is the shared Agent Skills dir; Gemini CLI reads it too.
-        (Scope::Project, Agent::Antigravity) => git_root(cwd)?.join(".agents"),
+        (Scope::Project, _) => git_root(cwd)?.join(project_dir(agent)),
     };
     canonical_or_as_is(&raw)
+}
+
+/// The agent's directory at a project's root.
+pub fn project_dir(agent: Agent) -> &'static str {
+    match agent {
+        Agent::Claude => ".claude",
+        Agent::Gemini => ".gemini",
+        // `.agents` is the shared Agent Skills dir; Gemini CLI reads it too.
+        Agent::Antigravity => ".agents",
+    }
 }
 
 /// The repository root containing `start`, canonicalized. Falls back to

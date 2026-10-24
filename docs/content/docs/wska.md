@@ -393,12 +393,14 @@ wska status
 Set `WSKA_REPO` only to use a clone you edit yourself (for example in the
 project's `mise.toml`: `[env] WSKA_REPO = "{{env.HOME}}/git/weebo-skillsagent"`).
 
-Gitignore the links, because they are absolute paths into the clone and mean
-nothing on another machine, but commit `.claude/wska.toml`:
-
-```text
-.claude/skills/
-```
+The links are absolute paths into the clone and mean nothing on another
+machine, so a project-scope install keeps them out of git itself: it rewrites
+its own block of the project's `.gitignore`, one line per link
+(`/.claude/skills/ponytail`, ...), and drops the block once nothing is linked.
+Hand-written skills and agents next to the links stay tracked. Commit
+`.claude/wska.toml` and the `.gitignore`.
+Links committed before wska did this stay tracked until removed from the
+index: `git rm --cached .claude/skills/<name>`.
 
 Each machine then re-runs a bare `wska install --run-installers` after
 cloning, which applies the committed selection. Installer items (`bmad`,

@@ -100,6 +100,11 @@ items = ["impeccable"]
     assert_eq!(narrowed.unlinked, 1);
     assert!(!links.join("impeccable").exists());
     assert!(links.join("ponytail").exists());
+
+    // The project's .gitignore lists exactly the links left
+    let ignore = fs::read_to_string(root.join(".gitignore")).unwrap();
+    assert!(ignore.contains("/.claude/skills/ponytail\n"));
+    assert!(!ignore.contains("impeccable"));
 }
 
 #[test]
@@ -672,4 +677,34 @@ fn an_item_defined_by_two_repos_is_refused() {
     )
     .unwrap_err();
     assert!(err.to_string().contains("item `ponytail`"), "{err}");
+}
+
+#[test]
+fn ignores_links_in_the_repo_gitignore_when_dot_claude_is_a_symlink() {
+    let d = tempfile::tempdir().unwrap();
+    let root = d.path().join("repo");
+    repo(
+        &root,
+        &["ponytail"],
+        "[profiles.base]\nitems = [\"ponytail\"]\n",
+    );
+    let elsewhere = d.path().join("dotfiles/claude");
+    fs::create_dir_all(&elsewhere).unwrap();
+    std::os::unix::fs::symlink(&elsewhere, root.join(".claude")).unwrap();
+
+    wska::app::install(
+        &root,
+        &profiles(&["base"]),
+        wska::cli::Scope::Project,
+        wska::cli::Agent::Claude,
+        false,
+        false,
+        &root,
+        &env_none,
+    )
+    .unwrap();
+
+    let ignore = fs::read_to_string(root.join(".gitignore")).unwrap();
+    assert!(ignore.contains("/.claude/skills/ponytail\n"));
+    assert!(!d.path().join("dotfiles/.gitignore").exists());
 }

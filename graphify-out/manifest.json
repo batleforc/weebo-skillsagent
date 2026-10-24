@@ -60,9 +60,9 @@
     "semantic_hash": ""
   },
   "crates/wska/src/app.rs": {
-    "mtime": 1792839299.6870346,
-    "seen": 1792839354.7090583,
-    "ast_hash": "870834d5ae6cef30d6b84bc0e69f1ae7",
+    "mtime": 1792843855.611753,
+    "seen": 1792843876.0471365,
+    "ast_hash": "f89e9cb29a82c735bfa29dbc981dd558",
     "semantic_hash": ""
   },
   "crates/wska/src/apply.rs": {
@@ -102,9 +102,9 @@
     "semantic_hash": ""
   },
   "crates/wska/src/lib.rs": {
-    "mtime": 1792227944.3126915,
-    "seen": 1792839078.6768696,
-    "ast_hash": "a7b4b356b9fb5a16813d55a61d142b8a",
+    "mtime": 1792842996.902995,
+    "seen": 1792843042.4352524,
+    "ast_hash": "0ad5df6c0e1ec5c1e295f0b65bb7e4b6",
     "semantic_hash": ""
   },
   "crates/wska/src/main.rs": {
@@ -150,9 +150,9 @@
     "semantic_hash": ""
   },
   "crates/wska/src/target.rs": {
-    "mtime": 1792838978.5795193,
-    "seen": 1792839078.676879,
-    "ast_hash": "0ff9f060a43fb7e1a848ae47b6d8f197",
+    "mtime": 1792843855.6114209,
+    "seen": 1792843876.047773,
+    "ast_hash": "74c65c302498bb7a80ab9ac47a617494",
     "semantic_hash": ""
   },
   "crates/wska/tests/cli.rs": {
@@ -162,9 +162,9 @@
     "semantic_hash": ""
   },
   "crates/wska/tests/install.rs": {
-    "mtime": 1792838978.5795193,
-    "seen": 1792839078.6768813,
-    "ast_hash": "c835dae89b81c216e91c055e0ab56bfd",
+    "mtime": 1792843868.5475824,
+    "seen": 1792843876.0478196,
+    "ast_hash": "c9bf98cde8c06439d44d1e66b726699b",
     "semantic_hash": ""
   },
   "judge/pyproject.toml": {
@@ -6678,9 +6678,9 @@
     "semantic_hash": ""
   },
   "skills/weebo-taskfile-mise/references/hooks.md": {
-    "mtime": 1792338941.7204394,
-    "seen": 1792839078.6783354,
-    "ast_hash": "46043c2f810e1a61eda511e8b9f0b81c",
+    "mtime": 1792843005.3090034,
+    "seen": 1792843042.4917872,
+    "ast_hash": "07d438376e4a936e7ef3a22d92e45aa7",
     "semantic_hash": ""
   },
   "skills/weebo-taskfile-mise/references/mise.md": {
@@ -6912,9 +6912,9 @@
     "semantic_hash": ""
   },
   "docs/content/docs/guide.md": {
-    "mtime": 1792838978.5809755,
-    "seen": 1792839078.6780782,
-    "ast_hash": "81eff3ab50138ad0a9e3e927f09a4262",
+    "mtime": 1792843035.1772313,
+    "seen": 1792843042.48038,
+    "ast_hash": "61f63b6488f651f9d974045b852a6a2d",
     "semantic_hash": ""
   },
   "docs/content/docs/index.md": {
@@ -6972,9 +6972,9 @@
     "semantic_hash": ""
   },
   "docs/content/docs/wska.md": {
-    "mtime": 1792839345.7482028,
-    "seen": 1792839354.7522483,
-    "ast_hash": "fb124fe8bdf2fc5c1939b69cfb236c82",
+    "mtime": 1792843855.6120744,
+    "seen": 1792843876.0938914,
+    "ast_hash": "562e562e11694c58c949e440911b2b11",
     "semantic_hash": ""
   },
   ".github/workflows/vendor-sync.yml": {
@@ -7005,6 +7005,12 @@
     "mtime": 1792840229.5691376,
     "seen": 1792840250.8109257,
     "ast_hash": "ae0db01d1de2620933c20357ebc7216c",
+    "semantic_hash": ""
+  },
+  "crates/wska/src/gitignore.rs": {
+    "mtime": 1792843845.475569,
+    "seen": 1792843876.0473266,
+    "ast_hash": "cfd2f04cf6136632dbaf01a87f6f95ac",
     "semantic_hash": ""
   }
 }
