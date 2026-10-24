@@ -1,0 +1,61 @@
+name: vendor-sync
+
+# Weekly `task skills:sync`: when a vendored skill moved upstream, open (or
+# refresh) one PR with the new tree and the advanced hashes in vendor.toml.
+# Patched skills are left alone by sync itself, so the PR only carries
+# fast-forwards. Upstream content is unreviewed: read the diff before merging.
+#
+# Needs "Allow GitHub Actions to create and approve pull requests" in the repo
+# settings. PRs opened with GITHUB_TOKEN do not trigger other workflows.
+on:
+  schedule:
+    - cron: "0 5 * * 1"
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: vendor-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: jdx/mise-action@9b200bcecbfd6303e69a4a261b2e09e3757440a7 # v5.2.0
+        with:
+          install_args: task rust
+      - name: Sync vendored sources
+        run: |
+          mkdir -p .task
+          task skills:sync 2>&1 | tee .task/sync.log
+      - name: PR body
+        run: |
+          {
+            echo 'Automated `task skills:sync` run.'
+            echo
+            echo 'Upstream content lands here unreviewed: read the diff under `skills/` and `agents/` before merging.'
+            echo
+            echo '```'
+            cat .task/sync.log
+            echo '```'
+          } > .task/pr-body.md
+      - uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
+        with:
+          branch: chore/vendor-sync
+          delete-branch: true
+          # vendor.toml plus whatever sync wrote; .task/ is gitignored.
+          add-paths: |
+            vendor.toml
+            skills/**
+            agents/**
+          commit-message: "chore(deps): sync vendored skills from upstream"
+          title: "chore(deps): sync vendored skills from upstream"
+          body-path: .task/pr-body.md
+          # API-created commits are signed by GitHub, so they show as verified.
+          sign-commits: true
+          labels: dependencies
