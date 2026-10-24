@@ -58,7 +58,7 @@ one profile serves both `--scope project` and `--scope user`.
 | Profile    | Includes  | Adds                                       |
 | ---------- | --------- | ------------------------------------------ |
 | `base`     | —         | `wska`, `graphify`, `rtk`, `ponytail`, `ponytail-plugin`, `grill-me`, `grilling`, `weebo-testing`, `weebo-good-practice`, `nr-check` |
-| `weebo`    | `base`    | `weebo-taskfile-mise`, `weebo-security`, `weebo-containerfile`, `weebo-api-contract`, `weebo-release`, `weebo-cde` |
+| `weebo`    | `base`    | `weebo-taskfile-mise`, `weebo-security`, `weebo-deps`, `weebo-containerfile`, `weebo-api-contract`, `weebo-release`, `weebo-cde` |
 | `planning` | `base`    | `bmad`, `batlehub-rfc`, `judge`            |
 | `design`   | `base`    | `frontend-design`, `theme-factory`, `impeccable`, `batlehub-design` |
 | `frontend` | `design`  | `webapp-testing`                           |
@@ -128,6 +128,7 @@ named `all`.
 | `nr-check` | symlink (agent) | vendored (`copies`) from `Institut-du-Numerique-Responsable/skill-nr`: agents `eco-check` (RGESN/GR491/Opquast) and `accessibilite-check` (RGAA) diff reviewers | — |
 | `weebo-taskfile-mise` | symlink | ours, from `batlehub/batlehub`: project skeleton: flattened `.tasks/` Taskfile, mise as the only package manager, cocogitto hooks, `.gitignore` | `task`, `mise`, `cog`, `gitleaks`, `git` |
 | `weebo-security` | symlink | ours, from `batlehub/batlehub`: `task audit` (cargo audit/deny, pnpm audit, Trivy), daily CI scanners, SBOM, VEX, CVE triage and exceptions | `cargo-audit`, `cargo-deny`, `pnpm`, `trivy` |
+| `weebo-deps` | symlink | ours: dependency hygiene: `task deps*` (outdated report, in-range and major-by-major bumps, CVE before/after diff, unused deps via cargo machete + knip) | `cargo`, `cargo-machete`, `cargo-audit`, `pnpm`, `jq`, `mise` |
 | `weebo-containerfile` | symlink | ours, from `batlehub/batlehub`: multi-stage Containerfile, distroless non-root runtime, hardened twin, updatecli digest pins, CI build/scan/sign | — |
 | `weebo-api-contract` | symlink | ours, from `batlehub/batlehub`: utoipa + self-hosted Scalar, `dump-spec`, HeyApi axios client, contract test + Spectral drift gates | `cargo`, `pnpm`, `npx` |
 | `weebo-release` | symlink | ours, from `batlehub/batlehub`: cocogitto bump/changelog, one version across manifests, tag-triggered GitHub release | `cog`, `git`, `task` |

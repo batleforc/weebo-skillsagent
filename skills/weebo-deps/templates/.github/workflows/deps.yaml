@@ -1,0 +1,69 @@
+# source: weebo-skillsagent (weebo-deps).
+# Runs the same tasks as a developer does: CI and `task deps*` cannot drift.
+# CVE gating against the whole tree stays in weebo-security's workflows; this
+# one answers "did this PR make it better or worse?" and "is everything used?".
+name: Dependency hygiene
+on:
+  pull_request:
+    branches: ["main"]
+    paths:
+      - "**/Cargo.toml"
+      - "Cargo.lock"
+      - "ui/package.json"
+      - "ui/pnpm-lock.yaml"
+      - "ui/src/**"
+      - "mise.toml"
+      - ".tasks/deps.yaml"
+      - ".github/workflows/deps.yaml"
+  # Weekly: the outdated report lands in the run summary.
+  schedule:
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+permissions:
+  contents: read
+env:
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # mise's GitHub lookups, 60/h without it
+jobs:
+  unused:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: jdx/mise-action@9b200bcecbfd6303e69a4a261b2e09e3757440a7 # v5.2.0
+        with:
+          install_args: task rust cargo-binstall cargo:cargo-machete node pnpm
+      # knip resolves imports and config plugins from node_modules.
+      - run: pnpm install --frozen-lockfile
+        working-directory: ui
+      - run: task deps:unused
+
+  cve-diff:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0 # the base commit's lockfiles
+      - uses: jdx/mise-action@9b200bcecbfd6303e69a4a261b2e09e3757440a7 # v5.2.0
+        with:
+          install_args: task jq rust cargo-binstall cargo:cargo-audit node pnpm
+      - name: Advisories closed / opened by this PR
+        run: |
+          rc=0
+          task deps:cve:branch BASE=${{ github.event.pull_request.base.sha }} > cve.txt 2>&1 || rc=$?
+          cat cve.txt
+          { echo '```'; cat cve.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+          exit $rc
+
+  outdated:
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: jdx/mise-action@9b200bcecbfd6303e69a4a261b2e09e3757440a7 # v5.2.0
+        with:
+          install_args: task rust node pnpm
+      - name: Outdated report
+        run: |
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          task deps:outdated 2>&1 | tee -a "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"

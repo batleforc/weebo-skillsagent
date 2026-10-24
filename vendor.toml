@@ -169,6 +169,7 @@ weebo-testing   = ["cargo", "cargo-llvm-cov", "cargo-fuzz", "k6"]
 # also why weebo-containerfile has no row: no container engine in a CDE.
 weebo-taskfile-mise = ["task", "mise", "cog", "gitleaks", "git"]
 weebo-security      = ["cargo-audit", "cargo-deny", "pnpm", "trivy"]
+weebo-deps          = ["cargo", "cargo-machete", "cargo-audit", "pnpm", "jq", "mise"]
 weebo-api-contract  = ["cargo", "pnpm", "npx"]
 weebo-release       = ["cog", "git", "task"]
 weebo-cde           = ["kubectl", "task"]

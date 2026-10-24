@@ -15,7 +15,7 @@ items = ["wska", "graphify", "rtk", "ponytail", "ponytail-plugin", "grill-me", "
 include = ["base"]
 # The house practices, each modelled on batlehub (weebo-testing is in base).
 # weebo-helm stays out: add it with ITEM= when the project ships a chart.
-items = ["weebo-taskfile-mise", "weebo-security", "weebo-containerfile", "weebo-api-contract", "weebo-release", "weebo-cde"]
+items = ["weebo-taskfile-mise", "weebo-security", "weebo-deps", "weebo-containerfile", "weebo-api-contract", "weebo-release", "weebo-cde"]
 
 [profiles.planning]
 include = ["base"]

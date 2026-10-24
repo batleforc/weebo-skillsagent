@@ -44,6 +44,7 @@ Fixed names every Weebo repo has, so hooks, CI and agents can call them blind:
 | `mise:install`, `mise:lock:gen`, `mise:lock:update` | tools and lock | this skill |
 | `test`, `coverage-check`, … | | `weebo-testing` |
 | `audit` | CVE scan of deps and images | `weebo-security` |
+| `deps`, `deps:update`, … | outdated / unused deps, bump + CVE diff | `weebo-deps` |
 | `release` | cocogitto bump | `weebo-release` |
 
 Details: [references/taskfile.md](references/taskfile.md).
