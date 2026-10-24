@@ -112,6 +112,7 @@ Each segment is on unless its variable is `0`, `false`, `off` or `no`. Set them 
 | `WEEBO_HUD_RAM` | RAM segment |
 | `WEEBO_HUD_CPU` | CPU segment |
 | `WEEBO_HUD_DISQUE` | disk segment(s) |
+| `WEEBO_HUD_DISQUE_HOME` | the `$HOME` disk; off, only the working directory's disk is shown |
 
 The pane has one option left, `paneAuto` (boolean, on by default): it controls the automatic opening of the pane. Set it in `/config`; a change reloads the mod right away. Thresholds, colors, segment order and the 5 s interval are fixed.
 

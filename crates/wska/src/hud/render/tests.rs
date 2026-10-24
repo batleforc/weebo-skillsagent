@@ -165,8 +165,10 @@ fn options_hide_segments_and_reset() {
         "WEEBO_HUD_RESET5H" => Some("0".into()),
         "WEEBO_HUD_RESET7J" => Some("no".into()),
         "WEEBO_HUD_CPU" => Some("yes".into()),
+        "WEEBO_HUD_DISQUE_HOME" => Some("false".into()),
         _ => None,
     });
+    assert!(o.disque && !o.disque_home);
     let t = texts(&build_segments(&full_input(), &Metrics::default(), &o));
     assert_eq!(
         t,

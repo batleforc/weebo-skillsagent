@@ -84,17 +84,14 @@ pub fn statusline() {
             .map(String::from)
     };
     let cwd = at("/workspace/current_dir").or_else(|| at("/cwd"));
-    let home = std::env::var("HOME").ok();
+    let o = render::Options::from_env();
+    let home = std::env::var("HOME").ok().filter(|_| o.disque_home);
     let paths: Vec<String> = cwd.into_iter().chain(home).collect();
     let now_ms = SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .map(|d| d.as_millis())
         .unwrap_or(0);
     let m = metrics::sample(&paths, &state_path(), now_ms);
-    let line = render::render(&render::build_segments(
-        &input,
-        &m,
-        &render::Options::from_env(),
-    ));
+    let line = render::render(&render::build_segments(&input, &m, &o));
     std::io::stdout().write_all(line.as_bytes()).ok();
 }

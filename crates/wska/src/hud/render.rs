@@ -27,6 +27,8 @@ pub struct Options {
     pub ram: bool,
     pub cpu: bool,
     pub disque: bool,
+    /// Also sample the disk holding `$HOME`, not only the working directory's.
+    pub disque_home: bool,
     pub reset5h: bool,
     pub reset7j: bool,
 }
@@ -58,6 +60,7 @@ impl Options {
             ram: on("RAM"),
             cpu: on("CPU"),
             disque: on("DISQUE"),
+            disque_home: on("DISQUE_HOME"),
             reset5h: on("RESET5H"),
             reset7j: on("RESET7J"),
         }
