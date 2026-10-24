@@ -2,6 +2,13 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## [v0.16.0](https://github.com/batleforc/weebo-skillsagent/compare/11c2abd78168beec0b660584b87004a85210f97f..v0.16.0) - 2026-10-24
+#### Features
+- (**weebo-containerfile**) cache Rust dependencies with cargo-chef - ([11c2abd](https://github.com/batleforc/weebo-skillsagent/commit/11c2abd78168beec0b660584b87004a85210f97f)) - Max Batleforc, Claude Opus 5.5
+- (**weebo-hud**) wska status line and the weebo-hud resume pane - ([b1c9137](https://github.com/batleforc/weebo-skillsagent/commit/b1c9137a90c489e3031abf28b87333ff3dfb50ff)) - Max Batleforc, Claude Opus 5.5
+
+- - -
+
 ## [v0.15.0](https://github.com/batleforc/weebo-skillsagent/compare/68a4693f381ff07d11a07afeaf1a826ec89e51b9..v0.15.0) - 2026-10-24
 #### Features
 - (**skills**) add weebo-deps dependency hygiene skill - ([b9d4daf](https://github.com/batleforc/weebo-skillsagent/commit/b9d4daf0326772280041eee5779817ed8cd9f724)) - Max Batleforc, Claude Opus 5.5
