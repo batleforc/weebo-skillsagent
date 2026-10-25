@@ -33,10 +33,23 @@ cog verify --file "$1"
 [git_hooks.pre-commit]
 script = """#!/bin/sh
 set -e
+# Re-stage only what the commit already holds plus what `task recu` generated:
+# `git add -u` swept every modified tracked file into the commit.
+tmp=$(mktemp -d)
+trap 'rm -rf "$tmp"' EXIT
+git diff --cached --name-only --diff-filter=ACMR > "$tmp/staged"
+git diff --name-only | sort > "$tmp/dirty"
+# shortcut: a re-staged file takes its unstaged hunks too (`git add -p` is lost), fine until a fixer runs on partially staged files
+restage() {
+    while IFS= read -r f; do
+        if [ -e "$f" ]; then git add -- "$f"; fi
+    done < "$tmp/staged"
+}
 task recu
-git add -u # in case recu needed to regenerate files, add need to be done before linting (-u: tracked files only)
+git diff --name-only | sort | comm -13 "$tmp/dirty" - >> "$tmp/staged"
+restage # before linting, so lint sees the regenerated files
 task lint
-git add -u # in case linting fixed anything
+restage # in case linting fixed anything
 .hooks/end-of-line.sh
 .hooks/whitespace-fixer.sh
 gitleaks git --pre-commit --redact --staged --verbose

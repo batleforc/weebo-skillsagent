@@ -60,8 +60,9 @@ Backends, the lock and the CDE caveats: [references/mise.md](references/mise.md)
 ## 4. Git hooks
 
 cocogitto owns both hooks; `task init` installs them from `cog.toml`. Conventional Commits are
-enforced by `cog verify` on commit-msg. Pre-commit runs `task recu`, `git add -u`, `task lint`,
-`git add -u`, the two `.hooks/` fixers, then `gitleaks git --pre-commit --staged`. Details and
+enforced by `cog verify` on commit-msg. Pre-commit runs `task recu`, `task lint` (re-staging only
+the already staged files and what `recu` generated), the two `.hooks/` fixers, then
+`gitleaks git --pre-commit --staged`. Details and
 failure modes: [references/hooks.md](references/hooks.md).
 
 An agent never commits: Weebo commits are signed and signed-off by the user. Write the message to a

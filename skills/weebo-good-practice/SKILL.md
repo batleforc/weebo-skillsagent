@@ -1,6 +1,6 @@
 ---
 name: weebo-good-practice
-description: House coding practice for Weebo projects (Rust backend + TS frontend) — resilient, sober and secure code. No `unwrap`/`expect`/panic/unchecked indexing or arithmetic outside tests unless justified by a `#[expect(..., reason = "…")]`, typed errors, no ignored `Result`, no `unsafe` without encapsulation; strict TS with no `!`, `any` or unchecked casts; eco-design rules (RGESN, GR491, Opquast) from the Institut du Numérique Responsable's skill-nr; smallest change via ponytail. Use when writing, fixing or reviewing any Rust or TS code, when setting up a crate's lints or a tsconfig, when an `unwrap`, `unsafe`, `as`, `!` or `allow` attribute is added, or when a change adds a dependency, a loop over unbounded data, a cache or a query.
+description: House coding practice for Weebo projects (Rust backend + TS frontend) — resilient, sober and secure code. No `unwrap`/`expect`/panic/unchecked indexing or arithmetic outside tests unless justified by a `#[expect(..., reason = "…")]`, typed errors, no ignored `Result`, no `unsafe` without encapsulation; strict TS with no `!`, `any` or unchecked casts; eco-design rules (RGESN, GR491, Opquast) from the Institut du Numérique Responsable's skill-nr; smallest change via ponytail; proposes weebo-testing for tests and weebo-containerfile (cargo-chef) for images. Use when writing, fixing or reviewing any Rust or TS code, when setting up a crate's lints or a tsconfig, when an `unwrap`, `unsafe`, `as`, `!` or `allow` attribute is added, or when a change adds a dependency, a loop over unbounded data, a cache or a query.
 ---
 
 # Weebo good practice
@@ -30,6 +30,12 @@ Three axes, each with one source of truth:
 
    Other languages: `references/nr/rules/ecoconception-<lang>.md`. The criteria they cite
    (`GR491_Backend_4`, `RGESN 4.2`, `Opquast n°124`) are in `references/nr/referentiels/`.
+3. **Propose the sibling skills** when the change calls for them, and invoke them if the user agrees:
+
+   | When the change | Propose |
+   | --- | --- |
+   | adds code, an endpoint, a parser or a backend that needs tests (unit, coverage, fuzz, k6 load) | `weebo-testing` |
+   | adds or touches a `Containerfile`/`Dockerfile`, or a Rust image build (cargo-chef dependency cache) | `weebo-containerfile` |
 
 ## 2. The non-negotiables
 

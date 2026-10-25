@@ -22,9 +22,9 @@ vs `fix` matters. Check a message before handing it over: `cog verify --file msg
 | Step | Does | When it fails |
 | --- | --- | --- |
 | `task recu` | regenerates tracked artefacts | the generator broke; fix it |
-| `git add -u` | stages what `recu` rewrote (tracked files only) | |
+| re-stage | re-stages the files staged at hook start, plus those `recu` rewrote | |
 | `task lint` | every linter and format check | fix the finding, or run the formatter (`task fmt`, `task ui:fix`) |
-| `git add -u` | stages what a fixing linter changed | |
+| re-stage | re-stages the staged files a fixing linter changed | |
 | `.hooks/end-of-line.sh` | appends a final newline to staged text files, re-stages them | |
 | `.hooks/whitespace-fixer.sh` | strips trailing whitespace from the staged lines, re-stages | aborts with `NO CHANGES ADDED` when nothing is staged |
 | `gitleaks git --pre-commit --redact --staged --verbose` | secret scan of the staged diff | a real secret: unstage it and rotate it. A false positive: `.gitleaksignore` (fingerprint) or an allowlist in `gitleaks.toml` (`weebo-security`) |
@@ -32,8 +32,9 @@ vs `fix` matters. Check a message before handing it over: `cog verify --file msg
 `set -e` stops at the first failure. Hooks run from the repo root, so the `.hooks/` paths are
 relative to it.
 
-`git add -u` re-stages **whole tracked files**, partial staging (`git add -p`) included: whatever
-else is modified in those files goes into the commit too. Stash unrelated work first.
+The re-stage only touches files already staged (and what `recu` generated), so other uncommitted
+work stays out of the commit. It re-stages **whole files**: a file staged with `git add -p` takes its
+unstaged hunks along. Stash those first.
 
 ## 4. `.hooks/ignore`
 
