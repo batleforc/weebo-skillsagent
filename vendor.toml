@@ -32,7 +32,7 @@ provides = ["impeccable"]
 # and adding it there by hand would make the local hash diverge from the
 # recorded upstream hash, marking the skill as patched forever.
 licence  = "Apache-2.0"
-commit = "9368675"
+commit = "3671d50"
 hashes = { impeccable = "sha256:b40a20b4783d16b6f9fab5187dad1de5743261ca1ae5d1c7e83ea105fbf10061" }
 
 [sources.blender-game-skills]
@@ -90,7 +90,7 @@ subpath  = "skills/productivity"
 provides = ["grill-me", "grilling"]
 # Full text in LICENSES/mattpocock-skills.txt, same root-LICENSE reason.
 licence  = "MIT"
-commit = "49dd158"
+commit = "5beb35b"
 hashes = { grill-me = "sha256:a2253d86abb930490613ecd40db7166d53451c0ae03271f4acce36fdf47c5ef3", grilling = "sha256:9fd4deb13b57d10876a782f9a6aa4adb47587be511231a0763835d35c7de6034" }
 
 [sources.skill-nr]
