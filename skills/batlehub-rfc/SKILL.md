@@ -6,9 +6,10 @@ description: >
   when the user asks for an RFC or design doc, a "bis" of an existing RFC, to
   resolve an RFC's open questions, to threat-model a proposed change, to move
   an RFC to In review / Accepted / Implemented / Rejected, or to check one is
-  ready for sign-off. Not for bug fixes, changelog entries or a roadmap alone.
+  ready for sign-off, or for a last multi-agent review ("last review").
+  Not for bug fixes, changelog entries or a roadmap alone.
 user-invocable: true
-argument-hint: "[new|revise|land|review] [title or NNNN]"
+argument-hint: "[new|revise|land|review|last-review] [title or NNNN]"
 ---
 
 An RFC is a change worth arguing about *before* it is written, and the document
@@ -198,14 +199,50 @@ Read it as the reviewer would, and report in this order:
 - Status `Implemented` with the landing dates; `Touches` and `Risk` updated;
   roadmap ticked; the index regenerated.
 
-## 10. Finish
+## 10. `last-review` — the review panel
+
+Only when the user asks for it ("last review", "final review", `last-review`):
+six subagents cost too much to run on every pass. Run the `review` checklist
+(section 7) first and fix what it finds; the panel reads what is left. The
+author is the worst reader of their own document, so six reviewers read it cold,
+each through one lens. Launch them **in parallel, in one message**, as read-only
+subagents. Give each the RFC path, the repo root, its lens below, and the repo's
+code-navigation rules (graphify, …) — never your own opinion of the RFC, or it
+comes back confirmed.
+
+| # | Lens | Reads first | Asks |
+| --- | --- | --- | --- |
+| 1 | User experience | §1, §4, §11, §13 | Can the user or operator guess the config, read the errors, find the warnings, migrate without help? Is the uninteresting case stated? Keyboard, contrast, every locale for UI? |
+| 2 | Security | §5, §7, §8, §9 | Try to break it: an input missing from the attack-surface map, a STRIDE row without enforcement or negative test, a default on the open side, a control that fails open, a secret or personal datum in a log, label or error. |
+| 3 | Resilience | §10.2, §10.3, §6 | Each new dependency down, slow or lying: what happens, which direction it fails, timeouts, retries without storms, idempotency, restart mid-operation, HA, backup and restore of the new state. |
+| 4 | Code quality | §5, §6, §14, §16 | Every named symbol exists (grep it); the design fits the codebase's layers and idioms; the invariant is real; no needless abstraction or dependency; the test plan proves the claims; each phase leaves the tree green. |
+| 5 | Stability | §4.1, §10, §13, §14 | What that works today could this break: compatibility, defaults that change, migrations and their rollback, existing suites that must stay green, behaviour under soak and load, deprecation path. |
+| 6 | Honesty and completeness | the whole RFC | Does it solve each numbered motivation? Claims stated as verified that were assumed; numbers without a probe; strawman alternatives; risks or questions buried instead of in §15; any mandatory block missing or answered "none" without a reason; leftover template comments. |
+
+Each reviewer verifies against the code, not only the text, and returns a list
+of findings: severity (`blocker`, `major`, `minor`), the RFC section, the
+problem, the evidence (RFC quote or `file:line`), and the fix. "Nothing found"
+is a valid answer only with what was checked.
+
+Then triage, yourself:
+
+1. Merge duplicates across lenses; keep the strongest evidence.
+2. Re-check every `blocker` and `major` against the RFC and the code. Drop what
+   does not hold, and say so — a reviewer's confidence is not evidence.
+3. A finding that changes the design becomes a numbered question in §15
+   *Still open* (see `revise` above). A fix that changes no decision — a missing
+   reason, a wrong symbol, an unstated default — is made in the text.
+4. Any `blocker` left → the RFC stays `Draft`.
+
+## 11. Finish
 
 Run the repo's docs gates if it has them and report the last line. Then tell the
 user, in this order: the number and path; the state of each mandatory block
 (cases, reasoned none, or missing — missing first and loudly); the security
-rating and the highest residual risk; what is still open; every other file
-touched; what was verified against real code or a real client versus assumed.
-Do not commit: the user signs.
+rating and the highest residual risk; what is still open; if it ran, the panel's
+verdict per lens (blockers first, then what was fixed, moved to §15 or dropped,
+and why); every other file touched; what was verified against real code or a
+real client versus assumed. Do not commit: the user signs.
 
 ---
 
