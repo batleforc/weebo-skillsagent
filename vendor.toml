@@ -16,8 +16,8 @@ subpath  = "skills"
 # claude-api, which this harness already provides as built-ins.
 provides = ["mcp-builder", "webapp-testing", "frontend-design", "theme-factory"]
 licence  = "Apache-2.0"
-commit = "dbd4588"
-hashes = { frontend-design = "sha256:b5c2e1f1e14812a1313248313eaed1b17fdf3762607fcb4b9e2ca35501370a06", mcp-builder = "sha256:5bbe358b4bf2efcac08cb86720df4c0abcb6b6a7f05c206229cad35ce2f3130e", theme-factory = "sha256:6b1609671e9da6726637a51427f5552584e0a1cacfcab4a1e8852a195913808b", webapp-testing = "sha256:25ee0d712d267b8b8c5037b2790068cd66b5481ab43c0ba2cba2892b14d9ade9" }
+commit = "ca45fc4"
+hashes = { frontend-design = "sha256:b5c2e1f1e14812a1313248313eaed1b17fdf3762607fcb4b9e2ca35501370a06", mcp-builder = "sha256:b0cbe1adecae690d148bca9f5c01db89c74cd0ed3801f5e8fcfc8f941d72b5e6", theme-factory = "sha256:6b1609671e9da6726637a51427f5552584e0a1cacfcab4a1e8852a195913808b", webapp-testing = "sha256:25ee0d712d267b8b8c5037b2790068cd66b5481ab43c0ba2cba2892b14d9ade9" }
 
 [sources.impeccable]
 upstream = "https://github.com/pbakaus/impeccable"
@@ -32,8 +32,8 @@ provides = ["impeccable"]
 # and adding it there by hand would make the local hash diverge from the
 # recorded upstream hash, marking the skill as patched forever.
 licence  = "Apache-2.0"
-commit = "9368675"
-hashes = { impeccable = "sha256:b40a20b4783d16b6f9fab5187dad1de5743261ca1ae5d1c7e83ea105fbf10061" }
+commit = "e89e3ad"
+hashes = { impeccable = "sha256:d52a2dc0e0ad89a6a8fb4ff3b6ff2f4386e2694a8b6a3c3c495b63c71a2136d8" }
 
 [sources.blender-game-skills]
 upstream = "https://github.com/majidmanzarpour/blender-game-skills"
@@ -76,7 +76,7 @@ provides = ["ponytail", "ponytail-audit", "ponytail-debt", "ponytail-gain", "pon
 # invoked as a skill, not armed by a hook, and ponytail-gain's benchmark
 # numbers (read from the plugin's benchmarks/) are not there to show.
 licence  = "MIT"
-commit = "09c434a"
+commit = "96608e0"
 hashes = { ponytail = "sha256:c0bd4968ae5f789f6e208df40a57ea3d0abbb66c642677d4d02fb9a62f0ea9ad", ponytail-audit = "sha256:990428458f4dce2bfc6f2fba0124522795b71d0410958154db22a8b6884495ae", ponytail-debt = "sha256:69fd443d41a89d105f4796bba4bad7e04200d4000cc024b8f952dd38c32f885e", ponytail-gain = "sha256:b128a0b9329504626839bcf082f367ebc26518ac9c5afba1dc79df146ca0ba9b", ponytail-help = "sha256:84592d842f52e9fe17a200472293a044ecb5d2a8447bc01f246507891b710683", ponytail-review = "sha256:0fcee427e152792c559f7c45a9f55b68e8c2bba731adaac1ac303d9bc08da98c" }
 
 [sources.mattpocock-skills]
@@ -90,8 +90,8 @@ subpath  = "skills/productivity"
 provides = ["grill-me", "grilling"]
 # Full text in LICENSES/mattpocock-skills.txt, same root-LICENSE reason.
 licence  = "MIT"
-commit = "49dd158"
-hashes = { grill-me = "sha256:a2253d86abb930490613ecd40db7166d53451c0ae03271f4acce36fdf47c5ef3", grilling = "sha256:9fd4deb13b57d10876a782f9a6aa4adb47587be511231a0763835d35c7de6034" }
+commit = "4ae2317"
+hashes = { grill-me = "sha256:a2253d86abb930490613ecd40db7166d53451c0ae03271f4acce36fdf47c5ef3", grilling = "sha256:9304f2921d99a315318cf8087ca9ed80c24089dfd99a98e5de057d34b295974e" }
 
 [sources.skill-nr]
 upstream = "https://github.com/Institut-du-Numerique-Responsable/skill-nr"
