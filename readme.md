@@ -57,7 +57,7 @@ one profile serves both `--scope project` and `--scope user`.
 
 | Profile    | Includes  | Adds                                       |
 | ---------- | --------- | ------------------------------------------ |
-| `base`     | —         | `wska`, `graphify`, `rtk`, `ponytail`, `ponytail-plugin`, `grill-me`, `grilling`, `weebo-testing`, `weebo-good-practice`, `nr-check`, `weebo-hud` |
+| `base`     | —         | `wska`, `graphify`, `rtk`, `ponytail`, `ponytail-plugin`, `grill-me`, `grilling`, `weebo-testing`, `weebo-good-practice`, `nr-check`, `weebo-hud`, `weebo-dum-e` |
 | `weebo`    | `base`    | `weebo-taskfile-mise`, `weebo-security`, `weebo-deps`, `weebo-containerfile`, `weebo-api-contract`, `weebo-release`, `weebo-cde` |
 | `planning` | `base`    | `bmad`, `batlehub-rfc`, `judge`            |
 | `design`   | `base`    | `frontend-design`, `theme-factory`, `impeccable`, `batlehub-design` |
@@ -135,6 +135,7 @@ named `all`.
 | `weebo-release` | symlink | ours, from `batlehub/batlehub`: cocogitto bump/changelog, one version across manifests, tag-triggered GitHub release | `cog`, `git`, `task` |
 | `weebo-cde` | symlink | ours, from `batlehub/batlehub`: Eclipse Che: devfile sidecars, `kubectl exec $HOSTNAME -c`, browser sidecar, sleep-infinity fallback | `kubectl`, `task` |
 | `weebo-helm` | symlink | ours, from `batlehub/batlehub`: Helm chart skeleton, values conventions, helm-docs gate, PR lint, cosign-signed OCI chart | `helm`, `helm-docs` |
+| `weebo-dum-e` | symlink | ours: `/weebo-dum-e` hands a brainless one-shot chore to a throwaway haiku subagent, low effort, no reasoning | — |
 | `wska`            | symlink     | ours: makes agents install, update and add skills through `wska` rather than by hand | `wska` or `cargo` |
 
 Requirements are hand-maintained in `vendor.toml`'s `[requires]` table — `wska`

@@ -247,7 +247,7 @@ installer is never `yes`: wska cannot see what its command wrote, so it reads
 
 ```
 PROFILE      INCLUDES  ITEMS
-base         -         wska, graphify, rtk, ponytail, ponytail-plugin, grill-me, grilling
+base         -         wska, graphify, rtk, ponytail, ponytail-plugin, grill-me, grilling, weebo-testing, weebo-good-practice, nr-check, weebo-hud, weebo-dum-e
 docs         base      weebo-techdoc
 ```
 
@@ -257,7 +257,7 @@ nothing is recorded.
 
 ```
 NAME             RECORDED AS  ITEMS
-docs             profile      graphify, grill-me, grilling, ponytail, ponytail-plugin, rtk, weebo-techdoc, wska
+docs             profile      graphify, grill-me, grilling, nr-check, ponytail, ponytail-plugin, rtk, weebo-dum-e, weebo-good-practice, weebo-hud, weebo-techdoc, weebo-testing, wska
 batlehub-design  item         batlehub-design
 ```
 

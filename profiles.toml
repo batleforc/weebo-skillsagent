@@ -10,7 +10,8 @@
 # weebo-good-practice is the house coding rules; it calls ponytail and the
 # nr-check agents (skill-nr's eco-check, accessibilite-check), so they travel together.
 # weebo-hud is user-scope only: a project-scope install skips it (see vendor.toml).
-items = ["wska", "graphify", "rtk", "ponytail", "ponytail-plugin", "grill-me", "grilling", "weebo-testing", "weebo-good-practice", "nr-check", "weebo-hud"]
+# weebo-dum-e hands brainless one-shot chores to a cheap haiku subagent.
+items = ["wska", "graphify", "rtk", "ponytail", "ponytail-plugin", "grill-me", "grilling", "weebo-testing", "weebo-good-practice", "nr-check", "weebo-hud", "weebo-dum-e"]
 
 [profiles.weebo]
 include = ["base"]
