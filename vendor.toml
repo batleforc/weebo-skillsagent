@@ -16,7 +16,7 @@ subpath  = "skills"
 # claude-api, which this harness already provides as built-ins.
 provides = ["mcp-builder", "webapp-testing", "frontend-design", "theme-factory"]
 licence  = "Apache-2.0"
-commit = "ca45fc4"
+commit = "2c5958e"
 hashes = { frontend-design = "sha256:b5c2e1f1e14812a1313248313eaed1b17fdf3762607fcb4b9e2ca35501370a06", mcp-builder = "sha256:b0cbe1adecae690d148bca9f5c01db89c74cd0ed3801f5e8fcfc8f941d72b5e6", theme-factory = "sha256:6b1609671e9da6726637a51427f5552584e0a1cacfcab4a1e8852a195913808b", webapp-testing = "sha256:25ee0d712d267b8b8c5037b2790068cd66b5481ab43c0ba2cba2892b14d9ade9" }
 
 [sources.impeccable]
@@ -32,8 +32,8 @@ provides = ["impeccable"]
 # and adding it there by hand would make the local hash diverge from the
 # recorded upstream hash, marking the skill as patched forever.
 licence  = "Apache-2.0"
-commit = "446a257"
-hashes = { impeccable = "sha256:be0aa5cbd23f001312ec05dbd04006e3c078b8e3689a195d4ed7b4cde08cf4ba" }
+commit = "0fb9d01"
+hashes = { impeccable = "sha256:2000c40bd4a747f428aa999b1c9111d0ce64f404f42d0a4535b7d0281efbd1de" }
 
 [sources.blender-game-skills]
 upstream = "https://github.com/majidmanzarpour/blender-game-skills"
