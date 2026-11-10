@@ -2,8 +2,8 @@
 name: batlehub-rfc
 description: >
   Write, revise or land an RFC (design document) in the BatleHub house style,
-  with mandatory security, supply-chain, privacy and operability blocks. Use
-  when the user asks for an RFC or design doc, a "bis" of an existing RFC, to
+  with mandatory security, supply-chain, privacy and operability blocks and
+  mocks of every visible change. Use when the user asks for an RFC or design doc, a "bis" of an existing RFC, to
   resolve an RFC's open questions, to threat-model a proposed change, to move
   an RFC to In review / Accepted / Implemented / Rejected, or to check one is
   ready for sign-off, or for a last multi-agent review ("last review").
@@ -26,7 +26,10 @@ If the repo has its own template (`docs/internal/0000-rfc-template.md`) and
 this skill for the rules; where the repo template lacks §8 to §11 of ours, add
 them.
 
-## 1. Before writing a line
+In this file `§N` always means a section of the RFC, never of this file. RFC
+section numbers are fixed (see `new`), so `§7` is Security in every RFC.
+
+## Before writing a line
 
 **Verify against the source, not memory or the roadmap.** A roadmap entry is a
 hypothesis written without the code open; BatleHub's RFC 0024 found two of its
@@ -45,19 +48,21 @@ claims wrong within the hour.
 - Run `task audit` (or the stack's audit) before proposing a dependency, and
   read its advisories, licence and maintenance health.
 
-## 2. `new` — scaffold, fill, check
+## `new` — scaffold, fill, check
 
 - Number: one past the highest that ever existed in `docs/rfc/`, zero-padded to
   4, never reused. `task rfc:new TITLE=… SETTLES=…` when the repo has it,
   otherwise copy `template.md` to `docs/rfc/NNNN-<slug>.md` by hand and add it
   to whatever index the docs keep.
-- Fill top to bottom, **delete every HTML comment**. Sections that do not apply
-  are deleted and the numbering closed up — except the mandatory blocks (§4).
+- Fill top to bottom, **delete every HTML comment**. Section numbers are
+  fixed: a section or subsection that does not apply keeps its heading and one
+  sentence on why, never a bare "N/A" and never deleted. Only §17 waits for
+  `land`.
 - `Co-author` is the model that wrote it with the user. `Touches` lists the
   components and trees actually edited. `Risk` is the highest rating among
   §7 to §10.
 
-## 3. What no gate checks
+## What no gate checks
 
 - **Motivations are numbered and falsifiable**, each naming the code path or
   workflow that hurts today.
@@ -89,7 +94,7 @@ claims wrong within the hour.
 - **Word count**: past ~4 000 words, mark it as reference material the way the
   repo's docs do. Prose wraps at 80 columns; tables and code are exempt.
 
-## 4. The mandatory blocks
+## The mandatory blocks
 
 Five blocks exist in **every** RFC, including a *bis*:
 
@@ -101,8 +106,8 @@ Five blocks exist in **every** RFC, including a *bis*:
 | §9 Data and privacy | every new datum: personal or not, where, how long, who reads it |
 | §10 Operability | metrics, audit trail, alerts, failure direction, capacity |
 
-§11 (accessibility, i18n, compliance, licensing, docs) is one line per concern,
-each either handled or ruled out with its reason.
+§11 (accessibility, i18n, compliance, licensing, docs) is always present too,
+one line per concern, each either handled or ruled out with its reason.
 
 **An RFC missing any of them is not valid.** It stays `Draft`, is not signed
 off, and `land` has nothing to measure against. "This change has no security
@@ -112,18 +117,36 @@ two are indistinguishable afterwards: a missing block does not say whether the
 author decided nothing applied or never asked. The written answer is a claim a
 reviewer can refuse; that is why it is written.
 
+**Size each block to the change.** The table in `concerns.md` says which blocks
+get full treatment for this kind of change; every other block is one sentence,
+not the template's tables filled with "n/a" rows. That sentence is the whole
+block:
+
+```markdown
+## 8. Supply chain
+
+No new dependency, image, action or tool: the retry reuses `tokio::time`,
+already in `Cargo.lock`, and `task audit` is unchanged.
+```
+
 Distrust your own judgement on a change that *feels* harmless. A log line can
 leak a token, a metric label can carry an email, a "read-only" endpoint can
 enumerate tenants, and a docs change can publish an internal hostname.
 
-### 4.1 §6.P, the proof
+### §6.P, the proof
 
 Name the real consumer — package manager, browser, CLI, operator workflow — its
 pinned version, and numbered **observations**, not intentions: the command run,
 what crossed the wire, the fact that settles it (exit code, the client's own
 error text quoted, a request that was *not* made, a counter that moved). The
 floor includes one success and one **refusal**: what must be denied, denied,
-with proof the refused bytes were never fetched. In BatleHub, map the change to
+with proof the refused bytes were never fetched. One observation reads like:
+
+> 3. `cargo 1.83 fetch` with a token lacking `read` on `foo` exits 101 with
+>    `failed to get foo … 403 Forbidden`; the proxy log shows no upstream
+>    `GET` for `foo`, so the refused bytes were never fetched.
+
+In BatleHub, map the change to
 its heavy suite (`tests/heavy/authz.sh` for grants and tokens, `airgap.sh`,
 `quarantine.sh`, `soak.sh`, …).
 
@@ -131,7 +154,7 @@ When no client can observe the change, keep the heading and write three
 sentences: what a client would have seen had it a surface, why it has none, and
 which suite carries the regression signal instead.
 
-### 4.2 §7, security
+### §7, security
 
 Start with the rating. Draw the trust boundaries (mermaid), then one STRIDE row
 per real threat with its mitigation, the code that enforces it and the residual
@@ -139,7 +162,7 @@ risk with who accepted it. §14 then carries **one negative test per row**: the
 bypass attempted, refused. New parsers get a fuzz target; how each test layer is
 written and run is the `weebo-testing` skill.
 
-## 5. Diagrams
+## Diagrams
 
 Two to four mermaid diagrams in §5 beside the before/after and the trust
 boundaries. `flowchart` for a decision, `sequenceDiagram` for a request
@@ -150,7 +173,26 @@ that make a decision node (`B{"blocked?"}`) are structure, not label. Run the
 repo's mermaid check if it has one; a broken fence can build green and render an
 error box.
 
-## 6. What else changes with an RFC
+### §4.5, mocks
+
+When the change alters anything a person sees — web UI, TUI, CLI output,
+prompts, help or error text — §4.5 carries a mock of each touched screen or
+command; a reviewer argues about wording and layout before they are built, not
+after. Not a mandatory block: with no visible surface, §4.5 is one sentence
+saying so and why.
+
+- **Every state, not just the happy one**: nominal, empty, error with the real
+  message text, and the §6.P refusal as the user sees it.
+- **CLI and TUI are drawn as exact output** in a `text` fence: the command, the
+  columns, the colours named (`[red]`), the exit code. Box-drawing for TUI.
+- **Web UI**: an ASCII wireframe in a `text` fence for layout; when look
+  matters, an HTML mock at `docs/rfc/assets/NNNN-<screen>.html` built with the
+  `batlehub-design` skill (its tokens and components, nothing invented), linked
+  from §4.5. Without that skill installed, the wireframe alone.
+- One sentence under each mock: what it decides. §11 accessibility then
+  refers to the mocks (focus order, contrast, what a screen reader announces).
+
+## What else changes with an RFC
 
 | When | What |
 | --- | --- |
@@ -161,7 +203,7 @@ error box.
 | It adds a dependency | `task audit` stays green; licence policy updated |
 | It adds an API | the generated spec (utoipa) and the generated client (HeyApi) |
 
-## 7. `review` — is it ready?
+## `review` — is it ready?
 
 Read it as the reviewer would, and report in this order:
 
@@ -170,16 +212,21 @@ Read it as the reviewer would, and report in this order:
 2. Security claims without an enforcement point or a negative test.
 3. Defaults that are not the safe side, and controls that fail open, without
    their argument.
-4. Questions still open.
-5. Everything else from §3 that is weak.
+4. A visible surface changed without a §4.5 mock, or mocks missing the error
+   and empty states.
+5. Questions still open.
+6. Everything else from §3 that is weak.
 
-## 8. `revise` — questions and status
+## `revise` — questions and status
 
 - Resolve a question by moving it up with its number and the decision; never
   delete it.
-- **No status move past `Draft` while a mandatory block is missing** or *Still
-  open* is non-empty. Adding a block after sign-off inverts the order the rule
-  protects.
+- **No move to `In review` while a mandatory block is missing**: the review
+  argues against the blocks, so they come first. Open questions may remain;
+  settling them is what the review is for.
+- **No move to `Accepted` while *Still open* is non-empty** or a `blocker`
+  stands. A question reopened by review keeps the RFC `In review`; it does not
+  send it back to `Draft`.
 - Vocabulary: `Draft`, `In review`, `Accepted`, `Implemented`, `Rejected`,
   `Superseded by NNNN`. Files never move or get renumbered.
 - Reopening a settled RFC is a *bis*, not an edit beyond a pointer in its
@@ -187,7 +234,7 @@ Read it as the reviewer would, and report in this order:
 - A security finding raised in review that changes the design is a resolved
   question with its number, not a silent edit to §7.
 
-## 9. `land` — when the implementation ships
+## `land` — when the implementation ships
 
 - Append `## 17. Revision against the tree (YYYY-MM-DD)`: what shipped and every
   point where it differs from the text, each with its reason. Do not rewrite the
@@ -195,15 +242,17 @@ Read it as the reviewer would, and report in this order:
 - Say what the proof observed, not what the RFC predicted.
 - For each §7 threat row: the test that now proves it, or the row that turned
   out not to hold and what replaced it. For §8: the versions that actually
-  shipped and `task audit`'s result.
+  shipped and `task audit`'s result. For §4.5: each mock against what shipped
+  (a screenshot or the real output), differences listed; the mocks stay as
+  written.
 - Status `Implemented` with the landing dates; `Touches` and `Risk` updated;
   roadmap ticked; the index regenerated.
 
-## 10. `last-review` — the review panel
+## `last-review` — the review panel
 
 Only when the user asks for it ("last review", "final review", `last-review`):
 six subagents cost too much to run on every pass. Run the `review` checklist
-(section 7) first and fix what it finds; the panel reads what is left. The
+first and fix what it finds; the panel reads what is left. The
 author is the worst reader of their own document, so six reviewers read it cold,
 each through one lens. Launch them **in parallel, in one message**, as read-only
 subagents. Give each the RFC path, the repo root, its lens below, and the repo's
@@ -212,7 +261,7 @@ comes back confirmed.
 
 | # | Lens | Reads first | Asks |
 | --- | --- | --- | --- |
-| 1 | User experience | §1, §4, §11, §13 | Can the user or operator guess the config, read the errors, find the warnings, migrate without help? Is the uninteresting case stated? Keyboard, contrast, every locale for UI? |
+| 1 | User experience | §1, §4 (mocks in §4.5), §11, §13 | Can the user or operator guess the config, read the errors, find the warnings, migrate without help? Is the uninteresting case stated? Does every visible change have a mock, in every state, that matches the text? Keyboard, contrast, every locale for UI? |
 | 2 | Security | §5, §7, §8, §9 | Try to break it: an input missing from the attack-surface map, a STRIDE row without enforcement or negative test, a default on the open side, a control that fails open, a secret or personal datum in a log, label or error. |
 | 3 | Resilience | §10.2, §10.3, §6 | Each new dependency down, slow or lying: what happens, which direction it fails, timeouts, retries without storms, idempotency, restart mid-operation, HA, backup and restore of the new state. |
 | 4 | Code quality | §5, §6, §14, §16 | Every named symbol exists (grep it); the design fits the codebase's layers and idioms; the invariant is real; no needless abstraction or dependency; the test plan proves the claims; each phase leaves the tree green. |
@@ -232,9 +281,9 @@ Then triage, yourself:
 3. A finding that changes the design becomes a numbered question in §15
    *Still open* (see `revise` above). A fix that changes no decision — a missing
    reason, a wrong symbol, an unstated default — is made in the text.
-4. Any `blocker` left → the RFC stays `Draft`.
+4. Any `blocker` left → the RFC cannot move to `Accepted`.
 
-## 11. Finish
+## Finish
 
 Run the repo's docs gates if it has them and report the last line. Then tell the
 user, in this order: the number and path; the state of each mandatory block

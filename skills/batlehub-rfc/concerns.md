@@ -17,7 +17,7 @@ reviewer asks. A "no" needs its reason: "no new surface, the handler reuses
 | stores, logs or forwards anything about a person | §9 |
 | adds a background job, cache, queue or new storage | §10.2, §10.3 |
 | changes a default | §4.1, §7, §13 |
-| changes the UI | §11 accessibility and i18n |
+| changes the UI, TUI, CLI output or any user-facing text | §4.5 mocks, §11 accessibility and i18n |
 
 Everything not in that table still gets its one sentence.
 
