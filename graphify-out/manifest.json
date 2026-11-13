@@ -5514,9 +5514,9 @@
     "semantic_hash": ""
   },
   "skills/batlehub-rfc/SKILL.md": {
-    "mtime": 1793138187.6234517,
-    "seen": 1793138195.0750003,
-    "ast_hash": "8ceb13cc3a9e9c253e99852bd5a6387c",
+    "mtime": 1794531211.0573049,
+    "seen": 1794531221.2027273,
+    "ast_hash": "32d48dc4244ce7521ccab180ba5181e2",
     "semantic_hash": ""
   },
   "skills/batlehub-rfc/concerns.md": {
@@ -5526,9 +5526,9 @@
     "semantic_hash": ""
   },
   "skills/batlehub-rfc/template.md": {
-    "mtime": 1792108095.899127,
-    "seen": 1792839078.6781642,
-    "ast_hash": "5da85d5c0761f14108f4d3b2318b9482",
+    "mtime": 1794531200.6543977,
+    "seen": 1794531221.2027733,
+    "ast_hash": "1c8d8d678644afbd79b63a1b31ee43ae",
     "semantic_hash": ""
   },
   "skills/blender-image-to-3d/SKILL.md": {
@@ -6972,9 +6972,9 @@
     "semantic_hash": ""
   },
   "docs/content/docs/wska.md": {
-    "mtime": 1792864143.436731,
-    "seen": 1792870143.860898,
-    "ast_hash": "bb884837a37c60ebe9848b5fab49c8f4",
+    "mtime": 1793904047.3016648,
+    "seen": 1794531221.199002,
+    "ast_hash": "347b885c3c7ced27d585272a24bd71e2",
     "semantic_hash": ""
   },
   ".github/workflows/vendor-sync.yml": {

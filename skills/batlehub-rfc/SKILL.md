@@ -47,6 +47,10 @@ claims wrong within the hour.
   design is then written to that map, not the map retrofitted to the design.
 - Run `task audit` (or the stack's audit) before proposing a dependency, and
   read its advisories, licence and maintenance health.
+- **Note each source as you read it**, pinned (commit SHA, version, probe
+  command and date, URL and date read): it becomes an entry of §17 *References
+  and sources*. Reconstructing them afterwards is how a memory gets cited as a
+  fact.
 
 ## `new` — scaffold, fill, check
 
@@ -56,7 +60,7 @@ claims wrong within the hour.
   to whatever index the docs keep.
 - Fill top to bottom, **delete every HTML comment**. Section numbers are
   fixed: a section or subsection that does not apply keeps its heading and one
-  sentence on why, never a bare "N/A" and never deleted. Only §17 waits for
+  sentence on why, never a bare "N/A" and never deleted. Only §18 waits for
   `land`.
 - `Co-author` is the model that wrote it with the user. `Touches` lists the
   components and trees actually edited. `Risk` is the highest rating among
@@ -91,6 +95,10 @@ claims wrong within the hour.
   recommendation, say so.
 - **Phases each leave the tree green**, and a security control never lands in a
   later phase than the surface it protects.
+- **Every borrowed fact is cited**: a quoted line of code, a probe's number, a
+  spec's rule, a client's behaviour, a CVE carries `[Rn]` pointing into §17,
+  where the source is pinned. A claim with no entry reads as the author's own
+  reasoning; uncited entries are deleted.
 - **Word count**: past ~4 000 words, mark it as reference material the way the
   repo's docs do. Prose wraps at 80 columns; tables and code are exempt.
 
@@ -215,7 +223,9 @@ Read it as the reviewer would, and report in this order:
 4. A visible surface changed without a §4.5 mock, or mocks missing the error
    and empty states.
 5. Questions still open.
-6. Everything else from §3 that is weak.
+6. Claims presented as verified with no §17 entry, and entries pinned to a
+   branch, a "latest" or no date.
+7. Everything else from §3 that is weak.
 
 ## `revise` — questions and status
 
@@ -236,10 +246,11 @@ Read it as the reviewer would, and report in this order:
 
 ## `land` — when the implementation ships
 
-- Append `## 17. Revision against the tree (YYYY-MM-DD)`: what shipped and every
+- Append `## 18. Revision against the tree (YYYY-MM-DD)`: what shipped and every
   point where it differs from the text, each with its reason. Do not rewrite the
   earlier sections; the delta is the record.
-- Say what the proof observed, not what the RFC predicted.
+- Say what the proof observed, not what the RFC predicted. Sources it relied
+  on (the commits that shipped, the client version actually run) join §17.
 - For each §7 threat row: the test that now proves it, or the row that turned
   out not to hold and what replaced it. For §8: the versions that actually
   shipped and `task audit`'s result. For §4.5: each mock against what shipped
@@ -266,7 +277,7 @@ comes back confirmed.
 | 3 | Resilience | §10.2, §10.3, §6 | Each new dependency down, slow or lying: what happens, which direction it fails, timeouts, retries without storms, idempotency, restart mid-operation, HA, backup and restore of the new state. |
 | 4 | Code quality | §5, §6, §14, §16 | Every named symbol exists (grep it); the design fits the codebase's layers and idioms; the invariant is real; no needless abstraction or dependency; the test plan proves the claims; each phase leaves the tree green. |
 | 5 | Stability | §4.1, §10, §13, §14 | What that works today could this break: compatibility, defaults that change, migrations and their rollback, existing suites that must stay green, behaviour under soak and load, deprecation path. |
-| 6 | Honesty and completeness | the whole RFC | Does it solve each numbered motivation? Claims stated as verified that were assumed; numbers without a probe; strawman alternatives; risks or questions buried instead of in §15; any mandatory block missing or answered "none" without a reason; leftover template comments. |
+| 6 | Honesty and completeness | the whole RFC | Does it solve each numbered motivation? Claims stated as verified that were assumed, or with no pinned §17 entry; numbers without a probe; strawman alternatives; risks or questions buried instead of in §15; any mandatory block missing or answered "none" without a reason; leftover template comments. |
 
 Each reviewer verifies against the code, not only the text, and returns a list
 of findings: severity (`blocker`, `major`, `minor`), the RFC section, the

@@ -11,7 +11,7 @@ included. What is left must read as a document, not a filled-in form.
   `0002-artifact-retention-policies`, not `0002-add-a-cron-job`.
 - Section numbers are fixed, so §7 is Security in every RFC and references to
   it hold. A section or subsection that does not apply keeps its heading and
-  one sentence on why: never a bare "N/A", never deleted. Only §17 waits for
+  one sentence on why: never a bare "N/A", never deleted. Only §18 waits for
   the implementation to ship.
 - The MANDATORY blocks: §6.P (proof), §7 (security), §8 (supply chain), §9
   (data and privacy), §10 (operability) and §11 (other concerns). "None
@@ -160,7 +160,7 @@ refusal from §6.P. Text surfaces (CLI, TUI) are drawn as the exact output in a
 `text` fence. A web UI is a wireframe in a `text` fence, or an HTML mock built
 with the batlehub-design skill at docs/rfc/assets/NNNN-<screen>.html, linked
 here. Under each mock: one sentence on what it decides (layout, wording,
-order). A mock is a proposal; §17 records what shipped. -->
+order). A mock is a proposal; §18 records what shipped. -->
 
 **<Screen or command> — <state>**
 
@@ -401,7 +401,28 @@ security control never lands in a later phase than the surface it protects. -->
 
 ---
 
-## 17. Revision against the tree (YYYY-MM-DD)
+## 17. References and sources
+
+<!-- Every fact the RFC did not establish itself points here: cite it inline as
+[R1], [R2]… where the claim is made, and an entry nobody cites is deleted.
+Pin each source so a reader can find the same bytes a year later:
+- code: `path:line` at a commit SHA, never a branch;
+- a sibling RFC: its number and status;
+- a spec, standard or upstream doc: its version or section, and the URL;
+- a real client or tool: its pinned version (the one §6.P ran);
+- a probe: the exact command and the date it ran — numbers come from here;
+- an advisory: CVE / GHSA id (the §8 rows cite these);
+- a web page that can change: the URL and the date it was read.
+A claim with no entry is the author's own reasoning and must read as such, not
+as a verified fact. -->
+
+| # | Source | Pinned at | Supports |
+| --- | --- | --- | --- |
+| R1 | <`src/routes/policy.rs:42`, RFC 0024, RFC 9110 §15.4, `curl -sI …`> | <SHA / version / date read> | <§ and the claim it backs> |
+
+---
+
+## 18. Revision against the tree (YYYY-MM-DD)
 
 <!-- Added by `land` when the implementation ships; leave this heading out
 until then. What shipped and every point where it differs from the text above,
