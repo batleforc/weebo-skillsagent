@@ -5106,9 +5106,9 @@
     "semantic_hash": ""
   },
   "readme.md": {
-    "mtime": 1793903737.8346045,
-    "seen": 1793903755.3713722,
-    "ast_hash": "2cdfd3cf307e0157af5f8fb893127ae5",
+    "mtime": 1794617288.2774134,
+    "seen": 1794617296.5601714,
+    "ast_hash": "c1ad9138348cc143451b61b4117473d1",
     "semantic_hash": ""
   },
   "skills/3dviz-pro-max/SKILL.md": {
@@ -5514,21 +5514,21 @@
     "semantic_hash": ""
   },
   "skills/batlehub-rfc/SKILL.md": {
-    "mtime": 1794531211.0573049,
-    "seen": 1794531221.2027273,
-    "ast_hash": "32d48dc4244ce7521ccab180ba5181e2",
+    "mtime": 1794617283.743314,
+    "seen": 1794617296.5624857,
+    "ast_hash": "11d4f81b88c824a65081c349c17c5f94",
     "semantic_hash": ""
   },
   "skills/batlehub-rfc/concerns.md": {
-    "mtime": 1792108124.2491012,
-    "seen": 1792839078.6781633,
-    "ast_hash": "145da913db2e87395fb25bf32f0cccac",
+    "mtime": 1794617264.3792865,
+    "seen": 1794617296.5624871,
+    "ast_hash": "3443627cd76fbfa602718ce18a01066b",
     "semantic_hash": ""
   },
   "skills/batlehub-rfc/template.md": {
-    "mtime": 1794531200.6543977,
-    "seen": 1794531221.2027733,
-    "ast_hash": "1c8d8d678644afbd79b63a1b31ee43ae",
+    "mtime": 1794617283.7435913,
+    "seen": 1794617296.562488,
+    "ast_hash": "0741b6ae4fa438808c7a6a5da0d6ef54",
     "semantic_hash": ""
   },
   "skills/blender-image-to-3d/SKILL.md": {
@@ -6089,34 +6089,10 @@
     "ast_hash": "5cfc551d75f3e28432027a891d140cbd",
     "semantic_hash": ""
   },
-  "skills/weebo-api-contract/templates/crates/web/src/handlers/example.rs": {
-    "mtime": 1792338941.712951,
-    "seen": 1792839078.6780043,
-    "ast_hash": "9e15f4af3bc1c2659e352f8f3c708461",
-    "semantic_hash": ""
-  },
-  "skills/weebo-api-contract/templates/crates/web/src/openapi.rs": {
-    "mtime": 1792338941.712951,
-    "seen": 1792839078.6780055,
-    "ast_hash": "739aa375054a1bfc77bd97b6831a8b91",
-    "semantic_hash": ""
-  },
-  "skills/weebo-api-contract/templates/crates/web/tests/openapi_contract.rs": {
-    "mtime": 1792338941.712951,
-    "seen": 1792839078.678007,
-    "ast_hash": "98f0c4b8626284bd85d2bd66dbf7df51",
-    "semantic_hash": ""
-  },
-  "skills/weebo-api-contract/templates/server/src/main.rs": {
-    "mtime": 1792338941.713278,
-    "seen": 1792839078.6780078,
-    "ast_hash": "e89a81f4e93fd9f9a8d77c0ddaad90c7",
-    "semantic_hash": ""
-  },
   "skills/weebo-api-contract/templates/ui/openapi-ts.config.ts": {
-    "mtime": 1792338941.7134018,
-    "seen": 1792839078.678009,
-    "ast_hash": "9fc5b6801701ef29e2f8174249c67f16",
+    "mtime": 1794617288.2788591,
+    "seen": 1794617296.5567276,
+    "ast_hash": "84eff2aab75c2e3cf1f57ba05ab13d48",
     "semantic_hash": ""
   },
   "skills/weebo-api-contract/templates/ui/src/clientInit.ts": {
@@ -6198,27 +6174,27 @@
     "semantic_hash": ""
   },
   "skills/weebo-api-contract/SKILL.md": {
-    "mtime": 1792338941.7118075,
-    "seen": 1792839078.6782517,
-    "ast_hash": "8a3d489c2cd06845dbe54ffd87c3b2b1",
+    "mtime": 1794617288.277541,
+    "seen": 1794617296.5652366,
+    "ast_hash": "47af0849857dddfef735d24f637f21e1",
     "semantic_hash": ""
   },
   "skills/weebo-api-contract/references/backend.md": {
-    "mtime": 1792338941.712322,
-    "seen": 1792839078.6782527,
-    "ast_hash": "9cf2f6d656ebde4244b6a568bea1a36e",
+    "mtime": 1794617288.2776387,
+    "seen": 1794617296.5652378,
+    "ast_hash": "5caef4e3f8a3e59a4bc6c60f1dc99977",
     "semantic_hash": ""
   },
   "skills/weebo-api-contract/references/client.md": {
-    "mtime": 1792338941.712416,
-    "seen": 1792839078.6782541,
-    "ast_hash": "1fbcece3b62faff754e333f2ddcb723a",
+    "mtime": 1794617288.2776387,
+    "seen": 1794617296.565239,
+    "ast_hash": "aabca59fa6076c70acc0ee22e4225615",
     "semantic_hash": ""
   },
   "skills/weebo-api-contract/references/drift-gate.md": {
-    "mtime": 1792338941.712416,
-    "seen": 1792839078.678255,
-    "ast_hash": "0b3112c5a6953e8ffc2f9e9fdf64db35",
+    "mtime": 1794617288.2776387,
+    "seen": 1794617296.5652404,
+    "ast_hash": "033a777f37eb28839bf725165806e361",
     "semantic_hash": ""
   },
   "skills/weebo-api-contract/templates/.github/workflows/openapi-lint.yaml": {
@@ -6234,9 +6210,9 @@
     "semantic_hash": ""
   },
   "skills/weebo-api-contract/templates/.tasks/api.yaml": {
-    "mtime": 1792338941.7125697,
-    "seen": 1792839078.6782584,
-    "ast_hash": "49ad307ff79524ca336b783ef9653bbf",
+    "mtime": 1794617288.2778273,
+    "seen": 1794617296.55671,
+    "ast_hash": "806f3cdaa632906dc96f359ed61ce264",
     "semantic_hash": ""
   },
   "skills/weebo-cde/SKILL.md": {
@@ -7149,6 +7125,90 @@
     "mtime": 1793903734.0753186,
     "seen": 1793903755.3760056,
     "ast_hash": "ed0b8895cfd9af0952072688c1cacbde",
+    "semantic_hash": ""
+  },
+  "skills/weebo-api-contract/templates/actix/crates/web/src/handlers/example.rs": {
+    "mtime": 1794617288.2779384,
+    "seen": 1794617296.5567117,
+    "ast_hash": "9e15f4af3bc1c2659e352f8f3c708461",
+    "semantic_hash": ""
+  },
+  "skills/weebo-api-contract/templates/actix/crates/web/src/openapi.rs": {
+    "mtime": 1794617288.2779384,
+    "seen": 1794617296.5567126,
+    "ast_hash": "ec408112e74fbcbe61de6d7f259f6d47",
+    "semantic_hash": ""
+  },
+  "skills/weebo-api-contract/templates/actix/crates/web/tests/openapi_contract.rs": {
+    "mtime": 1794617288.2779384,
+    "seen": 1794617296.556714,
+    "ast_hash": "98f0c4b8626284bd85d2bd66dbf7df51",
+    "semantic_hash": ""
+  },
+  "skills/weebo-api-contract/templates/actix/server/src/main.rs": {
+    "mtime": 1794617288.27819,
+    "seen": 1794617296.556715,
+    "ast_hash": "e89a81f4e93fd9f9a8d77c0ddaad90c7",
+    "semantic_hash": ""
+  },
+  "skills/weebo-api-contract/templates/axum/apps/swaggergen/Cargo.toml": {
+    "mtime": 1794617288.2782733,
+    "seen": 1794617296.5567162,
+    "ast_hash": "9162a19c27092027861bf43321fd8bdd",
+    "semantic_hash": ""
+  },
+  "skills/weebo-api-contract/templates/axum/apps/swaggergen/src/main.rs": {
+    "mtime": 1794617288.2783585,
+    "seen": 1794617296.5567174,
+    "ast_hash": "b656d16abb6c0b988ddbea6cc36f4be1",
+    "semantic_hash": ""
+  },
+  "skills/weebo-api-contract/templates/axum/crates/web/Cargo.toml": {
+    "mtime": 1794617288.2784364,
+    "seen": 1794617296.5567183,
+    "ast_hash": "f7d1eddd704ada39d0cae51944d781c7",
+    "semantic_hash": ""
+  },
+  "skills/weebo-api-contract/templates/axum/crates/web/src/handlers/example.rs": {
+    "mtime": 1794617288.2785048,
+    "seen": 1794617296.5567195,
+    "ast_hash": "d50cff8cc214d76eabb9665f2ff9d7cd",
+    "semantic_hash": ""
+  },
+  "skills/weebo-api-contract/templates/axum/crates/web/src/handlers/mod.rs": {
+    "mtime": 1794617288.2785769,
+    "seen": 1794617296.556721,
+    "ast_hash": "9c0028fb329cab6fc5b9f4beab67fa71",
+    "semantic_hash": ""
+  },
+  "skills/weebo-api-contract/templates/axum/crates/web/src/lib.rs": {
+    "mtime": 1794617288.2785769,
+    "seen": 1794617296.556722,
+    "ast_hash": "652cdeba4dea963ac67493287564227f",
+    "semantic_hash": ""
+  },
+  "skills/weebo-api-contract/templates/axum/crates/web/src/openapi.rs": {
+    "mtime": 1794617288.2785769,
+    "seen": 1794617296.5567229,
+    "ast_hash": "bbad3f976b1ee344a669b38ac2cfc327",
+    "semantic_hash": ""
+  },
+  "skills/weebo-api-contract/templates/axum/crates/web/tests/openapi_contract.rs": {
+    "mtime": 1794617288.2785769,
+    "seen": 1794617296.5567243,
+    "ast_hash": "2e6dada45e3a1f3cf389b9b2b67d37dd",
+    "semantic_hash": ""
+  },
+  "skills/weebo-api-contract/templates/axum/server/src/main.rs": {
+    "mtime": 1794617288.278778,
+    "seen": 1794617296.556725,
+    "ast_hash": "b2651b82514613fcd2af0c762f6f5e6b",
+    "semantic_hash": ""
+  },
+  "skills/weebo-api-contract/templates/crates/web/src/scalar.rs": {
+    "mtime": 1794617288.2788591,
+    "seen": 1794617296.5567257,
+    "ast_hash": "1e0f412821f910c61813daa827c110e8",
     "semantic_hash": ""
   },
   "docs/package-lock.json": {

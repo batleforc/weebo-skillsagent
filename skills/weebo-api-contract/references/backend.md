@@ -1,11 +1,13 @@
 # Backend: utoipa, route collection, Scalar, dump-spec
 
-Templates: `templates/crates/web/src/openapi.rs`, `templates/crates/web/src/handlers/example.rs`,
-`templates/server/src/main.rs`.
+Templates: `templates/actix/` (batlehub), `templates/axum/` (ProxyAuthK8S), and the shared
+`templates/crates/web/src/scalar.rs`. §1–§2 and §4 describe actix then axum; §3 is the same on both.
+Off Rust, the rules (named bodies, one route list, self-hosted Scalar, a spec export) carry over to
+the framework's own generator; see SKILL.md §4.
 
 ## 1. Annotating a handler
 
-Each handler carries both macros: `#[utoipa::path(...)]` for the document and the actix route macro
+**actix.** Each handler carries both macros: `#[utoipa::path(...)]` for the document and the actix route macro
 (`#[get("/api/v1/...")]`) for the router, with the same path in both.
 
 ```rust
@@ -32,6 +34,11 @@ pub async fn get_item(...)
 - A request body is `request_body = T`. A `204` declares no body.
 - utoipa 6 with `actix_extras` (plus `chrono`, `uuid` when DTOs use them).
 
+**axum.** Only `#[utoipa::path(...)]`: `routes!(get_item)` reads method and path from it, so there is
+no second copy of the path to keep in sync. The path is relative to the `nest` prefix the handler is
+mounted under (`path = "/items/{id}"` under `.nest("/api/v1", …)` documents `/api/v1/items/{id}`).
+utoipa 6 with `axum_extras`, which also documents `Path`/`Query` extractors.
+
 ## 2. ApiDoc and route collection
 
 `ApiDoc` (`#[derive(OpenApi)]`) holds only the document-wide parts: `info` (with `contact`, which
@@ -54,6 +61,23 @@ is not an `OpenApiFactory` and would disturb path collection.
 
 Order matters for actix matching, not for the spec: register the more specific path first
 (`subscriptions/{id}/test` before `subscriptions/{id}`).
+
+**axum.** One `OpenApiRouter<SharedState>` per prefix (`api_router()`, ProxyAuthK8S also has
+`management_router()` and `cluster_router()`), each `.routes(routes!(handler))`. `app_router()` nests
+them into `OpenApiRouter::with_openapi(ApiDoc::openapi())` and returns `.split_for_parts()`: the
+plain `axum::Router` and the finished spec. The server and `openapi_spec()` (`app_router().1`) both
+call it.
+
+- A layer for some routes only (ProxyAuthK8S: `DefaultBodyLimit` on its form endpoints) goes on a
+  sub-router merged into the prefix router; the spec is unaffected.
+- A route that `routes!` cannot express (ProxyAuthK8S's proxy catch-all, routed as `{*path}` with
+  `.route(...)`) is served but not collected: list its handlers in `ApiDoc`'s `paths(...)`, written
+  `{path}` there. That is the only case where `ApiDoc` names paths.
+- A route kept out of the spec on purpose (ProxyAuthK8S's issuer endpoints, read by apiservers only)
+  is merged into the plain `Router` after `split_for_parts()`, with a comment saying why.
+- `ApiDoc::openapi()` is mutated before use to set `info.version` from `CARGO_PKG_VERSION`.
+- Static files (`tower_http::services::ServeDir`, the SPA fallback) go on the plain `Router` after
+  `split_for_parts()`, like actix.
 
 ## 3. Scalar, self-hosted
 
@@ -78,14 +102,19 @@ dependencies visible to `pnpm audit` and the SBOM.
   installs. Both pages embed `$spec` in a `type="application/json"` block, so `curl /scalar` still
   yields the spec and the CSP needs no `'unsafe-inline'` for scripts.
 - `API_DOCS_CSP` is sent only on `/scalar`: the console and the API docs need different policies, so
-  it cannot be global. Batlehub does it in a prefix-keyed middleware; the template uses
-  `actix_web::middleware::from_fn`.
+  it cannot be global. Batlehub does it in a prefix-keyed middleware; the templates use
+  `actix_web::middleware::from_fn` and `axum::middleware::from_fn`.
+- Mounting: actix `.service(scalar(..))` on the plain `App`; axum `.merge(scalar(..))` on the
+  `Router` (utoipa-scalar's `axum` feature turns `Scalar` into a `Router`).
+- ProxyAuthK8S diverges here: it serves Scalar at `/api/docs` from jsDelivr, pinned with SRI. The
+  axum template follows the house rule instead; a pin with SRI still leaves the egress, the leak and
+  the bundle outside the audit.
 - Unit tests in `openapi.rs` pin all of this: no `//` or `scalar.com` in either page, `$spec` kept,
   degraded page served without a bundle.
 
-## 4. dump-spec
+## 4. Exporting the spec
 
-A clap subcommand of the server binary:
+**actix: `dump-spec`**, a clap subcommand of the server binary:
 
 ```rust
 Some(Command::DumpSpec) => {
@@ -97,3 +126,11 @@ Some(Command::DumpSpec) => {
 `task dump-spec` runs `cargo run -p my-server -- dump-spec > ui/openapi.json`. Batlehub passes
 `--config config.example.toml` because its CLI parses config before dispatching; a server whose
 subcommands run before config loading does not need it. Output is OpenAPI 3.1.
+
+**axum: `swaggergen`**, a separate binary (`apps/swaggergen`) that prints `openapi_spec()`.
+`task dump-spec` runs `cargo run -p swaggergen > ui/openapi.json`. It depends on the API crate with
+`default-features = false`, and the crate puts the server stack (utoipa-scalar there, OTLP, CORS,
+TLS in ProxyAuthK8S) behind a default `server` feature, so the export builds only handlers and DTOs.
+
+Pick by weight: a subcommand is one binary less; a separate binary pays off once the server stack is
+slow to build or needs config to start. The task name stays `dump-spec` either way.

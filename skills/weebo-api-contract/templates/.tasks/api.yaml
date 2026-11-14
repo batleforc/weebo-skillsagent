@@ -6,6 +6,7 @@ tasks:
   dump-spec:
     desc: Dump the OpenAPI spec to ui/openapi.json
     cmds:
+      # axum flavour: cargo run -p swaggergen > ui/openapi.json
       - cargo run -p my-server -- dump-spec > ui/openapi.json
 
   ui:generate:

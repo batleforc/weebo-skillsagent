@@ -4,7 +4,8 @@ Three layers, each catching what the others cannot.
 
 ## 1. Contract test (`crates/web/tests/openapi_contract.rs`)
 
-Template: `templates/crates/web/tests/openapi_contract.rs`. Runs under `task test`
+Templates: `templates/actix/crates/web/tests/openapi_contract.rs` (below) and
+`templates/axum/crates/web/tests/openapi_contract.rs` (end of this section). Runs under `task test`
 (see `weebo-testing`).
 
 | Test | Reads | Fails when |
@@ -14,11 +15,19 @@ Template: `templates/crates/web/tests/openapi_contract.rs`. Runs under `task tes
 | `every_declared_success_status_is_one_the_handler_can_actually_send` | this crate's `src/**/*.rs` | the 2xx in `#[utoipa::path]` and the literal `HttpResponse::Ok/Created` / `StatusCode::OK/CREATED` in the handler body disagree, in either direction |
 
 - The body check walks the spec, not the source, so it cannot be satisfied by a comment.
-- The status check is a source lint because nothing generates that fact. It skips a handler whose
+- The status check is a source lint because nothing generates that fact. Its patterns are actix's.
+  It has no axum counterpart yet (SKILL.md §5). It skips a handler whose
   status comes from a variable rather than guessing; it also asserts `checked >= MIN_ROUTES`,
   because its first draft in batlehub scanned nothing and passed.
 - `MIN_ROUTES` is `1` in the template; batlehub uses `100`. Raise it as the API grows, a little under
   the real count.
+
+**axum version** (ProxyAuthK8S). Walks the spec as JSON (`serde_json::to_value(openapi_spec())`), so
+it reads every 2xx but `204`, not only `200`/`201`. A response that is bodiless on purpose goes in
+`NO_BODY` as `(method, path, status, reason)`; an entry that no longer matches a bodiless response
+fails too, so the list cannot rot. `the_guard_reports_a_bodiless_response_and_a_stale_exemption`
+proves the guard can fail. ProxyAuthK8S has no `MIN_ROUTES`; the template adds it back, since an
+empty spec would pass with an empty `NO_BODY`.
 
 ## 2. Spectral (`task openapi:lint`, `.github/workflows/openapi-lint.yaml`)
 
@@ -43,7 +52,7 @@ halves from source before testing:
   run: pnpm install --frozen-lockfile --ignore-scripts
 - name: Generate OpenAPI spec
   working-directory: .
-  run: cargo run -p my-server -- dump-spec > ui/openapi.json
+  run: cargo run -p my-server -- dump-spec > ui/openapi.json   # axum: cargo run -p swaggergen
 - name: Generate TypeScript client
   run: pnpm run generate
 - name: Run tests with coverage

@@ -1,0 +1,21 @@
+# source: ProxyAuthK8S@8fe220b (Cargo.toml, libs/server/api/Cargo.toml), trimmed.
+[package]
+name = "my-crate"
+version = "0.1.0"
+edition = "2024"
+
+[features]
+default = ["server"]
+# Off for swaggergen: the spec needs the handlers, not the server stack, so
+# `cargo run -p swaggergen` builds neither utoipa-scalar nor what `server` grows into.
+server = ["dep:utoipa-scalar"]
+
+[dependencies]
+axum = "0.8"
+serde = { version = "1", features = ["derive"] }
+utoipa = { version = "6", features = ["axum_extras"] }
+utoipa-axum = "0.3"
+utoipa-scalar = { version = "0.4", features = ["axum"], optional = true }
+
+[dev-dependencies]
+serde_json = "1"

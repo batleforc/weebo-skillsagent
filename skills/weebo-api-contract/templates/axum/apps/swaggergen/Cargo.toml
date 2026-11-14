@@ -1,0 +1,9 @@
+# source: ProxyAuthK8S@8fe220b (apps/swaggergen/Cargo.toml).
+[package]
+name = "swaggergen"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+# No `server` feature: the spec builds without the server stack.
+my-crate = { path = "../../crates/web", default-features = false }

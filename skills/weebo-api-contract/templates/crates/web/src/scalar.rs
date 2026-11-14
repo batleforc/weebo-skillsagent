@@ -1,61 +1,10 @@
 // source: batlehub@20879e5 (crates/web/src/lib.rs, crates/web/src/middleware/security_headers.rs), trimmed.
 //
-// The whole backend half of the contract: the `ApiDoc` root, route collection
-// through utoipa-actix-web, `openapi_spec()` for dump-spec and the contract test,
-// and the self-hosted Scalar page. `pub mod openapi; pub use openapi::*;` in lib.rs.
+// The self-hosted Scalar page and its CSP. Framework-agnostic: utoipa-scalar
+// serves it on actix (`.service(scalar(..))`) and on axum (`.merge(scalar(..))`)
+// once its `actix-web` or `axum` feature is on.
 
-use utoipa::openapi::security::{HttpAuthScheme, HttpBuilder, SecurityScheme};
-use utoipa::OpenApi;
-use utoipa_actix_web::{service_config::ServiceConfig as UtoipaServiceConfig, AppExt};
 use utoipa_scalar::{Scalar, Servable as _};
-
-#[derive(OpenApi)]
-#[openapi(
-    info(
-        description = "my-crate API",
-        // spectral:oas `info-contact` fails without it.
-        contact(name = "my-crate", url = "https://github.com/my-org/my-crate"),
-    ),
-    tags((name = "items", description = "Items")),
-    modifiers(&SecurityAddon),
-)]
-pub struct ApiDoc;
-
-/// Declares the `bearer_token` scheme that handlers name in `security(...)`.
-struct SecurityAddon;
-
-impl utoipa::Modify for SecurityAddon {
-    fn modify(&self, openapi: &mut utoipa::openapi::OpenApi) {
-        let components = openapi.components.get_or_insert_with(Default::default);
-        components.add_security_scheme(
-            "bearer_token",
-            SecurityScheme::Http(
-                HttpBuilder::new()
-                    .scheme(HttpAuthScheme::Bearer)
-                    .bearer_format("token")
-                    .build(),
-            ),
-        );
-    }
-}
-
-/// Every documented route, registered once. Both the running server and
-/// `openapi_spec()` go through this, so the served API and the dumped spec
-/// cannot list different routes.
-pub fn collect_routes(cfg: &mut UtoipaServiceConfig) {
-    use crate::handlers::example::get_item;
-    cfg.service(get_item);
-}
-
-/// Return the raw OpenAPI spec (auto-collected from route registrations).
-pub fn openapi_spec() -> utoipa::openapi::OpenApi {
-    let (_, openapi) = actix_web::App::new()
-        .into_utoipa_app()
-        .openapi(ApiDoc::openapi())
-        .configure(collect_routes)
-        .split_for_parts();
-    openapi
-}
 
 /// Where the self-hosted Scalar bundle lives, relative to this origin.
 /// Written there by `ui/build/copy-scalar.mjs` from the `@scalar/api-reference`
@@ -126,7 +75,8 @@ fn scalar_unavailable_html() -> String {
     )
 }
 
-/// The `/scalar` service. Register it on the plain `App` after `split_for_parts()`.
+/// The `/scalar` service. Register it after `split_for_parts()` (actix: on the
+/// plain `App`; axum: merged into the `Router`).
 pub fn scalar(
     openapi: utoipa::openapi::OpenApi,
     static_dir: Option<&std::path::Path>,
@@ -155,6 +105,7 @@ pub const API_DOCS_CSP: &str = "default-src 'none'; \
 #[cfg(test)]
 mod scalar_tests {
     use super::*;
+    use crate::openapi_spec;
 
     #[test]
     fn the_reference_loads_nothing_from_a_third_party() {

@@ -15,7 +15,9 @@ export default defineConfig({
 ```
 
 `ui/package.json` has `"generate": "openapi-ts"`; `task ui:generate` runs it in `ui/`, and
-`task generate` runs `dump-spec` first. Output, all gitignored under `ui/src/client/`:
+`task generate` runs `dump-spec` first. Endpoints the UI never calls (health, a proxy) can be kept
+out of the client with `parser: { filters: { tags: { exclude: [...] } } }`, as ProxyAuthK8S does;
+they stay in the spec and in Scalar. Output, all gitignored under `ui/src/client/`:
 
 | File | Holds |
 | --- | --- |
@@ -39,7 +41,8 @@ House rule is the axios plugin. Batlehub ships `@hey-api/client-fetch`. Switchin
 | base URL | `client.setConfig({ baseUrl })` | `client.setConfig({ baseURL })` (axios' spelling; `baseUrl` is a type error) |
 
 `auth` is the same in both: `client.setConfig({ auth: token })` and the SDK sends
-`Authorization: Bearer <token>` on operations that declare `security(("bearer_token" = []))`.
+`Authorization: Bearer <token>` on operations that declare a bearer `security(...)` (whatever the
+project named the scheme).
 
 ## 3. Initialisation
 

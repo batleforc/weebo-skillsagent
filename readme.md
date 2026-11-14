@@ -131,7 +131,7 @@ named `all`.
 | `weebo-security` | symlink | ours, from `batlehub/batlehub`: `task audit` (cargo audit/deny, pnpm audit, Trivy), daily CI scanners, SBOM, VEX, CVE triage and exceptions | `cargo-audit`, `cargo-deny`, `pnpm`, `trivy` |
 | `weebo-deps` | symlink | ours: dependency hygiene: `task deps*` (outdated report, in-range and major-by-major bumps, CVE before/after diff, unused deps via cargo machete + knip) | `cargo`, `cargo-machete`, `cargo-audit`, `pnpm`, `jq`, `mise` |
 | `weebo-containerfile` | symlink | ours, from `batlehub/batlehub`: multi-stage Containerfile, distroless non-root runtime, hardened twin, updatecli digest pins, CI build/scan/sign | — |
-| `weebo-api-contract` | symlink | ours, from `batlehub/batlehub`: utoipa + self-hosted Scalar, `dump-spec`, HeyApi axios client, contract test + Spectral drift gates | `cargo`, `pnpm`, `npx` |
+| `weebo-api-contract` | symlink | ours, from `batlehub/batlehub` (actix) and `batleforc/proxyAuthK8S` (axum): utoipa + self-hosted Scalar, spec export, HeyApi axios client, contract test + Spectral drift gates | `cargo`, `pnpm`, `npx` |
 | `weebo-release` | symlink | ours, from `batlehub/batlehub`: cocogitto bump/changelog, one version across manifests, tag-triggered GitHub release | `cog`, `git`, `task` |
 | `weebo-cde` | symlink | ours, from `batlehub/batlehub`: Eclipse Che: devfile sidecars, `kubectl exec $HOSTNAME -c`, browser sidecar, sleep-infinity fallback | `kubectl`, `task` |
 | `weebo-helm` | symlink | ours, from `batlehub/batlehub`: Helm chart skeleton, values conventions, helm-docs gate, PR lint, cosign-signed OCI chart | `helm`, `helm-docs` |
