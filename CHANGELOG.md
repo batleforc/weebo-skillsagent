@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## [v0.18.1](https://github.com/batleforc/weebo-skillsagent/compare/8ed8e0c73c1ea54a0b65096170a34b1a96d01b37..v0.18.1) - 2026-11-16
+#### Features
+- show hash - ([8ed8e0c](https://github.com/batleforc/weebo-skillsagent/commit/8ed8e0c73c1ea54a0b65096170a34b1a96d01b37)) - Max Batleforc
+
+- - -
+
 ## [v0.18.0](https://github.com/batleforc/weebo-skillsagent/compare/4eedbee6e3904c06371be31c0ab5565cef7f5429..v0.18.0) - 2026-11-16
 #### Features
 - (**batlehub-rfc**) references and sources section (§17) - ([952480b](https://github.com/batleforc/weebo-skillsagent/commit/952480bbb2cc4790b0b3995ce66184b43b8844ca)) - Max Batleforc, Claude Opus 5.5
