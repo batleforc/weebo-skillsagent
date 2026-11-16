@@ -2,6 +2,19 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## [v0.18.0](https://github.com/batleforc/weebo-skillsagent/compare/4eedbee6e3904c06371be31c0ab5565cef7f5429..v0.18.0) - 2026-11-16
+#### Features
+- (**batlehub-rfc**) references and sources section (§17) - ([952480b](https://github.com/batleforc/weebo-skillsagent/commit/952480bbb2cc4790b0b3995ce66184b43b8844ca)) - Max Batleforc, Claude Opus 5.5
+- (**batlehub-rfc**) mocks, fixed section numbers, coherent statuses - ([9aae756](https://github.com/batleforc/weebo-skillsagent/commit/9aae756768ac8a0b29be7ef87cf933d2bb83c928)) - Max Batleforc, Claude Opus 5.5
+- (**batlehub-rfc**) last-review, a six-lens multi-agent review panel - ([f8a8f3a](https://github.com/batleforc/weebo-skillsagent/commit/f8a8f3a5f60d28eb0c9c6837cf592865cb71b512)) - Max Batleforc, Claude Opus 5.5
+- (**weebo-api-contract**) axum flavour from ProxyAuthK8S, framework-agnostic contract - ([76839d7](https://github.com/batleforc/weebo-skillsagent/commit/76839d7ed2afaf182a01d3f47e50acc2feb1bd36)) - Max Batleforc, Claude Opus 5.5
+- (**weebo-dum-e**) skill handing brainless chores to a haiku subagent - ([ad9b57a](https://github.com/batleforc/weebo-skillsagent/commit/ad9b57ae6ff0f9e8b356bc7fa7d1085ac2cd19b5)) - Max Batleforc, Claude Opus 5.5
+- support codex ++ mcp - ([5224d12](https://github.com/batleforc/weebo-skillsagent/commit/5224d12c8487af516124bb531098d39aec525850)) - Max Batleforc
+#### Bug Fixes
+- (**hooks**) re-stage only staged files in pre-commit instead of git add -u - ([4eedbee](https://github.com/batleforc/weebo-skillsagent/commit/4eedbee6e3904c06371be31c0ab5565cef7f5429)) - Max Batleforc, Claude Opus 5.5
+
+- - -
+
 ## [v0.17.0](https://github.com/batleforc/weebo-skillsagent/compare/52f6b3aa251ef67487699aa8a6009b582b4636f4..v0.17.0) - 2026-10-24
 #### Features
 - (**weebo-hud**) WEEBO_HUD_DISQUE_HOME hides the $HOME disk - ([52f6b3a](https://github.com/batleforc/weebo-skillsagent/commit/52f6b3aa251ef67487699aa8a6009b582b4636f4)) - Max Batleforc, Claude Opus 5.5
