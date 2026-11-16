@@ -108,6 +108,33 @@ items = ["impeccable"]
 }
 
 #[test]
+fn codex_project_install_links_skills_under_agents() {
+    let d = tempfile::tempdir().unwrap();
+    let root = d.path().join("repo");
+    repo(
+        &root,
+        &["ponytail"],
+        "[profiles.base]\nitems = [\"ponytail\"]\n",
+    );
+
+    let got = wska::app::install(
+        &root,
+        &profiles(&["base"]),
+        wska::cli::Scope::Project,
+        wska::cli::Agent::Codex,
+        false,
+        false,
+        &root,
+        &env_none,
+    )
+    .unwrap();
+
+    assert_eq!(got.linked, 1);
+    assert!(root.join(".agents/skills/ponytail").is_symlink());
+    assert!(root.join(".agents/wska.toml").exists());
+}
+
+#[test]
 fn refuses_to_replace_a_hand_written_directory_and_changes_nothing() {
     let d = tempfile::tempdir().unwrap();
     let root = d.path().join("repo");

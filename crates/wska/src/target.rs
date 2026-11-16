@@ -46,9 +46,8 @@ pub fn resolve(
             None => home()?.join(".claude"),
         },
         (Scope::User, Agent::Gemini) => home()?.join(".gemini"),
-        // shortcut: the Antigravity IDE path from Google's codelab; Antigravity 2.0
-        // documents ~/.gemini/config/skills, switch if the IDE path stops being read.
-        (Scope::User, Agent::Antigravity) => home()?.join(".gemini/antigravity"),
+        // Codex and Antigravity use the shared Agent Skills user directory.
+        (Scope::User, Agent::Codex | Agent::Antigravity) => home()?.join(".agents"),
         (Scope::Project, _) => git_root(cwd)?.join(project_dir(agent)),
     };
     canonical_or_as_is(&raw)
@@ -59,8 +58,8 @@ pub fn project_dir(agent: Agent) -> &'static str {
     match agent {
         Agent::Claude => ".claude",
         Agent::Gemini => ".gemini",
-        // `.agents` is the shared Agent Skills dir; Gemini CLI reads it too.
-        Agent::Antigravity => ".agents",
+        // `.agents` is the shared Agent Skills dir used by Codex and Antigravity.
+        Agent::Codex | Agent::Antigravity => ".agents",
     }
 }
 
@@ -404,17 +403,16 @@ mod tests {
     }
 
     #[test]
-    fn gemini_and_antigravity_have_their_own_dirs() {
+    fn provider_skill_directories_follow_the_agent_skills_layout() {
         let d = tempfile::tempdir().unwrap();
         let env = env_from(&[("HOME", d.path().to_str().unwrap())]);
         let base = d.path().canonicalize().unwrap();
         let at = |scope, agent| resolve(scope, agent, d.path(), &env).unwrap();
         assert_eq!(at(Scope::User, Agent::Gemini), base.join(".gemini"));
-        assert_eq!(
-            at(Scope::User, Agent::Antigravity),
-            base.join(".gemini/antigravity")
-        );
+        assert_eq!(at(Scope::User, Agent::Codex), base.join(".agents"));
+        assert_eq!(at(Scope::User, Agent::Antigravity), base.join(".agents"));
         assert_eq!(at(Scope::Project, Agent::Gemini), base.join(".gemini"));
+        assert_eq!(at(Scope::Project, Agent::Codex), base.join(".agents"));
         assert_eq!(at(Scope::Project, Agent::Antigravity), base.join(".agents"));
     }
 

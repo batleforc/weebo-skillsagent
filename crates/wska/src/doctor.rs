@@ -401,6 +401,7 @@ mod tests {
                 scope: InstallerScope::Project,
                 gemini: None,
                 antigravity: None,
+                codex: None,
                 root: std::path::PathBuf::new(),
             },
         );

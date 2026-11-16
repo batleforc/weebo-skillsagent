@@ -125,12 +125,14 @@ pub struct Installer {
     #[serde(default)]
     pub update: Option<String>,
     pub scope: InstallerScope,
-    /// The same tool set up for another agent. Absent: Claude Code only,
+    /// The same tool set up for another provider. Absent: Claude Code only,
     /// skipped for that agent.
     #[serde(default)]
     pub gemini: Option<Setup>,
     #[serde(default)]
     pub antigravity: Option<Setup>,
+    #[serde(default)]
+    pub codex: Option<Setup>,
 }
 
 /// An installer's command and scope for one non-Claude agent: they differ

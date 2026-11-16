@@ -7,6 +7,7 @@ pub mod gitignore;
 pub mod hash;
 pub mod hud;
 pub mod item;
+pub mod mcp;
 pub mod ownership;
 pub mod plan;
 pub mod profile;

@@ -62,6 +62,25 @@ fn main() {
         }
         return;
     }
+    if let Command::Mcp { cmd } = &cli.command {
+        let wska::cli::McpCommand::Setup { scope } = cmd;
+        let cwd = match std::env::current_dir() {
+            Ok(cwd) => cwd,
+            Err(e) => {
+                eprintln!("error: reading the current directory: {e}");
+                std::process::exit(1);
+            }
+        };
+        let env = |k: &str| std::env::var(k).ok();
+        match wska::mcp::setup(cli.agent, *scope, &cwd, &env) {
+            Ok(message) => println!("{message}"),
+            Err(e) => {
+                eprintln!("error: {e}");
+                std::process::exit(1);
+            }
+        }
+        return;
+    }
     let cwd = match std::env::current_dir() {
         Ok(cwd) => cwd,
         Err(e) => {
@@ -244,7 +263,9 @@ fn main() {
             clippy::unreachable,
             reason = "Completions and Hud return before items_root, above"
         )]
-        Command::Completions { .. } | Command::Hud { .. } => unreachable!("handled above"),
+        Command::Completions { .. } | Command::Hud { .. } | Command::Mcp { .. } => {
+            unreachable!("handled above")
+        }
     };
 
     if let Err(e) = result {

@@ -138,12 +138,14 @@ pub fn build(
                 scope: want,
                 gemini,
                 antigravity,
+                codex,
                 root,
                 ..
             } => {
                 let setup = match agent {
                     Agent::Claude => Some((command, update, *want)),
                     Agent::Gemini => gemini.as_ref().map(|s| (&s.command, &s.update, s.scope)),
+                    Agent::Codex => codex.as_ref().map(|s| (&s.command, &s.update, s.scope)),
                     Agent::Antigravity => antigravity
                         .as_ref()
                         .map(|s| (&s.command, &s.update, s.scope)),
@@ -474,6 +476,7 @@ mod tests {
                     scope: InstallerScope::User,
                 }),
                 antigravity: None,
+                codex: None,
                 root: PathBuf::new(),
             },
         );
@@ -569,6 +572,43 @@ mod tests {
     }
 
     #[test]
+    fn codex_links_skills_and_skips_agents_and_installers() {
+        let f = fx(&["ponytail"]);
+        let mut map = bmad_map();
+        map.extend(items(&f.repo, &["ponytail"]));
+        map.insert(
+            "doc-review".to_string(),
+            Item::Linked {
+                name: "doc-review".into(),
+                kind: Kind::Agent,
+                path: f.repo.join("agents/doc-review"),
+            },
+        );
+        let plan = build(
+            &map,
+            &set(&["bmad", "doc-review", "ponytail"]),
+            &f.target,
+            std::slice::from_ref(&f.repo),
+            Scope::Project,
+            Agent::Codex,
+            Installers::Install,
+        )
+        .unwrap();
+        assert!(plan.actions.iter().any(|a| matches!(
+            a,
+            Action::Link { to, .. } if to.ends_with("skills/ponytail")
+        )));
+        assert!(plan.actions.iter().any(|a| matches!(
+            a,
+            Action::Skip { name, .. } if name == "doc-review"
+        )));
+        assert!(plan.actions.iter().any(|a| matches!(
+            a,
+            Action::Skip { name, .. } if name == "bmad"
+        )));
+    }
+
+    #[test]
     fn an_installer_runs_its_own_command_and_scope_per_agent() {
         let f = fx(&[]);
         let run = |scope, agent| {
@@ -644,6 +684,7 @@ mod tests {
                 scope: InstallerScope::Any,
                 gemini: None,
                 antigravity: None,
+                codex: None,
                 root: f.repo.clone(),
             },
         );

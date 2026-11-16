@@ -5,10 +5,10 @@ use std::path::PathBuf;
 #[command(
     name = "wska",
     version,
-    about = "Link this repo's skills into a Claude Code, Gemini CLI or Antigravity target"
+    about = "Link this repo's skills into a Claude Code, Gemini CLI, Codex or Antigravity target"
 )]
 pub struct Cli {
-    /// Which agent's directory to link into. Gemini CLI and Antigravity get skills only:
+    /// Which provider's directory to link into. Gemini CLI, Codex and Antigravity get skills only:
     /// agents, MCP servers and installers are Claude Code formats
     #[arg(long, global = true, value_enum, default_value_t = Agent::Claude)]
     pub agent: Agent,
@@ -34,11 +34,25 @@ pub enum HudCommand {
 }
 
 #[derive(Debug, Subcommand)]
+pub enum McpCommand {
+    /// Open the interactive terminal form for an MCP server
+    Setup {
+        #[arg(long, value_enum, default_value_t = Scope::Project)]
+        scope: Scope,
+    },
+}
+
+#[derive(Debug, Subcommand)]
 pub enum Command {
     /// The weebo-hud status line
     Hud {
         #[command(subcommand)]
         cmd: HudCommand,
+    },
+    /// Manage MCP server configurations with interactive forms
+    Mcp {
+        #[command(subcommand)]
+        cmd: McpCommand,
     },
     /// Link the items named by the given profiles, removing owned links not in that set
     /// With neither --profile nor --item, re-applies the selection recorded in the target's wska.toml
@@ -155,6 +169,7 @@ pub enum Scope {
 pub enum Agent {
     Claude,
     Gemini,
+    Codex,
     Antigravity,
 }
 
@@ -201,6 +216,25 @@ mod tests {
     fn agent_is_accepted_after_the_subcommand() {
         let cli = Cli::parse_from(["wska", "status", "--agent", "antigravity"]);
         assert_eq!(cli.agent, Agent::Antigravity);
+    }
+
+    #[test]
+    fn codex_agent_is_accepted() {
+        let cli = Cli::parse_from(["wska", "status", "--agent", "codex"]);
+        assert_eq!(cli.agent, Agent::Codex);
+    }
+
+    #[test]
+    fn parses_mcp_setup() {
+        let cli = Cli::parse_from(["wska", "--agent", "gemini", "mcp", "setup"]);
+        assert!(matches!(
+            cli.command,
+            Command::Mcp {
+                cmd: McpCommand::Setup {
+                    scope: Scope::Project
+                }
+            }
+        ));
     }
 
     #[test]

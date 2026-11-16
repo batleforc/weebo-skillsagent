@@ -1,8 +1,8 @@
 # weebo-skillsagent
 
-One repository holding the Claude Code skills used across every project, plus
+One repository holding the agent skills used across every project, plus
 `wska` — the CLI that links a chosen subset into a project or into the user's
-global `~/.claude/`.
+global provider skills directory.
 
 It replaces `batleforc/weebo-skills` (now deleted),
 which published skills as a plugin marketplace and is abandoned.
@@ -10,7 +10,7 @@ which published skills as a plugin marketplace and is abandoned.
 ## How it works
 
 A skill is a plain directory containing a `SKILL.md`. `wska install` symlinks
-the directories named by a profile into the target's `.claude/skills/`, so
+the directories named by a profile into the target provider's skills directory, so
 editing a skill here is live in every target immediately, with no reinstall
 step.
 
@@ -35,6 +35,7 @@ task skills:install PROFILE=frontend SCOPE=user   # the same into ~/.claude/
 task skills:update                                # git pull --ff-only the items repo, then re-apply .claude/wska.toml
 task skills:status                                # what is linked where
 task skills:doctor                                # can each item actually work on this machine
+wska --agent claude mcp setup                     # interactive MCP configuration form
 ```
 
 To use the skills from **another project**, install the released binary and run

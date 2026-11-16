@@ -38,6 +38,7 @@ pub enum Item {
         scope: InstallerScope,
         gemini: Option<Setup>,
         antigravity: Option<Setup>,
+        codex: Option<Box<Setup>>,
         /// The items repo declaring it, exported to its command as `WSKA_REPO`.
         root: PathBuf,
     },
@@ -123,6 +124,7 @@ pub fn scan(repo_root: &Path, vendor: &Vendor) -> Result<BTreeMap<String, Item>,
                 scope: installer.scope,
                 gemini: installer.gemini.clone(),
                 antigravity: installer.antigravity.clone(),
+                codex: installer.codex.clone().map(Box::new),
                 root: repo_root.to_path_buf(),
             },
             "installers",
@@ -203,6 +205,7 @@ mod tests {
                 scope,
                 gemini: None,
                 antigravity: None,
+                codex: None,
             },
         );
         v

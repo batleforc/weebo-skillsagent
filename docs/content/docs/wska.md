@@ -4,7 +4,8 @@ title: "wska — reference"
 
 Looking for *how do I…*? Start with the [guide by use case](./guide.md).
 
-`wska` links this repo's items into a Claude Code target. One binary,
+`wska` links this repo's items into a Claude Code, Gemini CLI, Codex or
+Antigravity target. One binary,
 `crates/wska`, wrapped by the tasks in `.tasks/skills.yaml`.
 
 Every task is a thin wrapper: `WSKA` defaults to `cargo run --quiet -p wska --`,
@@ -35,17 +36,18 @@ the git root containing the working directory (falling back to the working
 directory itself when there is no `.git`, which keeps the CLI usable in a plain
 directory). `user` resolves to `$CLAUDE_CONFIG_DIR`, else `$HOME/.claude`.
 
-**Agent** — `--agent claude|gemini|antigravity` (default `claude`, accepted by
+**Agent** — `--agent claude|gemini|codex|antigravity` (default `claude`, accepted by
 every command) picks whose directory the scope resolves to:
 
 | agent         | `project`   | `user`                  |
 |---------------|-------------|-------------------------|
 | `claude`      | `.claude/`  | `$CLAUDE_CONFIG_DIR` or `~/.claude/` |
 | `gemini`      | `.gemini/`  | `~/.gemini/`            |
-| `antigravity` | `.agents/`  | `~/.gemini/antigravity/` |
+| `codex`       | `.agents/`  | `~/.agents/`            |
+| `antigravity` | `.agents/`  | `~/.agents/`            |
 
-Gemini CLI and Antigravity read the same `SKILL.md` folders, so skills link
-as-is. Agents and MCP servers are Claude Code formats: for the other two
+Gemini CLI, Codex and Antigravity read Agent Skills folders, so skills link
+as-is. Agents and MCP servers are Claude Code formats: for the other three
 agents they are skipped with a reason. An installer runs for them only when
 `vendor.toml` declares a setup for that agent (see `[installers.<item>]`):
 today bmad, bmad-gds, graphify, rtk and ponytail-plugin for both, and
@@ -349,6 +351,30 @@ The status line of [weebo-hud](weebo-hud): an ANSI powerline under the prompt wi
 The installer of `weebo-hud` needs a wska that has `hud`: it checks `wska hud --help` first and stops with a message otherwise. Mise machines need a wska release (`task release`) first.
 
 Machines that install `wska` through mise only get `hud` after a wska release (`task release`). Until then, use the binary built from this repo.
+
+### `mcp setup`
+
+```bash
+wska --agent claude mcp setup
+wska --agent gemini mcp setup --scope user
+wska --agent codex mcp setup
+```
+
+Opens a terminal form powered by `ratatui`. It asks for the server name,
+transport (`stdio`, `http` or `sse`), command or URL, arguments, and the names
+of environment variables needed by the server. Environment values are never
+prompted for or written: the generated configuration contains references such
+as `${GITHUB_TOKEN}`, so credentials remain in the shell environment or a
+secret manager.
+
+The writer preserves other servers and updates only the selected name:
+
+- Claude: `.mcp.json` or `~/.claude.json`;
+- Gemini CLI: `.gemini/settings.json`;
+- Codex: `.codex/config.toml` or `~/.codex/config.toml`.
+
+Antigravity currently reports an explicit unsupported-provider error because
+its MCP configuration location is not stable enough to edit safely.
 
 ### `completions`
 

@@ -18,6 +18,8 @@ thiserror = "2"
 tempfile = "3"
 serde_json = { version = "1.0.154", features = ["preserve_order"] }
 chrono = { version = "0.4.45", default-features = false, features = ["clock"] }
+ratatui = "0.29"
+crossterm = "0.28"
 
 # House rules from skills/weebo-good-practice (templates/lints.toml, references/cargo.md).
 [workspace.lints.rust]

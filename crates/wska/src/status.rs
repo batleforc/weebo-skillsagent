@@ -115,6 +115,7 @@ mod tests {
                 scope: InstallerScope::Project,
                 gemini: None,
                 antigravity: None,
+                codex: None,
                 root: repo.clone(),
             },
         );
