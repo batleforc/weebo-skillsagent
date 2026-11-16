@@ -186,9 +186,17 @@ fn main() {
                 ..Default::default()
             };
             wska::app::update(&root, &selection, scope, agent, run_installers, &cwd, &env).map(
-                |applied| {
+                |result| {
                     println!("updated {}", root.display());
-                    if let Some(a) = applied {
+                    for (repo, pull) in result.pulls {
+                        println!(
+                            "pulled {}: source {} -> destination {}",
+                            repo.display(),
+                            pull.source,
+                            pull.destination
+                        );
+                    }
+                    if let Some(a) = result.applied {
                         print_applied(&a);
                     }
                 },

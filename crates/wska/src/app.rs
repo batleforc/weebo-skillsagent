@@ -27,6 +27,12 @@ pub enum AppError {
     Selection(#[from] SelectionError),
 }
 
+#[derive(Debug)]
+pub struct UpdateResult {
+    pub applied: Option<Applied>,
+    pub pulls: Vec<(PathBuf, target::PullResult)>,
+}
+
 /// Every items repo a target draws from, the primary one then the clones its
 /// wska.toml names, merged into one item and profile namespace.
 struct Registry {
@@ -380,18 +386,22 @@ pub fn update(
     run_installers: bool,
     cwd: &Path,
     env: &dyn Fn(&str) -> Option<String>,
-) -> Result<Option<Applied>, AppError> {
-    target::pull(repo_root)?;
+) -> Result<UpdateResult, AppError> {
+    let mut pulls = vec![(repo_root.to_path_buf(), target::pull(repo_root)?)];
     let recorded = Selection::load(&target::resolve(scope, agent, cwd, env)?)?;
     for url in recorded
         .iter()
         .flat_map(|s| &s.repos)
         .chain(&selection.repos)
     {
-        target::pull(&target::extra_root(url, env)?)?;
+        let root = target::extra_root(url, env)?;
+        pulls.push((root.clone(), target::pull(&root)?));
     }
     if selection.is_empty() && recorded.is_none() {
-        return Ok(None);
+        return Ok(UpdateResult {
+            applied: None,
+            pulls,
+        });
     }
     install_with(
         repo_root,
@@ -407,7 +417,10 @@ pub fn update(
         cwd,
         env,
     )
-    .map(Some)
+    .map(|applied| UpdateResult {
+        applied: Some(applied),
+        pulls,
+    })
 }
 
 /// Whether each item in the repos can actually work here: its declared tools

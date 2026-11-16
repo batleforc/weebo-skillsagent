@@ -30,6 +30,14 @@ pub enum TargetError {
     },
 }
 
+/// The commit fetched from the upstream and the commit left in the local
+/// checkout after a successful pull.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct PullResult {
+    pub source: String,
+    pub destination: String,
+}
+
 /// The agent's config directory for a scope (`.claude`, `.gemini`, ...),
 /// canonicalized when it already exists so that a symlinked `~/.claude`
 /// compares correctly against link targets.
@@ -169,7 +177,7 @@ fn clone(url: &str, dir: &Path) -> Result<(), TargetError> {
 
 /// Fast-forward the items repo to its upstream. `--ff-only` so local commits
 /// or a diverged branch stop the update instead of creating a merge.
-pub fn pull(root: &Path) -> Result<(), TargetError> {
+pub fn pull(root: &Path) -> Result<PullResult, TargetError> {
     let fail = |detail: String| TargetError::Pull {
         dir: root.to_path_buf(),
         detail,
@@ -182,7 +190,21 @@ pub fn pull(root: &Path) -> Result<(), TargetError> {
     if !status.success() {
         return Err(fail(format!(" ({status})")));
     }
-    Ok(())
+    let rev_parse = |reference: &str| {
+        let output = std::process::Command::new("git")
+            .args(["rev-parse", "--verify", reference])
+            .current_dir(root)
+            .output()
+            .map_err(|e| fail(format!(" reading {reference}: {e}")))?;
+        if !output.status.success() {
+            return Err(fail(format!(" reading {reference} ({})", output.status)));
+        }
+        Ok(String::from_utf8_lossy(&output.stdout).trim().to_string())
+    };
+    Ok(PullResult {
+        source: rev_parse("FETCH_HEAD")?,
+        destination: rev_parse("HEAD")?,
+    })
 }
 
 fn git_root(start: &Path) -> Result<PathBuf, TargetError> {
@@ -374,8 +396,18 @@ mod tests {
             assert!(ok);
         }
 
-        pull(&clone_dir).unwrap();
+        let result = pull(&clone_dir).unwrap();
         assert!(clone_dir.join("new.toml").exists());
+        let upstream_head = std::process::Command::new("git")
+            .args(["rev-parse", "HEAD"])
+            .current_dir(&upstream)
+            .output()
+            .unwrap();
+        let upstream_head = String::from_utf8_lossy(&upstream_head.stdout)
+            .trim()
+            .to_string();
+        assert_eq!(result.source, upstream_head);
+        assert_eq!(result.source, result.destination);
     }
 
     #[test]

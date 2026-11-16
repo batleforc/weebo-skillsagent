@@ -160,6 +160,9 @@ in another project](#using-wska-in-another-project)) — and every [extra items
 repo](#extra-items-repos) the target's `wska.toml` names. A local commit or a
 diverged branch makes the pull fail and nothing is installed.
 
+After each pull, `wska` prints the source SHA (`FETCH_HEAD`) and the
+destination SHA (`HEAD`) so the exact synchronization can be checked.
+
 It then runs `install` with the given profiles and items, or, given none,
 with the target's `wska.toml`. That re-install picks up items added to or
 removed from a profile upstream. With nothing given and no `wska.toml`, the
