@@ -16,7 +16,7 @@ subpath  = "skills"
 # claude-api, which this harness already provides as built-ins.
 provides = ["mcp-builder", "webapp-testing", "frontend-design", "theme-factory"]
 licence  = "Apache-2.0"
-commit = "ca45fc4"
+commit = "1780c5e"
 hashes = { frontend-design = "sha256:b5c2e1f1e14812a1313248313eaed1b17fdf3762607fcb4b9e2ca35501370a06", mcp-builder = "sha256:b0cbe1adecae690d148bca9f5c01db89c74cd0ed3801f5e8fcfc8f941d72b5e6", theme-factory = "sha256:6b1609671e9da6726637a51427f5552584e0a1cacfcab4a1e8852a195913808b", webapp-testing = "sha256:25ee0d712d267b8b8c5037b2790068cd66b5481ab43c0ba2cba2892b14d9ade9" }
 
 [sources.impeccable]
@@ -32,8 +32,8 @@ provides = ["impeccable"]
 # and adding it there by hand would make the local hash diverge from the
 # recorded upstream hash, marking the skill as patched forever.
 licence  = "Apache-2.0"
-commit = "446a257"
-hashes = { impeccable = "sha256:be0aa5cbd23f001312ec05dbd04006e3c078b8e3689a195d4ed7b4cde08cf4ba" }
+commit = "d41d986"
+hashes = { impeccable = "sha256:ece432ed614e04ffa3bd8f762056708ef4534875c3a7f8f722c46e57e05a52ea" }
 
 [sources.blender-game-skills]
 upstream = "https://github.com/majidmanzarpour/blender-game-skills"
@@ -90,7 +90,7 @@ subpath  = "skills/productivity"
 provides = ["grill-me", "grilling"]
 # Full text in LICENSES/mattpocock-skills.txt, same root-LICENSE reason.
 licence  = "MIT"
-commit = "4ae2317"
+commit = "5863806"
 hashes = { grill-me = "sha256:a2253d86abb930490613ecd40db7166d53451c0ae03271f4acce36fdf47c5ef3", grilling = "sha256:9304f2921d99a315318cf8087ca9ed80c24089dfd99a98e5de057d34b295974e" }
 
 [sources.skill-nr]
@@ -103,8 +103,8 @@ ref      = "main"
 copies = { "skills/weebo-good-practice/references/nr/rules" = ".continue/rules", "skills/weebo-good-practice/references/nr/referentiels" = "referentiels", "agents/nr-check" = "versions/claude-code/.claude/agents" }
 # Full text in LICENSES/skill-nr.txt: LICENSE sits at the repo root.
 licence  = "CC-BY-SA-4.0"
-commit = "01ff0f3"
-hashes = { "agents/nr-check" = "sha256:0d91ac89ce7ca19dc5768fb3b62f516e16808bcd4ce65cd6b9e5b02c444fec82", "skills/weebo-good-practice/references/nr/referentiels" = "sha256:bddcd052ee8bb6a24426cafab3c696bba01b58adb594baf140f0ef88d6884114", "skills/weebo-good-practice/references/nr/rules" = "sha256:771b967b89fa539d0a79553780a902e72696b76aa9850d88ebc21d6791b573fa" }
+commit = "6911b8b"
+hashes = { "agents/nr-check" = "sha256:3a7629708a6bcb573a0f0e80e537b42473539cd6e3138423dd6030977523c1df", "skills/weebo-good-practice/references/nr/referentiels" = "sha256:bddcd052ee8bb6a24426cafab3c696bba01b58adb594baf140f0ef88d6884114", "skills/weebo-good-practice/references/nr/rules" = "sha256:6115860abeb784e7bada7eca29476eee9670238f9f91d2ba4c8b10c1590d315b" }
 
 # skills/batlehub-design is a hand-made snapshot, not a [sources] entry:
 # upstream (https://github.com/batlehub/batlehub, Apache-2.0, commit 2336695)
