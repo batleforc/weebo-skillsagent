@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## [v0.19.0](https://github.com/batleforc/weebo-skillsagent/compare/1184a6e7659ab993061f96fb050fe46635259e9a..v0.19.0) - 2026-11-23
+#### Features
+- (**wska**) support multiple target agents - ([1184a6e](https://github.com/batleforc/weebo-skillsagent/commit/1184a6e7659ab993061f96fb050fe46635259e9a)) - Max Batleforc
+
+- - -
+
 ## [v0.18.1](https://github.com/batleforc/weebo-skillsagent/compare/8ed8e0c73c1ea54a0b65096170a34b1a96d01b37..v0.18.1) - 2026-11-16
 #### Features
 - show hash - ([8ed8e0c](https://github.com/batleforc/weebo-skillsagent/commit/8ed8e0c73c1ea54a0b65096170a34b1a96d01b37)) - Max Batleforc
