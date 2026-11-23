@@ -80,13 +80,12 @@ pub fn repo_root(start: &Path) -> Result<PathBuf, TargetError> {
 
 /// Where items come from. `$WSKA_REPO` if set; else the repo containing
 /// `cwd` when it holds a `profiles.toml` (working inside this repo); else a
-/// clone of `url` that wska owns under `$XDG_DATA_HOME/wska` (or
-/// `~/.local/share/wska`). A `$WSKA_REPO` or owned clone that does not exist
-/// yet is cloned first, so a fresh machine needs only the binary.
+/// clone of `configured_url`, or of the compiled-in `url` when absent.
 pub fn items_root(
     cwd: &Path,
     env: &dyn Fn(&str) -> Option<String>,
     url: &str,
+    configured_url: Option<&str>,
 ) -> Result<PathBuf, TargetError> {
     let dir = match env("WSKA_REPO") {
         Some(dir) => PathBuf::from(dir),
@@ -95,12 +94,35 @@ pub fn items_root(
             if here.join("profiles.toml").exists() {
                 return Ok(here);
             }
-            data_dir(env)
-                .ok_or(TargetError::NoCloneDir)?
-                .join("wska/weebo-skillsagent")
+            let data = data_dir(env).ok_or(TargetError::NoCloneDir)?;
+            match configured_url {
+                Some(configured) => data.join("wska/items").join(repo_slug(configured)?),
+                None => data.join("wska/weebo-skillsagent"),
+            }
         }
     };
-    cloned_items_repo(url, &dir)
+    cloned_items_repo(configured_url.unwrap_or(url), &dir)
+}
+
+fn repo_slug(url: &str) -> Result<String, TargetError> {
+    let slug: String = url
+        .trim_end_matches('/')
+        .trim_end_matches(".git")
+        .split_once("://")
+        .map_or(url, |(_, rest)| rest)
+        .chars()
+        .map(|c| {
+            if c.is_ascii_alphanumeric() || "-_.".contains(c) {
+                c
+            } else {
+                '_'
+            }
+        })
+        .collect();
+    if slug.is_empty() || slug.chars().all(|c| c == '.') {
+        return Err(TargetError::BadRepoUrl(url.to_string()));
+    }
+    Ok(slug)
 }
 
 fn data_dir(env: &dyn Fn(&str) -> Option<String>) -> Option<PathBuf> {
@@ -339,13 +361,27 @@ mod tests {
         let data = d.path().join("data");
         let env = env_from(&[("XDG_DATA_HOME", data.to_str().unwrap())]);
 
-        let got = items_root(&project, &env, &url).unwrap();
+        let got = items_root(&project, &env, &url, None).unwrap();
         assert_eq!(
             got,
             data.join("wska/weebo-skillsagent").canonicalize().unwrap()
         );
         // Second run must not re-clone (a clone into a non-empty dir would fail).
-        assert_eq!(items_root(&project, &env, &url).unwrap(), got);
+        assert_eq!(items_root(&project, &env, &url, None).unwrap(), got);
+    }
+
+    #[test]
+    fn items_root_uses_the_repository_recorded_by_the_target() {
+        let d = tempfile::tempdir().unwrap();
+        let url = upstream_repo(&d.path().join("fork"));
+        let project = d.path().join("project");
+        fs::create_dir_all(project.join(".git")).unwrap();
+        let data = d.path().join("data");
+        let env = env_from(&[("XDG_DATA_HOME", data.to_str().unwrap())]);
+
+        let got = items_root(&project, &env, "unused", Some(&url)).unwrap();
+        assert!(got.join("profiles.toml").exists());
+        assert!(got.starts_with(data.join("wska/items")));
     }
 
     #[test]
@@ -422,7 +458,7 @@ mod tests {
         fs::create_dir_all(d.path().join(".git")).unwrap();
         fs::write(d.path().join("profiles.toml"), "").unwrap();
         let env = env_from(&[]);
-        let got = items_root(d.path(), &env, "unused").unwrap();
+        let got = items_root(d.path(), &env, "unused", None).unwrap();
         assert_eq!(got, d.path().canonicalize().unwrap());
     }
 
@@ -430,7 +466,7 @@ mod tests {
     fn items_root_rejects_a_wska_repo_without_profiles() {
         let d = tempfile::tempdir().unwrap();
         let env = env_from(&[("WSKA_REPO", d.path().to_str().unwrap())]);
-        let result = items_root(d.path(), &env, "unused");
+        let result = items_root(d.path(), &env, "unused", None);
         assert!(matches!(result, Err(TargetError::NotItemsRepo(_))));
     }
 

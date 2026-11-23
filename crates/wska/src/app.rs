@@ -151,6 +151,11 @@ fn install_with(
             .merged(selection)
     } else {
         Selection {
+            repository: recorded.as_ref().and_then(|s| s.repository.clone()),
+            agents: recorded
+                .as_ref()
+                .map(|s| s.agents.clone())
+                .unwrap_or_default(),
             repos: recorded.map(|s| s.repos).unwrap_or_default(),
             ..Selection::default()
         }
@@ -341,6 +346,8 @@ pub fn remove(
         )));
     }
     let kept = Selection {
+        repository: recorded.repository.clone(),
+        agents: recorded.agents.clone(),
         profiles: recorded
             .profiles
             .iter()

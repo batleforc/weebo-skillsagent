@@ -189,10 +189,24 @@ the project scope), by every applied install:
 profiles = ["base", "docs"]
 items = ["batlehub-design"]
 repos = ["https://github.com/my-team/team-skills"]
+repository = "https://github.com/my-team/agent-items"
+agents = ["claude", "codex"]
 ```
 
 `repos` is only written when there is one (see [Extra items
 repos](#extra-items-repos)).
+
+`repository` is the primary items repository. It is optional for backwards
+compatibility. When present, a released `wska` binary clones that URL
+automatically, which makes a committed `wska.toml` work with a fork.
+`WSKA_REPO` still has priority, and a local checkout containing
+`profiles.toml` is preferred when running inside an items repository.
+
+`agents` is optional. For `wska install` without explicit profiles/items, it
+causes the recorded selection to be applied to every listed provider. For
+example, `agents = ["claude", "codex"]` links skills into both `.claude/` and
+`.agents/`. Without this field, `--agent` keeps its existing single-provider
+behaviour.
 
 It holds what was asked for, not the expanded item list, so a profile that
 gains an item upstream brings it on the next bare `install`/`update`. Edit it

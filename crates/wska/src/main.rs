@@ -4,6 +4,53 @@ use wska::cli::{Cli, Command, HudCommand};
 /// Cloned on first run when wska is used outside this repo without WSKA_REPO.
 const REPO_URL: &str = "https://github.com/batleforc/weebo-skillsagent";
 
+fn configured_repository(
+    command: &wska::cli::Command,
+    agent: wska::cli::Agent,
+    cwd: &std::path::Path,
+    env: &dyn Fn(&str) -> Option<String>,
+) -> Option<String> {
+    let scope = match command {
+        wska::cli::Command::Install { scope, .. }
+        | wska::cli::Command::Add { scope, .. }
+        | wska::cli::Command::Remove { scope, .. }
+        | wska::cli::Command::Update { scope, .. }
+        | wska::cli::Command::Status { scope }
+        | wska::cli::Command::Doctor { scope }
+        | wska::cli::Command::List {
+            scope,
+            recorded: true,
+            ..
+        } => *scope,
+        _ => return None,
+    };
+    let target = wska::target::resolve(scope, agent, cwd, env).ok()?;
+    wska::selection::Selection::load(&target).ok()??.repository
+}
+
+fn configured_agents(
+    command: &wska::cli::Command,
+    agent: wska::cli::Agent,
+    cwd: &std::path::Path,
+    env: &dyn Fn(&str) -> Option<String>,
+) -> (Vec<wska::cli::Agent>, Option<wska::selection::Selection>) {
+    let scope = match command {
+        wska::cli::Command::Install { scope, .. } => *scope,
+        _ => return (vec![agent], None),
+    };
+    let target = match wska::target::resolve(scope, agent, cwd, env) {
+        Ok(target) => target,
+        Err(_) => return (vec![agent], None),
+    };
+    let recorded = wska::selection::Selection::load(&target).ok().flatten();
+    let agents = recorded
+        .as_ref()
+        .filter(|selection| !selection.agents.is_empty())
+        .map(|selection| selection.agents.clone())
+        .unwrap_or_else(|| vec![agent]);
+    (agents, recorded)
+}
+
 fn print_applied(a: &wska::apply::Applied) {
     println!(
         "linked {} unlinked {} installers {} skipped {}",
@@ -89,7 +136,8 @@ fn main() {
         }
     };
     let env = |k: &str| std::env::var(k).ok();
-    let root = match wska::target::items_root(&cwd, &env, REPO_URL) {
+    let configured = configured_repository(&cli.command, cli.agent, &cwd, &env);
+    let root = match wska::target::items_root(&cwd, &env, REPO_URL, configured.as_deref()) {
         Ok(root) => root,
         Err(e) => {
             eprintln!("error: {e}");
@@ -107,22 +155,48 @@ fn main() {
             dry_run,
             run_installers,
         } => {
-            let selection = wska::selection::Selection {
+            let requested = wska::selection::Selection {
+                repository: None,
+                agents: vec![],
                 profiles: profile,
                 items: item,
                 repos: repo,
             };
-            wska::app::install(
-                &root,
-                &selection,
-                scope,
+            let (agents, recorded) = configured_agents(
+                &Command::Install {
+                    profile: requested.profiles.clone(),
+                    item: requested.items.clone(),
+                    repo: requested.repos.clone(),
+                    scope,
+                    dry_run,
+                    run_installers,
+                },
                 agent,
-                dry_run,
-                run_installers,
                 &cwd,
                 &env,
-            )
-            .map(|a| print_applied(&a))
+            );
+            let selection = if requested.is_empty() {
+                recorded.unwrap_or_default()
+            } else {
+                requested
+            };
+            let mut result: Result<(), wska::app::AppError> = Ok(());
+            for target_agent in agents {
+                if result.is_ok() {
+                    result = wska::app::install(
+                        &root,
+                        &selection,
+                        scope,
+                        target_agent,
+                        dry_run,
+                        run_installers,
+                        &cwd,
+                        &env,
+                    )
+                    .map(|a| print_applied(&a));
+                }
+            }
+            result
         }
         Command::Add {
             profile,
@@ -133,6 +207,8 @@ fn main() {
             run_installers,
         } => {
             let extra = wska::selection::Selection {
+                repository: None,
+                agents: vec![],
                 profiles: profile,
                 items: item,
                 repos: repo,
@@ -158,6 +234,8 @@ fn main() {
             run_installers,
         } => {
             let gone = wska::selection::Selection {
+                repository: None,
+                agents: vec![],
                 profiles: profile,
                 items: item,
                 repos: repo,
@@ -183,6 +261,7 @@ fn main() {
             let selection = wska::selection::Selection {
                 profiles: profile,
                 items: item,
+                agents: vec![],
                 ..Default::default()
             };
             wska::app::update(&root, &selection, scope, agent, run_installers, &cwd, &env).map(

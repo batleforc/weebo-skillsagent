@@ -16,6 +16,8 @@ fn repo(root: &Path, skills: &[&str], profiles_toml: &str) {
 
 fn profiles(names: &[&str]) -> wska::selection::Selection {
     wska::selection::Selection {
+        repository: None,
+        agents: vec![],
         profiles: names.iter().map(|s| s.to_string()).collect(),
         items: vec![],
         repos: vec![],
@@ -310,6 +312,8 @@ fn records_profiles_and_single_items_and_a_bare_install_reapplies_them() {
     assert!(err.to_string().contains("wska.toml"), "{err}");
 
     let chosen = wska::selection::Selection {
+        repository: None,
+        agents: vec![],
         profiles: vec!["base".into()],
         items: vec!["techdoc".into()],
         repos: vec![],
@@ -374,6 +378,8 @@ fn add_extends_the_recorded_selection_instead_of_replacing_it() {
     .unwrap();
 
     let extra = wska::selection::Selection {
+        repository: None,
+        agents: vec![],
         profiles: vec!["base".into()], // already recorded: not duplicated
         items: vec!["techdoc".into()],
         repos: vec![],
@@ -395,6 +401,8 @@ fn add_extends_the_recorded_selection_instead_of_replacing_it() {
     assert_eq!(
         wska::selection::Selection::load(&root.join(".claude")).unwrap(),
         Some(wska::selection::Selection {
+            repository: None,
+            agents: vec![],
             profiles: vec!["base".into()],
             items: vec!["techdoc".into()],
             repos: vec![],
@@ -426,6 +434,8 @@ fn remove_drops_recorded_names_and_refuses_unrecorded_ones() {
     );
     let scope = wska::cli::Scope::Project;
     let sel = |profiles: &[&str], items: &[&str]| wska::selection::Selection {
+        repository: None,
+        agents: vec![],
         profiles: profiles.iter().map(|s| s.to_string()).collect(),
         items: items.iter().map(|s| s.to_string()).collect(),
         repos: vec![],
@@ -545,6 +555,8 @@ fn list_tables_show_profiles_per_item_and_the_recorded_selection() {
         wska::app::list_recorded(&root, scope, wska::cli::Agent::Claude, &root, &env_none).is_err()
     );
     let sel = wska::selection::Selection {
+        repository: None,
+        agents: vec![],
         profiles: vec!["base".into()],
         items: vec!["loose".into()],
         repos: vec![],
@@ -630,6 +642,8 @@ fn an_extra_repo_merges_its_items_and_profiles_and_is_kept_until_removed() {
     let data = d.path().join("data").to_str().unwrap().to_string();
     let env = move |k: &str| (k == "XDG_DATA_HOME").then(|| data.clone());
     let sel = |profiles: &[&str], repos: &[&str]| wska::selection::Selection {
+        repository: None,
+        agents: vec![],
         profiles: profiles.iter().map(|s| s.to_string()).collect(),
         items: vec![],
         repos: repos.iter().map(|s| s.to_string()).collect(),
@@ -691,6 +705,8 @@ fn an_item_defined_by_two_repos_is_refused() {
     let err = wska::app::install(
         &root,
         &wska::selection::Selection {
+            repository: None,
+            agents: vec![],
             profiles: vec![],
             items: vec!["ponytail".into()],
             repos: vec![url],

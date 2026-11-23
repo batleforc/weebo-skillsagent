@@ -41,6 +41,9 @@ wska --agent claude mcp setup                     # interactive MCP configuratio
 To use the skills from **another project**, install the released binary and run
 `wska install` there — it clones this repo on first use; see
 [Using wska in another project](docs/content/docs/wska.md#using-wska-in-another-project).
+For a fork, set `repository = "https://github.com/you/your-items"` in the
+project's `.claude/wska.toml`; the committed selection then works on another
+machine without a manually exported `WSKA_REPO`.
 Releases are cut with `task release`; see [Releasing](docs/content/docs/wska.md#releasing).
 
 Install is idempotent — run it twice and the second run changes nothing — and it

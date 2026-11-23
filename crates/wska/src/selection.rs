@@ -7,6 +7,15 @@ pub const FILE: &str = "wska.toml";
 
 #[derive(Debug, Default, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Selection {
+    /// Primary items repository used by this target. This makes a committed
+    /// selection portable to forks without requiring WSKA_REPO on every
+    /// machine.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub repository: Option<String>,
+    /// Provider targets that receive this selection. Empty keeps the
+    /// command-line agent-only behaviour for backwards compatibility.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub agents: Vec<crate::cli::Agent>,
     #[serde(default)]
     pub profiles: Vec<String>,
     #[serde(default)]
@@ -46,6 +55,12 @@ impl Selection {
             out
         };
         Self {
+            repository: other.repository.clone().or_else(|| self.repository.clone()),
+            agents: if other.agents.is_empty() {
+                self.agents.clone()
+            } else {
+                other.agents.clone()
+            },
             profiles: union(&self.profiles, &other.profiles),
             items: union(&self.items, &other.items),
             repos: union(&self.repos, &other.repos),
@@ -91,6 +106,8 @@ mod tests {
         let d = tempfile::tempdir().unwrap();
         assert_eq!(Selection::load(d.path()).unwrap(), None);
         let s = Selection {
+            repository: Some("https://example.invalid/items".into()),
+            agents: vec![crate::cli::Agent::Claude, crate::cli::Agent::Codex],
             profiles: vec!["base".into()],
             items: vec!["weebo-techdoc".into()],
             repos: vec!["https://example.invalid/team-skills".into()],
