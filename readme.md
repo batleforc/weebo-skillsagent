@@ -139,6 +139,8 @@ named `all`.
 | `weebo-release` | symlink | ours, from `batlehub/batlehub`: cocogitto bump/changelog, one version across manifests, tag-triggered GitHub release | `cog`, `git`, `task` |
 | `weebo-cde` | symlink | ours, from `batlehub/batlehub`: Eclipse Che: devfile sidecars, `kubectl exec $HOSTNAME -c`, browser sidecar, sleep-infinity fallback | `kubectl`, `task` |
 | `weebo-helm` | symlink | ours, from `batlehub/batlehub`: Helm chart skeleton, values conventions, helm-docs gate, PR lint, cosign-signed OCI chart | `helm`, `helm-docs` |
+| `weebo-mission` | symlink | ours, from `batleforc/weebo-update`: fleet maintenance missions: `mission.yaml` schema and `fleet:check` rules, prompt rules (no untrusted text), outcomes and exit codes, `task mission:run` | `task`, `podman` |
+| `weebo-health` | symlink | ours, from `batleforc/weebo-update`: the health scorecard rows, weights, owning skills, score and issue publication | `jq`, `yq` |
 | `weebo-dum-e` | symlink | ours: `/weebo-dum-e` hands a brainless one-shot chore to a throwaway haiku subagent, low effort, no reasoning | — |
 | `wska`            | symlink     | ours: makes agents install, update and add skills through `wska` rather than by hand | `wska` or `cargo` |
 

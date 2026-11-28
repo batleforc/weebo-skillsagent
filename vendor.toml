@@ -175,6 +175,8 @@ weebo-api-contract  = ["cargo", "pnpm", "npx"]
 weebo-release       = ["cog", "git", "task"]
 weebo-cde           = ["kubectl", "task"]
 weebo-helm          = ["helm", "helm-docs"]
+weebo-mission       = ["task", "podman"]
+weebo-health        = ["jq", "yq"]
 wska            = ["wska|cargo"]
 doc-review      = ["claude", "judge"]
 
